@@ -1,0 +1,19 @@
+[package]
+name = "pype"
+version = "0.1.0"
+edition = "2021"
+description = "A Python static code analyzer & language server"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[workspace]
+members = [
+    "crates/py2erg",
+]
+
+[dependencies]
+rustpython-parser = "0.1.2"
+erg_compiler = { git = "https://github.com/erg-lang/erg", branch = "main" }
+erg_common = { git = "https://github.com/erg-lang/erg", branch = "main" }
+els = { git = "https://github.com/erg-lang/erg-language-server", branch = "main" }
+py2erg = { path = "./crates/py2erg" }

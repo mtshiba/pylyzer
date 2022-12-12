@@ -1,0 +1,38 @@
+{
+  "name": "vscode-pype",
+  "displayName": "pype",
+  "description": "A Python static code analyzer & language server for VSCode",
+  "publisher": "gmshiba",
+  "version": "0.1.0",
+  "engines": {
+    "vscode": "^1.70.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mtshiba/pype.git"
+  },
+  "main": "./extension.js",
+  "activationEvents": [
+    "onLanguage:python"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "python",
+        "aliases": [
+          "Python",
+          "python"
+        ],
+        "extensions": [
+          ".py"
+        ]
+      }
+    ]
+  },
+  "dependencies": {
+    "vscode-languageclient": "^7.0.0"
+  }
+}

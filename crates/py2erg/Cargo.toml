@@ -1,0 +1,15 @@
+[package]
+name = "py2erg"
+version = "0.1.0"
+edition = "2021"
+description = "A Python -> Erg converter"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+rustpython-parser = "0.1.2"
+erg_compiler = { git = "https://github.com/erg-lang/erg", branch = "main" }
+erg_common = { git = "https://github.com/erg-lang/erg", branch = "main" }
+
+[lib]
+path = "lib.rs"
