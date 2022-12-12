@@ -1,6 +1,6 @@
 # pype
 
-`pype` is a Python static code analyzer / language server written in Rust.
+`pype` is a static code analyzer / language server for Python written in Rust.
 
 ## Installation
 
