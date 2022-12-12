@@ -29,8 +29,14 @@ However, pype is superior to them in the following points:
 
 * Performance: pype can inspect Python scripts on average 100 times faster than pytype. This is largely due to the fact that pype is implemented in Rust, whereas pytype is implemented in Python.
 
+![performance](extension/images/performance.png)
+
 * Detailed analysis
 
 pype can do more than the usual type testing. For example, it can detect out-of-bounds accesses to lists and accesses to nonexistent keys in dicts.
 
-* Reporting quality: While pytype's error reports are crude, showing only that an error has occurred, pype shows where the error occurred and provides clear error messages.
+![analysis](extension/images/analysis.png)
+
+* Reports readability: While pytype's error reports are crude, showing only that an error has occurred, pype shows where the error occurred and provides clear error messages.
+
+![reports](extension/images/reports.png)

@@ -22,7 +22,11 @@ class C:
     x = 1 + "a"
 
 dic = {"a": 1, "b": 2}
+
+
+
 print(dic["c"])
+
 
 a = [1, 2, 3]
 print(a[4])
