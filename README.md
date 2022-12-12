@@ -14,12 +14,6 @@ or download the binary from [the releases page].
 
 ## What is the advantage over pylint, pyright, pytype, etc.?
 
-pype performs type inference of Python source code. Therefore, there is no need to annotate or type your Python scripts in order to use pype. You can, however, explicitly request type checks by specifying types.
-
-There are other softwares that takes the same approach as pype, such as pytype, pyright, etc.
-
-However, pype is superior to them in the following points:
-
 * Performance: pype can inspect Python scripts on average __100 times faster__ than pytype and pyright. This is largely due to the fact that pype is implemented in Rust, whereas pytype is implemented in Python.
 
 ![performance](images/performance.png)
