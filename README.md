@@ -1,6 +1,6 @@
 # pype
 
-`pype` is a Python static code analyzer & language server written in Rust.
+`pype` is a Python static code analyzer / language server written in Rust.
 
 ## Installation
 
@@ -10,7 +10,7 @@
 cargo install pype
 ```
 
-or download the binary from [the releases page].
+or download the binary from [the releases page](https://github.com/mtshiba/pype/releases).
 
 ## What is the advantage over pylint, pyright, pytype, etc.?
 
