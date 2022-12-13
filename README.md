@@ -4,6 +4,12 @@
 
 ## Installation
 
+### pip
+
+```bash
+pip install pype
+```
+
 ### cargo (rust package manager)
 
 ```bash
@@ -16,17 +22,17 @@ or download the binary from [the releases page](https://github.com/mtshiba/pype/
 
 * Performance: pype can inspect Python scripts on average __100 times faster__ than pytype and pyright. This is largely due to the fact that pype is implemented in Rust, whereas pytype is implemented in Python.
 
-![performance](images/performance.png)
+![performance](https://raw.githubusercontent.com/mtshiba/pype/main/images/performance.png)
 
 * Detailed analysis
 
 pype can do more than the usual type testing. For example, it can detect out-of-bounds accesses to lists and accesses to nonexistent keys in dicts.
 
-![analysis](images/analysis.png)
+![analysis](https://raw.githubusercontent.com/mtshiba/pype/main/images/analysis.png)
 
 * Reports readability: While pytype's error reports are crude, showing only that an error has occurred, pype shows where the error occurred and provides clear error messages.
 
-![reports](images/reports.png)
+![reports](https://raw.githubusercontent.com/mtshiba/pype/main/images/reports.png)
 
 ## How it works
 
