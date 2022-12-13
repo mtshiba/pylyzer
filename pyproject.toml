@@ -1,0 +1,10 @@
+[build-system]
+requires = ["maturin>=0.12"]
+build-backend = "maturin"
+
+[project]
+name = "pype-analyzer"
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Rust",
+]
