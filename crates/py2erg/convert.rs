@@ -7,36 +7,33 @@ use erg_compiler::erg_parser::token::{Token, TokenKind, EQUAL, COLON};
 use erg_compiler::erg_parser::ast::{
     Expr, Module, Signature, VarSignature, VarPattern, Params, Identifier, VarName, DefBody, DefId, Block, Def, Literal, Args, PosArg, Accessor,
     BinOp, Lambda, LambdaSignature, TypeBoundSpecs, TypeSpec, SubrSignature, Decorator, NonDefaultParamSignature, DefaultParamSignature, ParamPattern, TypeSpecWithOp,
-    Tuple, NormalTuple, Array, NormalArray, Set, NormalSet, Dict, NormalDict, PreDeclTypeSpec, SimpleTypeSpec, ConstArgs, AttrDef, UnaryOp, KeyValue, Dummy
+    Tuple, NormalTuple, Array, NormalArray, Set, NormalSet, Dict, NormalDict, PreDeclTypeSpec, SimpleTypeSpec, ConstArgs, AttrDef, UnaryOp, KeyValue, Dummy, TypeAscription
 };
 
-fn add_procedural_mark(name: String) -> String {
+/// Variables are automatically rewritten with `python_compatible_mode`,
+/// but types are rewritten here because they are complex components used inseparably in the Erg system.
+fn escape_name(name: String) -> String {
     match &name[..] {
-        "print" => "print!".to_string(),
-        "input" => "input!".to_string(),
-        "open" => "open!".to_string(),
-        "int" => "Int".to_string(),
-        "float" => "Float".to_string(),
-        "str" => "Str".to_string(),
-        "bool" => "Bool".to_string(),
-        "list" => "GenericArray".to_string(),
-        "tuple" => "GenericTuple".to_string(),
-        "range" => "Range".to_string(),
+        "int" => "Int".into(),
+        "float" => "Float".into(),
+        "str" => "Str".into(),
+        "bool" => "Bool".into(),
+        "list" => "GenericArray".into(),
+        "range" => "GenericRange".into(),
+        "dict" => "GenericDict".into(),
+        "set" => "GenericSet".into(),
+        "tuple" => "GenericTuple".into(),
+        "type" => "Type".into(),
+        "ModuleType" => "GeneticModule".into(),
         _ => name,
     }
 }
 
-fn convert_attr(name: String, loc: PyLocation) -> Identifier {
-    let token = Token::new(TokenKind::Symbol, add_procedural_mark(name), loc.row(), loc.column() - 1);
-    let name = VarName::new(token);
-    let dot = Token::new(TokenKind::Dot, ".", loc.row(), loc.column());
-    Identifier::new(Some(dot), name)
-}
-
 fn convert_ident(name: String, loc: PyLocation) -> Identifier {
-    let token = Token::new(TokenKind::Symbol, add_procedural_mark(name), loc.row(), loc.column() - 1);
+    let token = Token::new(TokenKind::Symbol, escape_name(name), loc.row(), loc.column() - 1);
     let name = VarName::new(token);
-    Identifier::new(None, name)
+    let dot = Token::new(TokenKind::Dot, ".", loc.row(), loc.column() - 1);
+    Identifier::new(Some(dot), name)
 }
 
 fn convert_param_pattern(arg: String, loc: PyLocation) -> ParamPattern {
@@ -183,7 +180,7 @@ fn convert_expr(expr: Located<ExpressionType>) -> Expr {
         }
         ExpressionType::Attribute { value, name } => {
             let obj = convert_expr(*value);
-            let name = convert_attr(name, expr.location);
+            let name = convert_ident(name, expr.location);
             Expr::Accessor(Accessor::attr(obj, name))
         }
         ExpressionType::Lambda { args, body } => {
@@ -226,7 +223,7 @@ fn convert_expr(expr: Located<ExpressionType>) -> Expr {
         }
         ExpressionType::Subscript { a, b } => {
             let obj = convert_expr(*a);
-            let method = obj.attr_expr(convert_attr("__getitem__".to_string(), expr.location));
+            let method = obj.attr_expr(convert_ident("__getitem__".to_string(), expr.location));
             let args = Args::new(vec![PosArg::new(convert_expr(*b))], vec![], None);
             method.call_expr(args)
         }
@@ -244,6 +241,36 @@ fn convert_block(block: Vec<Located<StatementType>>) -> Block {
 fn convert_statement(stmt: Located<StatementType>) -> Expr {
     match stmt.node {
         StatementType::Expression { expression } => convert_expr(expression),
+        StatementType::AnnAssign { target, annotation, value } => {
+            let t_spec = convert_type_spec(*annotation);
+            match target.node {
+                ExpressionType::Identifier { name } => {
+                    let ident = convert_ident(name, stmt.location);
+                    if let Some(value) = value {
+                        let sig = Signature::Var(VarSignature::new(VarPattern::Ident(ident), Some(t_spec)));
+                        let block = Block::new(vec![convert_expr(value)]);
+                        let body = DefBody::new(EQUAL, block, DefId(0));
+                        let def = Def::new(sig, body);
+                        Expr::Def(def)
+                    } else {
+                        let tasc = TypeAscription::new(Expr::Accessor(Accessor::Ident(ident)), COLON, t_spec);
+                        Expr::TypeAsc(tasc)
+                    }
+                }
+                ExpressionType::Attribute { value: attr, name } => {
+                    let attr = convert_expr(*attr).attr(convert_ident(name, target.location));
+                    if let Some(value) = value {
+                        let expr = convert_expr(value);
+                        let adef = AttrDef::new(attr, expr);
+                        Expr::AttrDef(adef)
+                    } else {
+                        let tasc = TypeAscription::new(Expr::Accessor(attr), COLON, t_spec);
+                        Expr::TypeAsc(tasc)
+                    }
+                }
+                _other => Expr::Dummy(Dummy::empty()),
+            }
+        }
         StatementType::Assign { mut targets, value } => {
             let lhs = targets.remove(0);
             match lhs.node {
@@ -339,7 +366,7 @@ fn convert_statement(stmt: Located<StatementType>) -> Expr {
         StatementType::Import { names } => {
             let mut imports = vec![];
             for name in names {
-                let import_acc = Expr::Accessor(Accessor::Ident(convert_ident("pyimport".to_string(), stmt.location)));
+                let import_acc = Expr::Accessor(Accessor::Ident(convert_ident("__import__".to_string(), stmt.location)));
                 let cont = format!("\"{}\"", name.symbol);
                 let mod_name = Expr::Lit(Literal::new(Token::new(TokenKind::StrLit, cont, stmt.location.row(), stmt.location.column() - 1)));
                 let args = Args::new(vec![PosArg::new(mod_name)], vec![], None);

@@ -8,12 +8,13 @@ use std::str::FromStr;
 use analyze::PythonAnalyzer;
 use els::Server;
 use erg_common::config::{Input, ErgConfig};
+use erg_common::spawn::exec_new_thread;
 use erg_common::traits::Runnable;
 
 pub fn parse_args() -> ErgConfig {
     let mut args = env::args();
     args.next(); // "pylyzer"
-    let mut cfg = ErgConfig::default();
+    let mut cfg = ErgConfig{ python_compatible_mode: true, ..ErgConfig::default() };
     while let Some(arg) = args.next() {
         match &arg[..] {
             "--" => {
@@ -27,6 +28,9 @@ pub fn parse_args() -> ErgConfig {
             }
             "--server" => {
                 cfg.mode = "server";
+            }
+            "--dump-decl" => {
+                cfg.output_dir = Some("");
             }
             "--verbose" => {
                 cfg.verbose = args
@@ -68,7 +72,7 @@ For more information try `pylyzer --help`"
     cfg
 }
 
-fn main() {
+fn run() {
     let cfg = parse_args();
     if cfg.mode == "server" {
         let mut lang_server = Server::<PythonAnalyzer>::new();
@@ -79,4 +83,8 @@ fn main() {
         let mut analyzer = PythonAnalyzer::new(cfg);
         analyzer.run();
     }
+}
+
+fn main() {
+    exec_new_thread(run);
 }

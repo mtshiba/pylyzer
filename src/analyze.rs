@@ -6,6 +6,7 @@ use erg_compiler::context::Context;
 use erg_compiler::erg_parser::ast::AST;
 use erg_compiler::error::{CompileErrors, CompileError};
 use erg_compiler::lower::ASTLowerer;
+use py2erg::dump_decl_er;
 use rustpython_parser::parser;
 
 use crate::handle_err;
@@ -85,6 +86,10 @@ impl PythonAnalyzer {
                     artifact.warns.fmt_all_stderr();
                 }
                 println!("All checks OK.");
+                if self.cfg.output_dir.is_some() {
+                    dump_decl_er(artifact.object);
+                    println!("A declaration file has been generated to __pycache__ directory.");
+                }
                 std::process::exit(0);
             }
             Err(artifact) => {
