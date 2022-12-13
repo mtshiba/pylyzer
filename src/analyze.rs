@@ -87,7 +87,7 @@ impl PythonAnalyzer {
                 }
                 println!("All checks OK.");
                 if self.cfg.output_dir.is_some() {
-                    dump_decl_er(artifact.object);
+                    dump_decl_er(self.cfg.input.clone(), artifact.object);
                     println!("A declaration file has been generated to __pycache__ directory.");
                 }
                 std::process::exit(0);
