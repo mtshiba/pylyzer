@@ -512,8 +512,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "pype"
-version = "0.1.0"
+name = "pylyzer"
+version = "0.0.1"
 dependencies = [
  "els",
  "erg_common",

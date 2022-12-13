@@ -1,6 +1,6 @@
 [package]
-name = "pype"
-version = "0.1.0"
+name = "pylyzer"
+version = "0.0.1"
 edition = "2021"
 description = "A Python static code analyzer & language server"
 

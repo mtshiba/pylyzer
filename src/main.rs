@@ -12,7 +12,7 @@ use erg_common::traits::Runnable;
 
 pub fn parse_args() -> ErgConfig {
     let mut args = env::args();
-    args.next(); // "pype"
+    args.next(); // "pylyzer"
     let mut cfg = ErgConfig::default();
     while let Some(arg) = args.next() {
         match &arg[..] {
@@ -45,9 +45,9 @@ pub fn parse_args() -> ErgConfig {
 invalid option: {other}
 
 USAGE:
-pype [OPTIONS] [SUBCOMMAND] [ARGS]...
+pylyzer [OPTIONS] [SUBCOMMAND] [ARGS]...
 
-For more information try `pype --help`"
+For more information try `pylyzer --help`"
                 );
                 std::process::exit(2);
             }

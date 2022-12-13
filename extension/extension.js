@@ -7,7 +7,7 @@ let client;
 function activate(context) {
     try {
         const serverOptions = {
-            command: "pype",
+            command: "pylyzer",
             args: ["--server"]
         };
         const clientOptions = {
@@ -18,10 +18,10 @@ function activate(context) {
                 }
             ],
         };
-        client = new languageclient.LanguageClient("pype", serverOptions, clientOptions);
+        client = new languageclient.LanguageClient("pylyzer", serverOptions, clientOptions);
         context.subscriptions.push(client.start());
     } catch (e) {
-        vscode.window.showErrorMessage("failed to start pype.");
+        vscode.window.showErrorMessage("failed to start pylyzer.");
     }
 }
 
