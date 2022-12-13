@@ -67,6 +67,7 @@ impl PythonAnalyzer {
         let py_program = parser::parse_program(&py_code).unwrap();
         let erg_module = py2erg::convert_program(py_program);
         let erg_ast = AST::new(erg_common::Str::rc(filename), erg_module);
+        erg_common::log!("AST: {erg_ast}");
         self.checker.lower(erg_ast, mode).map_err(|iart| {
             let filtered = handle_err::filter_errors(self.checker.get_mod_ctx(), iart.errors);
             IncompleteArtifact::new(iart.object, filtered, iart.warns)

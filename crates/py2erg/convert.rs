@@ -181,6 +181,11 @@ fn convert_expr(expr: Located<ExpressionType>) -> Expr {
             let ident = convert_ident(name, expr.location);
             Expr::Accessor(Accessor::Ident(ident))
         }
+        ExpressionType::Attribute { value, name } => {
+            let obj = convert_expr(*value);
+            let name = convert_attr(name, expr.location);
+            Expr::Accessor(Accessor::attr(obj, name))
+        }
         ExpressionType::Lambda { args, body } => {
             let params = convert_params(args);
             let body = vec![convert_expr(*body)];
@@ -330,6 +335,25 @@ fn convert_statement(stmt: Located<StatementType>) -> Expr {
         StatementType::Return { value } => {
             value.map(convert_expr)
                 .unwrap_or_else(||Expr::Tuple(Tuple::Normal(NormalTuple::new(Args::empty()))))
+        }
+        StatementType::Import { names } => {
+            let mut imports = vec![];
+            for name in names {
+                let import_acc = Expr::Accessor(Accessor::Ident(convert_ident("pyimport".to_string(), stmt.location)));
+                let cont = format!("\"{}\"", name.symbol);
+                let mod_name = Expr::Lit(Literal::new(Token::new(TokenKind::StrLit, cont, stmt.location.row(), stmt.location.column() - 1)));
+                let args = Args::new(vec![PosArg::new(mod_name)], vec![], None);
+                let call = import_acc.call_expr(args);
+                let def = if let Some(alias) = name.alias {
+                    let var = VarSignature::new(VarPattern::Ident(convert_ident(alias, stmt.location)), None);
+                    Def::new(Signature::Var(var), DefBody::new(EQUAL, Block::new(vec![call]), DefId(0)))
+                } else {
+                    let var = VarSignature::new(VarPattern::Ident(convert_ident(name.symbol, stmt.location)), None);
+                    Def::new(Signature::Var(var), DefBody::new(EQUAL, Block::new(vec![call]), DefId(0)))
+                };
+                imports.push(Expr::Def(def));
+            }
+            Expr::Dummy(Dummy::new(imports))
         }
         _other => {
             erg_common::log!(err "unimplemented: {:?}", _other);
