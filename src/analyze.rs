@@ -58,7 +58,7 @@ impl Buildable for PythonAnalyzer {
         self.analyze(code, mode)
     }
     fn pop_context(&mut self) -> Option<Context> {
-        Some(self.checker.pop_mod_ctx())
+        self.checker.pop_mod_ctx()
     }
     fn get_context(&self) -> Option<&Context> {
         Some(self.checker.get_mod_ctx())

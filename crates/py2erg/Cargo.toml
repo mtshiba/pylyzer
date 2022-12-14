@@ -8,8 +8,8 @@ description = "A Python -> Erg converter"
 
 [dependencies]
 rustpython-parser = "0.1.2"
-erg_compiler = { git = "https://github.com/erg-lang/erg", branch = "pylyzer-mode" }
-erg_common = { git = "https://github.com/erg-lang/erg", branch = "pylyzer-mode" }
+erg_compiler = { git = "https://github.com/erg-lang/erg", branch = "main" }
+erg_common = { git = "https://github.com/erg-lang/erg", branch = "main" }
 
 [lib]
 path = "lib.rs"
