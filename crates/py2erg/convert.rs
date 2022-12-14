@@ -7,7 +7,7 @@ use erg_compiler::erg_parser::token::{Token, TokenKind, EQUAL, COLON};
 use erg_compiler::erg_parser::ast::{
     Expr, Module, Signature, VarSignature, VarPattern, Params, Identifier, VarName, DefBody, DefId, Block, Def, Literal, Args, PosArg, Accessor,
     BinOp, Lambda, LambdaSignature, TypeBoundSpecs, TypeSpec, SubrSignature, Decorator, NonDefaultParamSignature, DefaultParamSignature, ParamPattern, TypeSpecWithOp,
-    Tuple, NormalTuple, Array, NormalArray, Set, NormalSet, Dict, NormalDict, PreDeclTypeSpec, SimpleTypeSpec, ConstArgs, AttrDef, UnaryOp, KeyValue, Dummy, TypeAscription
+    Tuple, NormalTuple, Array, NormalArray, Set, NormalSet, Dict, NormalDict, PreDeclTypeSpec, SimpleTypeSpec, ConstArgs, AttrDef, UnaryOp, KeyValue, Dummy, TypeAscription, ParamTuplePattern
 };
 
 /// Variables are automatically rewritten with `python_compatible_mode`,
@@ -67,9 +67,21 @@ fn convert_for_param(name: String, loc: PyLocation) -> NonDefaultParamSignature 
     NonDefaultParamSignature::new(pat, t_spec)
 }
 
+fn convert_expr_to_param(expr: Located<ExpressionType>) -> NonDefaultParamSignature {
+    match expr.node {
+        ExpressionType::Identifier { name } => convert_for_param(name, expr.location),
+        ExpressionType::Tuple { elements } => {
+            let non_defaults = elements.into_iter().map(convert_expr_to_param).collect();
+            let params = Params::new(non_defaults, None, vec![], None);
+            let pat = ParamPattern::Tuple(ParamTuplePattern::new(params));
+            NonDefaultParamSignature::new(pat, None)
+        }
+        other => todo!("{:?}", other),
+    }
+}
+
 fn convert_for_body(lhs: Located<ExpressionType>, body: Suite) -> Lambda {
-    let ExpressionType::Identifier { name } = lhs.node else { todo!() };
-    let param = convert_for_param(name, lhs.location);
+    let param = convert_expr_to_param(lhs);
     let params = Params::new(vec![param], None, vec![], None);
     let body = body.into_iter().map(convert_statement).collect::<Vec<_>>();
     let sig = LambdaSignature::new(params, None, TypeBoundSpecs::empty());
