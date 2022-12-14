@@ -1,5 +1,7 @@
 # pylyzer
 
+<a href="https://marketplace.visualstudio.com/items?itemName=pylyzer.pylyzer" target="_blank" rel="noreferrer noopener nofollow"><img src="https://img.shields.io/visual-studio-marketplace/v/pylyzer.pylyzer?style=flat&amp;label=VS%20Marketplace&amp;logo=visual-studio-code" alt="vsm-version"></a>
+
 `pylyzer` is a static code analyzer / language server for Python written in Rust.
 
 ## Installation
@@ -23,7 +25,9 @@ or download the binary from [the releases page](https://github.com/mtshiba/pylyz
 
 ## What is the advantage over pylint, pyright, pytype, etc.?
 
-* Performance: pylyzer can inspect Python scripts on average __100 times faster__ than pytype and pyright. This is largely due to the fact that pylyzer is implemented in Rust, whereas pytype is implemented in Python.
+* Performance
+
+pylyzer can inspect Python scripts on average __100 times faster__ than pytype and pyright. This is largely due to the fact that pylyzer is implemented in Rust, whereas pytype is implemented in Python.
 
 ![performance](https://raw.githubusercontent.com/mtshiba/pylyzer/main/images/performance.png)
 
@@ -33,7 +37,9 @@ pylyzer can do more than the usual type testing. For example, it can detect out-
 
 ![analysis](https://raw.githubusercontent.com/mtshiba/pylyzer/main/images/analysis.png)
 
-* Reports readability: While pytype's error reports are crude, showing only that an error has occurred, pylyzer shows where the error occurred and provides clear error messages.
+* Reports readability
+
+While pytype/pyright's error reports are illegible, pylyzer shows where the error occurred and provides clear error messages.
 
 ![reports](https://raw.githubusercontent.com/mtshiba/pylyzer/main/images/reports.png)
 

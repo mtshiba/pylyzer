@@ -1,14 +1,15 @@
 {
-  "name": "vscode-pylyzer",
+  "name": "pylyzer",
   "displayName": "pylyzer",
-  "description": "A Python static code analyzer & language server for VSCode",
-  "publisher": "gmshiba",
+  "description": "A fast Python static code analyzer & language server for VSCode",
+  "publisher": "pylyzer",
   "version": "0.1.0",
   "engines": {
     "vscode": "^1.70.0"
   },
   "categories": [
-    "Programming Languages"
+    "Programming Languages",
+    "Linters"
   ],
   "repository": {
     "type": "git",
