@@ -6,4 +6,4 @@ print(i + 1)
 
 print(export.test)
 print(export.add(1, 2))
-assert export.add("a", "b") == "ab"
+assert export.add("a", "b") == 1
