@@ -1,6 +1,6 @@
 use erg_common::traits::{Runnable, Stream};
 use erg_common::config::{ErgConfig};
-use erg_common::error::MultiErrorDisplay;
+use erg_common::error::{MultiErrorDisplay, ErrorCore, ErrorKind};
 use erg_compiler::artifact::{BuildRunnable, CompleteArtifact, IncompleteArtifact, Buildable};
 use erg_compiler::context::Context;
 use erg_compiler::erg_parser::ast::AST;
@@ -70,7 +70,17 @@ impl BuildRunnable for PythonAnalyzer {}
 impl PythonAnalyzer {
     pub fn analyze(&mut self, py_code: String, mode: &str) -> Result<CompleteArtifact, IncompleteArtifact> {
         let filename = self.cfg.input.filename();
-        let py_program = parser::parse_program(&py_code).unwrap();
+        let py_program = parser::parse_program(&py_code).map_err(|err| {
+            let core = ErrorCore::new(
+                vec![],
+                err.to_string(),
+                0,
+                ErrorKind::SyntaxError,
+                erg_common::error::Location::Line(err.location.row())
+            );
+            let err = CompileError::new(core, self.cfg.input.clone(),  "".into());
+            IncompleteArtifact::new(None, CompileErrors::from(err), CompileErrors::empty())
+        })?;
         let erg_module = py2erg::convert_program(py_program);
         let erg_ast = AST::new(erg_common::Str::rc(filename), erg_module);
         erg_common::log!("AST: {erg_ast}");

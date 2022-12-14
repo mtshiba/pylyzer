@@ -40,3 +40,11 @@ pylyzer uses the type checker of [the Erg programming language](https://erg-lang
 This language is a transpiled language that targets Python, and has a static type system.
 
 pylyzer converts Python ASTs to Erg ASTs and passes them to Erg's type checker. It then displays the results with appropriate modifications.
+
+## TODOs
+
+* [x] type checking
+* [x] type inferring
+* [x] builtin modules resolving (partially)
+* [x] local scripts resolving
+* [ ] local packages resolving

@@ -363,6 +363,17 @@ fn convert_statement(stmt: Located<StatementType>) -> Expr {
             value.map(convert_expr)
                 .unwrap_or_else(||Expr::Tuple(Tuple::Normal(NormalTuple::new(Args::empty()))))
         }
+        StatementType::Assert { test, msg } => {
+            let test = convert_expr(test);
+            let args = if let Some(msg) = msg {
+                let msg = convert_expr(msg);
+                Args::new(vec![PosArg::new(test), PosArg::new(msg)], vec![], None)
+            } else {
+                Args::new(vec![PosArg::new(test)], vec![], None)
+            };
+            let assert_acc = Expr::Accessor(Accessor::Ident(convert_ident("assert".to_string(), stmt.location)));
+            assert_acc.call_expr(args)
+        }
         StatementType::Import { names } => {
             let mut imports = vec![];
             for name in names {
