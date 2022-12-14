@@ -28,8 +28,13 @@ impl Runnable for PythonAnalyzer {
             cfg,
         }
     }
+    #[inline]
     fn cfg(&self) -> &ErgConfig {
         &self.cfg
+    }
+    #[inline]
+    fn cfg_mut(&mut self) -> &mut ErgConfig {
+        &mut self.cfg
     }
     fn finish(&mut self) {
         self.checker.finish();

@@ -75,7 +75,7 @@ For more information try `pylyzer --help`"
 fn run() {
     let cfg = parse_args();
     if cfg.mode == "server" {
-        let mut lang_server = Server::<PythonAnalyzer>::new();
+        let mut lang_server = Server::<PythonAnalyzer>::new(cfg);
         lang_server.run().unwrap_or_else(|_| {
             std::process::exit(1);
         });
