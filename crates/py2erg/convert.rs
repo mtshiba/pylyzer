@@ -142,7 +142,7 @@ fn convert_expr(expr: Located<ExpressionType>) -> Expr {
             let sig = LambdaSignature::new(params.clone(), None, TypeBoundSpecs::empty());
             let body = Lambda::new(sig, Token::DUMMY, Block::new(vec![block]), DefId(0));
             let test = convert_expr(*test);
-            let if_ident = convert_ident("if!".to_string(), expr.location);
+            let if_ident = convert_ident("if".to_string(), expr.location);
             let if_acc = Expr::Accessor(Accessor::Ident(if_ident));
             let else_block = convert_expr(*orelse);
             let sig = LambdaSignature::new(params, None, TypeBoundSpecs::empty());
@@ -371,7 +371,7 @@ fn convert_statement(stmt: Located<StatementType>) -> Expr {
         StatementType::For { is_async: _, target, iter, body, orelse: _ } => {
             let block = convert_for_body(*target, body);
             let iter = convert_expr(*iter);
-            let for_ident = convert_ident("for!".to_string(), stmt.location);
+            let for_ident = convert_ident("for".to_string(), stmt.location);
             let for_acc = Expr::Accessor(Accessor::Ident(for_ident));
             for_acc.call_expr(Args::new(vec![PosArg::new(iter), PosArg::new(Expr::Lambda(block))], vec![], None))
         }
@@ -380,7 +380,7 @@ fn convert_statement(stmt: Located<StatementType>) -> Expr {
             let params = Params::new(vec![], None, vec![], None);
             let body = Lambda::new(LambdaSignature::new(params, None, TypeBoundSpecs::empty()), Token::DUMMY, block, DefId(0));
             let test = convert_expr(test);
-            let while_ident = convert_ident("while!".to_string(), stmt.location);
+            let while_ident = convert_ident("while".to_string(), stmt.location);
             let while_acc = Expr::Accessor(Accessor::Ident(while_ident));
             while_acc.call_expr(Args::new(vec![PosArg::new(test), PosArg::new(Expr::Lambda(body))], vec![], None))
         }
@@ -390,7 +390,7 @@ fn convert_statement(stmt: Located<StatementType>) -> Expr {
             let sig = LambdaSignature::new(params.clone(), None, TypeBoundSpecs::empty());
             let body = Lambda::new(sig, Token::DUMMY, block, DefId(0));
             let test = convert_expr(test);
-            let if_ident = convert_ident("if!".to_string(), stmt.location);
+            let if_ident = convert_ident("if".to_string(), stmt.location);
             let if_acc = Expr::Accessor(Accessor::Ident(if_ident));
             if let Some(orelse) = orelse {
                 let else_block = convert_block(orelse);
