@@ -1,5 +1,5 @@
 use erg_common::traits::Stream;
-use rustpython_parser::ast::{StatementType, ExpressionType, Located, Program, Number, StringGroup, Operator, BooleanOperator, UnaryOperator, Suite, Parameters, Parameter};
+use rustpython_parser::ast::{StatementType, ExpressionType, Located, Program, Number, StringGroup, Operator, BooleanOperator, UnaryOperator, Suite, Parameters, Parameter, Comparison};
 use rustpython_parser::ast::Location as PyLocation;
 
 use erg_common::set::Set as HashSet;
@@ -124,6 +124,32 @@ fn convert_expr(expr: Located<ExpressionType>) -> Expr {
             let token = Token::new(TokenKind::StrLit, value, expr.location.row(), expr.location.column() - 2);
             Expr::Lit(Literal::new(token))
         }
+        ExpressionType::False => {
+            Expr::Lit(Literal::new(Token::new(TokenKind::BoolLit, "False", expr.location.row(), expr.location.column() - 1)))
+        }
+        ExpressionType::True => {
+            Expr::Lit(Literal::new(Token::new(TokenKind::BoolLit, "True", expr.location.row(), expr.location.column() - 1)))
+        }
+        ExpressionType::None => {
+            Expr::Lit(Literal::new(Token::new(TokenKind::NoneLit, "None", expr.location.row(), expr.location.column() - 1)))
+        }
+        ExpressionType::Ellipsis => {
+            Expr::Lit(Literal::new(Token::new(TokenKind::EllipsisLit, "Ellipsis", expr.location.row(), expr.location.column() - 1)))
+        }
+        ExpressionType::IfExpression { test, body, orelse } => {
+            let block = convert_expr(*body);
+            let params = Params::new(vec![], None, vec![], None);
+            let sig = LambdaSignature::new(params.clone(), None, TypeBoundSpecs::empty());
+            let body = Lambda::new(sig, Token::DUMMY, Block::new(vec![block]), DefId(0));
+            let test = convert_expr(*test);
+            let if_ident = convert_ident("if!".to_string(), expr.location);
+            let if_acc = Expr::Accessor(Accessor::Ident(if_ident));
+            let else_block = convert_expr(*orelse);
+            let sig = LambdaSignature::new(params, None, TypeBoundSpecs::empty());
+            let else_body = Lambda::new(sig, Token::DUMMY, Block::new(vec![else_block]), DefId(0));
+            let args = Args::new(vec![PosArg::new(test), PosArg::new(Expr::Lambda(body)), PosArg::new(Expr::Lambda(else_body))], vec![], None);
+            if_acc.call_expr(args)
+        }
         ExpressionType::Call { function, args, keywords: _ } => {
             let function = convert_expr(*function);
             let pos_args = args.into_iter().map(|ex| PosArg::new(convert_expr(ex))).collect::<Vec<_>>();
@@ -170,6 +196,25 @@ fn convert_expr(expr: Located<ExpressionType>) -> Expr {
             let (kind, cont) = match op {
                 BooleanOperator::And => (TokenKind::AndOp, "and"),
                 BooleanOperator::Or => (TokenKind::OrOp, "or"),
+            };
+            let op = Token::from_str(kind, cont);
+            Expr::BinOp(BinOp::new(op, lhs, rhs))
+        }
+        // TODO: multiple comparisons
+        ExpressionType::Compare { mut vals, mut ops } => {
+            let lhs = convert_expr(vals.remove(0));
+            let rhs = convert_expr(vals.remove(0));
+            let (kind, cont) = match ops.remove(0) {
+                Comparison::Equal => (TokenKind::Equal, "=="),
+                Comparison::NotEqual => (TokenKind::NotEq, "!="),
+                Comparison::Less => (TokenKind::Less, "<"),
+                Comparison::LessOrEqual => (TokenKind::LessEq, "<="),
+                Comparison::Greater => (TokenKind::Gre, ">"),
+                Comparison::GreaterOrEqual => (TokenKind::GreEq, ">="),
+                Comparison::Is => (TokenKind::IsOp, "is"),
+                Comparison::IsNot => (TokenKind::IsNotOp, "isnot"),
+                Comparison::In => (TokenKind::InOp, "in"),
+                Comparison::NotIn => (TokenKind::NotInOp, "notin"),
             };
             let op = Token::from_str(kind, cont);
             Expr::BinOp(BinOp::new(op, lhs, rhs))
