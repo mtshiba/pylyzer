@@ -382,12 +382,13 @@ impl ASTConverter {
     //     self.x = x
     //     self.y = y
     // ↓
-    // {x: Int, y: Int}, .new(x: Int, y: Int) -> Self
-    fn extract_init(&self, def: Def) -> Expr {
+    // {x: Int, y: Int}, .__call__(x: Int, y: Int): Self = .unreachable()
+    fn extract_init(&self, def: Def) -> (Expr, Def) {
         let l_brace = Token::new(TokenKind::LBrace, "{", def.ln_begin().unwrap(), def.col_begin().unwrap());
         let r_brace = Token::new(TokenKind::RBrace, "}", def.ln_end().unwrap(), def.col_end().unwrap());
         let Signature::Subr(sig) = def.sig else { unreachable!() };
         let mut fields = vec![];
+        let mut params = vec![];
         for chunk in def.body.block {
             #[allow(clippy::single_match)]
             match chunk {
@@ -401,8 +402,11 @@ impl ASTConverter {
                             } else {
                                 "Never".to_string()
                             };
-                        let typ = Identifier::public_with_line(DOT, typ_name.into(), attr.obj.ln_begin().unwrap());
-                        let typ = Expr::Accessor(Accessor::Ident(typ));
+                        let typ_ident = Identifier::public_with_line(DOT, typ_name.into(), attr.obj.ln_begin().unwrap());
+                        let typ_spec = TypeSpec::PreDeclTy(PreDeclTypeSpec::Simple(SimpleTypeSpec::new(typ_ident.clone(), ConstArgs::empty())));
+                        let typ_spec = TypeSpecWithOp::new(COLON, typ_spec);
+                        params.push(NonDefaultParamSignature::new(ParamPattern::VarName(attr.ident.name.clone()), Some(typ_spec)));
+                        let typ = Expr::Accessor(Accessor::Ident(typ_ident));
                         let sig = Signature::Var(VarSignature::new(VarPattern::Ident(attr.ident), None));
                         let body = DefBody::new(EQUAL, Block::new(vec![typ]), DefId(0));
                         let field_type_def = Def::new(sig, body);
@@ -412,7 +416,17 @@ impl ASTConverter {
                 _ => {}
             }
         }
-        Expr::Record(Record::Normal(NormalRecord::new(l_brace, r_brace, RecordAttrs::new(fields))))
+        let record = Record::Normal(NormalRecord::new(l_brace, r_brace, RecordAttrs::new(fields)));
+        let call_ident = Identifier::new(Some(DOT), VarName::from_static("__call__"));
+        let params = Params::new(params, None, vec![], None);
+        let class_ident = Identifier::public_with_line(DOT, self.namespace.last().unwrap().into(), sig.ln_begin().unwrap());
+        let class_spec = TypeSpec::PreDeclTy(PreDeclTypeSpec::Simple(SimpleTypeSpec::new(class_ident, ConstArgs::empty())));
+        let sig = Signature::Subr(SubrSignature::new(HashSet::new(), call_ident, TypeBoundSpecs::empty(), params, Some(class_spec)));
+        let unreachable_acc = Identifier::new(Some(DOT), VarName::from_static("exit"));
+        let body = Expr::Accessor(Accessor::Ident(unreachable_acc)).call_expr(Args::empty());
+        let body = DefBody::new(EQUAL, Block::new(vec![body]), DefId(0));
+        let def = Def::new(sig, body);
+        (Expr::Record(record), def)
     }
 
     fn extract_method(&mut self, body: Vec<Located<StatementType>>) -> (Expr, ClassAttrs) {
@@ -423,7 +437,9 @@ impl ASTConverter {
             match chunk {
                 Expr::Def(def) => {
                     if def.is_subr() && &def.sig.ident().unwrap().inspect()[..] == "__init__" {
-                        base_type = self.extract_init(def);
+                        let (base_t, call_def) = self.extract_init(def);
+                        base_type = base_t;
+                        attrs.push(ClassAttr::Def(call_def));
                     } else {
                         attrs.push(ClassAttr::Def(def));
                     }

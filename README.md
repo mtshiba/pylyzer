@@ -50,10 +50,24 @@ This language is a transpiled language that targets Python, and has a static typ
 
 pylyzer converts Python ASTs to Erg ASTs and passes them to Erg's type checker. It then displays the results with appropriate modifications.
 
+## Limitation
+
+* pylyzer's type inspector only assumes (potentially) statically typed code, so you cannot use `exec`, etc.
+
+* Type checking of compound types such as Union types is not supported yet (will be implemented soon).
+
 ## TODOs
 
 * [x] type checking
+  * [x] variable
+  * [x] operator
+  * [x] function/method
+  * [x] class
 * [x] type inferring
+  * [x] variable
+  * [x] operator
+  * [x] function/method
+  * [x] class
 * [x] builtin modules resolving (partially)
 * [x] local scripts resolving
 * [ ] local packages resolving
