@@ -1,14 +1,14 @@
 use erg_common::fresh::fresh_varname;
-use erg_common::traits::Stream;
+use erg_common::traits::{Locational};
 use rustpython_parser::ast::{StatementType, ExpressionType, Located, Program, Number, StringGroup, Operator, BooleanOperator, UnaryOperator, Suite, Parameters, Parameter, Comparison};
 use rustpython_parser::ast::Location as PyLocation;
 
 use erg_common::set::Set as HashSet;
 use erg_compiler::erg_parser::token::{Token, TokenKind, EQUAL, COLON, DOT};
 use erg_compiler::erg_parser::ast::{
-    Expr, Module, Signature, VarSignature, VarPattern, Params, Identifier, VarName, DefBody, DefId, Block, Def, Literal, Args, PosArg, Accessor,
+    Expr, Module, Signature, VarSignature, VarPattern, Params, Identifier, VarName, DefBody, DefId, Block, Def, Literal, Args, PosArg, Accessor, ClassAttrs, ClassAttr, RecordAttrs,
     BinOp, Lambda, LambdaSignature, TypeBoundSpecs, TypeSpec, SubrSignature, Decorator, NonDefaultParamSignature, DefaultParamSignature, ParamPattern, TypeSpecWithOp,
-    Tuple, NormalTuple, Array, NormalArray, Set, NormalSet, Dict, NormalDict, PreDeclTypeSpec, SimpleTypeSpec, ConstArgs, AttrDef, UnaryOp, KeyValue, Dummy, TypeAscription,
+    Tuple, NormalTuple, Array, NormalArray, Set, NormalSet, Dict, NormalDict, PreDeclTypeSpec, SimpleTypeSpec, ConstArgs, AttrDef, UnaryOp, KeyValue, Dummy, TypeAscription, ClassDef, Record, Methods, NormalRecord,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -47,6 +47,23 @@ fn escape_name(name: String) -> String {
         "tuple" => "GenericTuple".into(),
         "type" => "Type".into(),
         "ModuleType" => "GeneticModule".into(),
+        _ => name,
+    }
+}
+
+fn _de_escape_name(name: String) -> String {
+    match &name[..] {
+        "Int" => "int".into(),
+        "Float" => "float".into(),
+        "Str" => "str".into(),
+        "Bool" => "bool".into(),
+        "GenericArray" => "list".into(),
+        "GenericRange" => "range".into(),
+        "GenericDict" => "dict".into(),
+        "GenericSet" => "set".into(),
+        "GenericTuple" => "tuple".into(),
+        "Type" => "type".into(),
+        "GenericModule" => "ModuleType".into(),
         _ => name,
     }
 }
@@ -361,6 +378,94 @@ impl ASTConverter {
         Block::new(new_block)
     }
 
+    // def __init__(self, x: Int, y: Int):
+    //     self.x = x
+    //     self.y = y
+    // ↓
+    // {x: Int, y: Int}, .new(x: Int, y: Int) -> Self
+    fn extract_init(&self, def: Def) -> Expr {
+        let l_brace = Token::new(TokenKind::LBrace, "{", def.ln_begin().unwrap(), def.col_begin().unwrap());
+        let r_brace = Token::new(TokenKind::RBrace, "}", def.ln_end().unwrap(), def.col_end().unwrap());
+        let Signature::Subr(sig) = def.sig else { unreachable!() };
+        let mut fields = vec![];
+        for chunk in def.body.block {
+            #[allow(clippy::single_match)]
+            match chunk {
+                Expr::AttrDef(adef) => {
+                    let Accessor::Attr(attr) = adef.attr else { break; };
+                    if attr.obj.get_name().map(|s| &s[..]) == Some("self") {
+                        let typ_name = if let Some(t_spec_op) = sig.params.non_defaults.iter()
+                            .find(|&param| param.inspect() == Some(attr.ident.inspect()))
+                            .and_then(|param| param.t_spec.as_ref()) {
+                                t_spec_op.t_spec.to_string().replace('.', "")
+                            } else {
+                                "Never".to_string()
+                            };
+                        let typ = Identifier::public_with_line(DOT, typ_name.into(), attr.obj.ln_begin().unwrap());
+                        let typ = Expr::Accessor(Accessor::Ident(typ));
+                        let sig = Signature::Var(VarSignature::new(VarPattern::Ident(attr.ident), None));
+                        let body = DefBody::new(EQUAL, Block::new(vec![typ]), DefId(0));
+                        let field_type_def = Def::new(sig, body);
+                        fields.push(field_type_def);
+                    }
+                }
+                _ => {}
+            }
+        }
+        Expr::Record(Record::Normal(NormalRecord::new(l_brace, r_brace, RecordAttrs::new(fields))))
+    }
+
+    fn extract_method(&mut self, body: Vec<Located<StatementType>>) -> (Expr, ClassAttrs) {
+        let mut base_type = Expr::Tuple(Tuple::Normal(NormalTuple::new(Args::empty())));
+        let mut attrs = vec![];
+        for stmt in body {
+            let chunk = self.convert_statement(stmt, true);
+            match chunk {
+                Expr::Def(def) => {
+                    if def.is_subr() && &def.sig.ident().unwrap().inspect()[..] == "__init__" {
+                        base_type = self.extract_init(def);
+                    } else {
+                        attrs.push(ClassAttr::Def(def));
+                    }
+                },
+                Expr::TypeAsc(type_asc) => attrs.push(ClassAttr::Decl(type_asc)),
+                _other => {} // TODO:
+            }
+        }
+        (base_type, ClassAttrs::new(attrs))
+    }
+
+    fn extract_method_list(&mut self, ident: Identifier, body: Vec<Located<StatementType>>) -> (Expr, Vec<Methods>) {
+        let class = TypeSpec::PreDeclTy(PreDeclTypeSpec::Simple(SimpleTypeSpec::new(ident, ConstArgs::empty())));
+        let (base_type, attrs) = self.extract_method(body);
+        let methods = Methods::new(class, DOT, attrs);
+        (base_type, vec![methods])
+    }
+
+    fn convert_classdef(
+        &mut self,
+        name: String,
+        body: Vec<Located<StatementType>>,
+        bases: Vec<Located<ExpressionType>>,
+        decorator_list: Vec<Located<ExpressionType>>,
+        loc: PyLocation,
+    ) -> Expr {
+        self.namespace.push(name.clone());
+        let _decos = decorator_list.into_iter().map(Self::convert_expr).collect::<Vec<_>>();
+        let _bases = bases.into_iter().map(Self::convert_expr).collect::<Vec<_>>();
+        let ident = Self::convert_ident(name, loc);
+        let sig = Signature::Var(VarSignature::new(VarPattern::Ident(ident.clone()), None));
+        let (base_type, methods) = self.extract_method_list(ident, body);
+        let args = Args::new(vec![PosArg::new(base_type)], vec![], None);
+        let class_acc = Expr::Accessor(Accessor::Ident(Self::convert_ident("Class".to_string(), loc)));
+        let class_call = class_acc.call_expr(args);
+        let body = DefBody::new(EQUAL, Block::new(vec![class_call]), DefId(0));
+        let def = Def::new(sig, body);
+        let classdef = ClassDef::new(def, methods);
+        self.namespace.pop();
+        Expr::ClassDef(classdef)
+    }
+
     fn convert_statement(&mut self, stmt: Located<StatementType>, dont_call_return: bool) -> Expr {
         match stmt.node {
             StatementType::Expression { expression } => Self::convert_expr(expression),
@@ -434,21 +539,8 @@ impl ASTConverter {
                 self.namespace.pop();
                 Expr::Def(def)
             }
-            // TODO
             StatementType::ClassDef { name, body, bases, keywords: _, decorator_list } => {
-                self.namespace.push(name);
-                let exprs = decorator_list.into_iter().map(Self::convert_expr).collect::<Vec<_>>();
-                let bases = bases.into_iter().map(Self::convert_expr).collect::<Vec<_>>();
-                // let decos = decorator_list.into_iter().map(|ex| Decorator(convert_expr(ex))).collect::<Set<_>>();
-                // let ident = convert_ident(name, stmt.location);
-                // let params = Params::new(vec![], None, vec![], None);
-                let mut block = self.convert_block(body, BlockKind::Class);
-                block.extend(exprs);
-                block.extend(bases);
-                // let body = DefBody::new(EQUAL, block, DefId(0));
-                // let def = Def::new(sig, body);
-                self.namespace.pop();
-                Expr::Dummy(Dummy::new(block.into_iter().collect()))
+                self.convert_classdef(name, body, bases, decorator_list, stmt.location)
             }
             StatementType::For { is_async: _, target, iter, body, orelse: _ } => {
                 let block = self.convert_for_body(*target, body);

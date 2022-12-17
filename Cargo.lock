@@ -227,7 +227,7 @@ dependencies = [
 [[package]]
 name = "erg_common"
 version = "0.6.0-beta.2"
-source = "git+https://github.com/erg-lang/erg?branch=main#f05b3e43ad263deac167e96513222b9d8e6286b5"
+source = "git+https://github.com/erg-lang/erg?branch=main#d4f8f17e4182bb3f22a3f98a2ca579000bd61a22"
 dependencies = [
  "hermit-abi",
  "libc",
@@ -237,7 +237,7 @@ dependencies = [
 [[package]]
 name = "erg_compiler"
 version = "0.6.0-beta.2"
-source = "git+https://github.com/erg-lang/erg?branch=main#f05b3e43ad263deac167e96513222b9d8e6286b5"
+source = "git+https://github.com/erg-lang/erg?branch=main#d4f8f17e4182bb3f22a3f98a2ca579000bd61a22"
 dependencies = [
  "erg_common",
  "erg_parser",
@@ -246,7 +246,7 @@ dependencies = [
 [[package]]
 name = "erg_parser"
 version = "0.6.0-beta.2"
-source = "git+https://github.com/erg-lang/erg?branch=main#f05b3e43ad263deac167e96513222b9d8e6286b5"
+source = "git+https://github.com/erg-lang/erg?branch=main#d4f8f17e4182bb3f22a3f98a2ca579000bd61a22"
 dependencies = [
  "erg_common",
  "unicode-xid 0.2.4",
@@ -716,18 +716,18 @@ checksum = "4501abdff3ae82a1c1b477a17252eb69cee9e66eb915c1abaa4f44d873df9f09"
 
 [[package]]
 name = "serde"
-version = "1.0.150"
+version = "1.0.151"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e326c9ec8042f1b5da33252c8a37e9ffbd2c9bef0155215b6e6c80c790e05f91"
+checksum = "97fed41fc1a24994d044e6db6935e69511a1153b52c15eb42493b26fa87feba0"
 dependencies = [
  "serde_derive",
 ]
 
 [[package]]
 name = "serde_derive"
-version = "1.0.150"
+version = "1.0.151"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "42a3df25b0713732468deadad63ab9da1f1fd75a48a15024b50363f128db627e"
+checksum = "255abe9a125a985c05190d687b320c12f9b1f0b99445e608c21ba0782c719ad8"
 dependencies = [
  "proc-macro2",
  "quote",
