@@ -636,6 +636,30 @@ impl ASTConverter {
                 }
                 Expr::Dummy(Dummy::new(imports))
             }
+            StatementType::ImportFrom { level: _, module, names } => {
+                let import_acc = Expr::Accessor(Accessor::Ident(Self::convert_ident("__import__".to_string(), stmt.location)));
+                let cont = format!("\"{}\"", module.clone().unwrap());
+                let mod_name = Expr::Lit(Literal::new(Token::new(TokenKind::StrLit, cont, stmt.location.row(), stmt.location.column() - 1)));
+                let args = Args::new(vec![PosArg::new(mod_name)], vec![], None);
+                let call = import_acc.call_expr(args);
+                let mod_ident = Self::convert_ident(module.unwrap(), stmt.location);
+                let mod_expr = Expr::Accessor(Accessor::Ident(mod_ident.clone()));
+                let var = VarSignature::new(VarPattern::Ident(mod_ident), None);
+                let moddef = Expr::Def(Def::new(Signature::Var(var), DefBody::new(EQUAL, Block::new(vec![call]), DefId(0))));
+                let mut imports = vec![];
+                for name in names {
+                    let var = if let Some(alias) = name.alias {
+                        VarSignature::new(VarPattern::Ident(Self::convert_ident(alias, stmt.location)), None)
+                    } else {
+                        VarSignature::new(VarPattern::Ident(Self::convert_ident(name.symbol.clone(), stmt.location)), None)
+                    };
+                    let attr = mod_expr.clone().attr_expr(Self::convert_ident(name.symbol, stmt.location));
+                    let def = Def::new(Signature::Var(var), DefBody::new(EQUAL, Block::new(vec![attr]), DefId(0)));
+                    imports.push(Expr::Def(def));
+                }
+                let imports = Dummy::new(vec![moddef].into_iter().chain(imports.into_iter()).collect());
+                Expr::Dummy(imports)
+            }
             _other => {
                 erg_common::log!(err "unimplemented: {:?}", _other);
                 Expr::Dummy(Dummy::empty())
