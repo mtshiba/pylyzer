@@ -535,6 +535,44 @@ impl ASTConverter {
                     _other => Expr::Dummy(Dummy::empty()),
                 }
             }
+            StatementType::AugAssign { target, op, value } => {
+                let (kind, cont) = match op {
+                    Operator::Add => (TokenKind::Plus, "+"),
+                    Operator::Sub => (TokenKind::Minus, "-"),
+                    Operator::Mult => (TokenKind::Star, "*"),
+                    Operator::Div => (TokenKind::Slash, "/"),
+                    Operator::Mod => (TokenKind::Mod, "%"),
+                    Operator::Pow => (TokenKind::Pow, "**"),
+                    Operator::LShift => (TokenKind::Shl, "<<"),
+                    Operator::RShift => (TokenKind::Shr, ">>"),
+                    Operator::BitOr => (TokenKind::BitOr, "|"),
+                    Operator::BitXor => (TokenKind::BitXor, "^"),
+                    Operator::BitAnd => (TokenKind::BitAnd, "&"),
+                    Operator::FloorDiv => (TokenKind::FloorDiv, "//"),
+                    Operator::MatMult => (TokenKind::AtSign, "@"),
+                };
+                let op = Token::from_str(kind, cont);
+                match target.node {
+                    ExpressionType::Identifier { name } => {
+                        let ident = Self::convert_ident(name, stmt.location);
+                        let val = Self::convert_expr(*value);
+                        let bin = BinOp::new(op, Expr::Accessor(Accessor::Ident(ident.clone())), val);
+                        let sig = Signature::Var(VarSignature::new(VarPattern::Ident(ident), None));
+                        let block = Block::new(vec![Expr::BinOp(bin)]);
+                        let body = DefBody::new(EQUAL, block, DefId(0));
+                        let def = Def::new(sig, body);
+                        Expr::Def(def)
+                    }
+                    ExpressionType::Attribute { value: attr, name } => {
+                        let attr = Self::convert_expr(*attr).attr(Self::convert_ident(name, target.location));
+                        let val = Self::convert_expr(*value);
+                        let bin = BinOp::new(op, Expr::Accessor(attr.clone()), val);
+                        let adef = AttrDef::new(attr, Expr::BinOp(bin));
+                        Expr::AttrDef(adef)
+                    }
+                    _other => Expr::Dummy(Dummy::empty()),
+                }
+            }
             StatementType::FunctionDef {
                 is_async: _,
                 name,
@@ -659,6 +697,26 @@ impl ASTConverter {
                 }
                 let imports = Dummy::new(vec![moddef].into_iter().chain(imports.into_iter()).collect());
                 Expr::Dummy(imports)
+            }
+            StatementType::Try { body, handlers: _, orelse, finalbody } => {
+                let chunks = self.convert_block(body, BlockKind::Try).into_iter();
+                let dummy = match (orelse, finalbody) {
+                    (Some(orelse), Some(finalbody)) => {
+                        chunks.chain(self.convert_block(orelse, BlockKind::Try).into_iter())
+                            .chain(self.convert_block(finalbody, BlockKind::Try).into_iter())
+                            .collect()
+                    }
+                    (Some(orelse), None) => {
+                        chunks.chain(self.convert_block(orelse, BlockKind::Try).into_iter())
+                            .collect()
+                    }
+                    (None, Some(finalbody)) => {
+                        chunks.chain(self.convert_block(finalbody, BlockKind::Try).into_iter())
+                            .collect()
+                    }
+                    (None, None) => chunks.collect(),
+                };
+                Expr::Dummy(Dummy::new(dummy))
             }
             _other => {
                 erg_common::log!(err "unimplemented: {:?}", _other);
