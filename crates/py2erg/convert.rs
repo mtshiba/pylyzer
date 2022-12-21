@@ -371,8 +371,8 @@ impl ASTConverter {
     // ↓
     // {x: Int, y: Int}, .__call__(x: Int, y: Int): Self = .unreachable()
     fn extract_init(&self, def: Def) -> (Expr, Def) {
-        let l_brace = Token::new(TokenKind::LBrace, "{", def.ln_begin().unwrap(), def.col_begin().unwrap());
-        let r_brace = Token::new(TokenKind::RBrace, "}", def.ln_end().unwrap(), def.col_end().unwrap());
+        let l_brace = Token::new(TokenKind::LBrace, "{", def.ln_begin().unwrap_or(0), def.col_begin().unwrap_or(0));
+        let r_brace = Token::new(TokenKind::RBrace, "}", def.ln_end().unwrap_or(0), def.col_end().unwrap_or(0));
         let Signature::Subr(sig) = def.sig else { unreachable!() };
         let mut fields = vec![];
         let mut params = vec![];
@@ -389,7 +389,7 @@ impl ASTConverter {
                             } else {
                                 "Never".to_string()
                             };
-                        let typ_ident = Identifier::public_with_line(DOT, typ_name.into(), attr.obj.ln_begin().unwrap());
+                        let typ_ident = Identifier::public_with_line(DOT, typ_name.into(), attr.obj.ln_begin().unwrap_or(0));
                         let typ_spec = TypeSpec::PreDeclTy(PreDeclTypeSpec::Simple(SimpleTypeSpec::new(typ_ident.clone(), ConstArgs::empty())));
                         let typ_spec = TypeSpecWithOp::new(COLON, typ_spec);
                         params.push(NonDefaultParamSignature::new(ParamPattern::VarName(attr.ident.name.clone()), Some(typ_spec)));
@@ -406,7 +406,7 @@ impl ASTConverter {
         let record = Record::Normal(NormalRecord::new(l_brace, r_brace, RecordAttrs::new(fields)));
         let call_ident = Identifier::new(Some(DOT), VarName::from_static("__call__"));
         let params = Params::new(params, None, vec![], None);
-        let class_ident = Identifier::public_with_line(DOT, self.namespace.last().unwrap().into(), sig.ln_begin().unwrap());
+        let class_ident = Identifier::public_with_line(DOT, self.namespace.last().unwrap().into(), sig.ln_begin().unwrap_or(0));
         let class_spec = TypeSpec::PreDeclTy(PreDeclTypeSpec::Simple(SimpleTypeSpec::new(class_ident, ConstArgs::empty())));
         let sig = Signature::Subr(SubrSignature::new(HashSet::new(), call_ident, TypeBoundSpecs::empty(), params, Some(class_spec)));
         let unreachable_acc = Identifier::new(Some(DOT), VarName::from_static("exit"));
