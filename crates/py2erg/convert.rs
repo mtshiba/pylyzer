@@ -51,21 +51,23 @@ fn escape_name(name: String) -> String {
     }
 }
 
-fn _de_escape_name(name: String) -> String {
-    match &name[..] {
-        "Int" => "int".into(),
-        "Float" => "float".into(),
-        "Str" => "str".into(),
-        "Bool" => "bool".into(),
-        "GenericArray" => "list".into(),
-        "GenericRange" => "range".into(),
-        "GenericDict" => "dict".into(),
-        "GenericSet" => "set".into(),
-        "GenericTuple" => "tuple".into(),
-        "Type" => "type".into(),
-        "GenericModule" => "ModuleType".into(),
-        _ => name,
-    }
+fn op_to_token(op: Operator) -> Token {
+    let (kind, cont) = match op {
+        Operator::Add => (TokenKind::Plus, "+"),
+        Operator::Sub => (TokenKind::Minus, "-"),
+        Operator::Mult => (TokenKind::Star, "*"),
+        Operator::Div => (TokenKind::Slash, "/"),
+        Operator::Mod => (TokenKind::Mod, "%"),
+        Operator::Pow => (TokenKind::Pow, "**"),
+        Operator::LShift => (TokenKind::Shl, "<<"),
+        Operator::RShift => (TokenKind::Shr, ">>"),
+        Operator::BitOr => (TokenKind::BitOr, "|"),
+        Operator::BitXor => (TokenKind::BitXor, "^"),
+        Operator::BitAnd => (TokenKind::BitAnd, "&"),
+        Operator::FloorDiv => (TokenKind::FloorDiv, "//"),
+        Operator::MatMult => (TokenKind::AtSign, "@"),
+    };
+    Token::from_str(kind, cont)
 }
 
 #[derive(Debug, Default)]
@@ -248,22 +250,7 @@ impl ASTConverter {
             ExpressionType::Binop { a, op, b } => {
                 let lhs = Self::convert_expr(*a);
                 let rhs = Self::convert_expr(*b);
-                let (kind, cont) = match op {
-                    Operator::Add => (TokenKind::Plus, "+"),
-                    Operator::Sub => (TokenKind::Minus, "-"),
-                    Operator::Mult => (TokenKind::Star, "*"),
-                    Operator::Div => (TokenKind::Slash, "/"),
-                    Operator::Mod => (TokenKind::Mod, "%"),
-                    Operator::Pow => (TokenKind::Pow, "**"),
-                    Operator::LShift => (TokenKind::Shl, "<<"),
-                    Operator::RShift => (TokenKind::Shr, ">>"),
-                    Operator::BitOr => (TokenKind::BitOr, "|"),
-                    Operator::BitXor => (TokenKind::BitXor, "^"),
-                    Operator::BitAnd => (TokenKind::BitAnd, "&"),
-                    Operator::FloorDiv => (TokenKind::FloorDiv, "//"),
-                    Operator::MatMult => (TokenKind::AtSign, "@"),
-                };
-                let op = Token::from_str(kind, cont);
+                let op = op_to_token(op);
                 Expr::BinOp(BinOp::new(op, lhs, rhs))
             }
             ExpressionType::Unop { op, a } => {
@@ -516,42 +503,70 @@ impl ASTConverter {
                 }
             }
             StatementType::Assign { mut targets, value } => {
-                let lhs = targets.remove(0);
-                match lhs.node {
-                    ExpressionType::Identifier { name } => {
-                        let ident = Self::convert_ident(name, stmt.location);
-                        let sig = Signature::Var(VarSignature::new(VarPattern::Ident(ident), None));
-                        let block = Block::new(vec![Self::convert_expr(value)]);
-                        let body = DefBody::new(EQUAL, block, DefId(0));
-                        let def = Def::new(sig, body);
-                        Expr::Def(def)
+                if targets.len() == 1 {
+                    let lhs = targets.remove(0);
+                    match lhs.node {
+                        ExpressionType::Identifier { name } => {
+                            let ident = Self::convert_ident(name, stmt.location);
+                            let sig = Signature::Var(VarSignature::new(VarPattern::Ident(ident), None));
+                            let block = Block::new(vec![Self::convert_expr(value)]);
+                            let body = DefBody::new(EQUAL, block, DefId(0));
+                            let def = Def::new(sig, body);
+                            Expr::Def(def)
+                        }
+                        ExpressionType::Attribute { value: attr, name } => {
+                            let attr = Self::convert_expr(*attr).attr(Self::convert_ident(name, lhs.location));
+                            let expr = Self::convert_expr(value);
+                            let adef = AttrDef::new(attr, expr);
+                            Expr::AttrDef(adef)
+                        }
+                        ExpressionType::Tuple { elements } => {
+                            let tmp = fresh_varname();
+                            let tmp_name = VarName::from_str_and_line((&tmp).into(), stmt.location.row());
+                            let tmp_ident = Identifier::new(Some(DOT), tmp_name);
+                            let tmp_expr = Expr::Accessor(Accessor::Ident(tmp_ident.clone()));
+                            let sig = Signature::Var(VarSignature::new(VarPattern::Ident(tmp_ident), None));
+                            let body = DefBody::new(EQUAL, Block::new(vec![Self::convert_expr(value)]), DefId(0));
+                            let tmp_def = Expr::Def(Def::new(sig, body));
+                            let mut defs = vec![tmp_def];
+                            for (i, elem) in elements.into_iter().enumerate() {
+                                let index = Literal::new(Token::new(TokenKind::NatLit, i.to_string(), elem.location.row(), elem.location.column() - 1));
+                                let (param, mut blocks) = Self::convert_expr_to_param(elem);
+                                let sig = Signature::Var(VarSignature::new(Self::param_pattern_to_var(param.pat), param.t_spec.map(|t| t.t_spec)));
+                                let method = tmp_expr.clone().attr_expr(Self::convert_ident("__Tuple_getitem__".to_string(), stmt.location));
+                                let args = Args::new(vec![PosArg::new(Expr::Lit(index))], vec![], None);
+                                let tuple_acc = method.call_expr(args);
+                                let body = DefBody::new(EQUAL, Block::new(vec![tuple_acc]), DefId(0));
+                                let def = Expr::Def(Def::new(sig, body));
+                                defs.push(def);
+                                defs.append(&mut blocks);
+                            }
+                            Expr::Dummy(Dummy::new(defs))
+                        }
+                        _other => Expr::Dummy(Dummy::empty()),
                     }
-                    ExpressionType::Attribute { value: attr, name } => {
-                        let attr = Self::convert_expr(*attr).attr(Self::convert_ident(name, lhs.location));
-                        let expr = Self::convert_expr(value);
-                        let adef = AttrDef::new(attr, expr);
-                        Expr::AttrDef(adef)
+                } else {
+                    let value = Self::convert_expr(value);
+                    let mut defs = vec![];
+                    for target in targets {
+                        match target.node {
+                            ExpressionType::Identifier { name } => {
+                                let ident = Self::convert_ident(name, stmt.location);
+                                let sig = Signature::Var(VarSignature::new(VarPattern::Ident(ident), None));
+                                let body = DefBody::new(EQUAL, Block::new(vec![value.clone()]), DefId(0));
+                                let def = Expr::Def(Def::new(sig, body));
+                                defs.push(def);
+                            }
+                            _other => {
+                                defs.push(Expr::Dummy(Dummy::empty()));
+                            }
+                        }
                     }
-                    _other => Expr::Dummy(Dummy::empty()),
+                    Expr::Dummy(Dummy::new(defs))
                 }
             }
             StatementType::AugAssign { target, op, value } => {
-                let (kind, cont) = match op {
-                    Operator::Add => (TokenKind::Plus, "+"),
-                    Operator::Sub => (TokenKind::Minus, "-"),
-                    Operator::Mult => (TokenKind::Star, "*"),
-                    Operator::Div => (TokenKind::Slash, "/"),
-                    Operator::Mod => (TokenKind::Mod, "%"),
-                    Operator::Pow => (TokenKind::Pow, "**"),
-                    Operator::LShift => (TokenKind::Shl, "<<"),
-                    Operator::RShift => (TokenKind::Shr, ">>"),
-                    Operator::BitOr => (TokenKind::BitOr, "|"),
-                    Operator::BitXor => (TokenKind::BitXor, "^"),
-                    Operator::BitAnd => (TokenKind::BitAnd, "&"),
-                    Operator::FloorDiv => (TokenKind::FloorDiv, "//"),
-                    Operator::MatMult => (TokenKind::AtSign, "@"),
-                };
-                let op = Token::from_str(kind, cont);
+                let op = op_to_token(op);
                 match target.node {
                     ExpressionType::Identifier { name } => {
                         let ident = Self::convert_ident(name, stmt.location);

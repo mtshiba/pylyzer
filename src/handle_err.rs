@@ -16,15 +16,7 @@ fn filter_error(_ctx: &Context, error: CompileError) -> Option<CompileError> {
             None
         }
         ErrorKind::VisibilityError => None,
-        ErrorKind::AssignError => handle_assign_error(error),
+        // ErrorKind::AssignError => handle_assign_error(error),
         _ => Some(error),
-    }
-}
-
-fn handle_assign_error(error: CompileError) -> Option<CompileError> {
-    if error.core.main_message.ends_with("cannot be assigned more than once") {
-        None
-    } else {
-        Some(error)
     }
 }
