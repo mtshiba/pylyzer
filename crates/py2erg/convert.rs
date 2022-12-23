@@ -123,16 +123,18 @@ pub fn pyloc_to_ergloc(loc: PyLocation, cont_len: usize) -> erg_common::error::L
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct NameInfo {
     rename: Option<String>,
+    defined_in: String,
     // last_defined_line: usize,
     defined_times: usize,
     referenced: HashSet<String>,
 }
 
 impl NameInfo {
-    pub fn new(rename: Option<String>, defined_times: usize) -> Self {
+    pub fn new(rename: Option<String>, defined_in: String, defined_times: usize) -> Self {
         Self {
             rename,
             // last_defined_line,
+            defined_in,
             defined_times,
             referenced: HashSet::new(),
         }
@@ -180,26 +182,31 @@ impl ASTConverter {
 
     fn convert_ident(&mut self, name: String, loc: PyLocation) -> Identifier {
         let shadowing = self.shadowing;
-        let referrer = self.namespace.last().unwrap().clone();
+        let defined_in = self.namespace.last().unwrap().clone();
         let name = escape_name(name);
         let cont = if let Some(name_info) = self.get_mut_name(&name) {
-            if referrer != "<module>" {
-                name_info.add_referrer(referrer);
+            let different_namespace = name_info.defined_in != defined_in;
+            if defined_in != "<module>" {
+                name_info.add_referrer(defined_in);
             }
-            let name = name_info.rename.as_ref().map_or_else(|| &name, |renamed| renamed);
-            if name_info.defined_times > 1 {
-                if shadowing == ShadowingMode::Invisible {
-                    // HACK: add zero-width characters as postfix
-                    format!("{name}{}", "\0".repeat(name_info.defined_times))
-                } else {
-                    format!("{name}__{}", name_info.defined_times)
-                }
+            if different_namespace {
+                name
             } else {
-                name.clone()
+                let name = name_info.rename.as_ref().map_or_else(|| &name, |renamed| renamed);
+                if name_info.defined_times > 1 {
+                    if shadowing == ShadowingMode::Invisible {
+                        // HACK: add zero-width characters as postfix
+                        format!("{name}{}", "\0".repeat(name_info.defined_times))
+                    } else {
+                        format!("{name}__{}", name_info.defined_times)
+                    }
+                } else {
+                    name.clone()
+                }
             }
         } else {
-            let mut info = NameInfo::new(None, 0);
-            info.add_referrer(referrer);
+            let mut info = NameInfo::new(None, defined_in.clone(), 0);
+            info.add_referrer(defined_in);
             self.names.insert(name.clone(), info);
             name
         };
@@ -591,17 +598,12 @@ impl ASTConverter {
         decorator_list: Vec<Located<ExpressionType>>,
         loc: PyLocation,
     ) -> Expr {
-        let class_name = if !name.starts_with(char::is_uppercase) {
-            format!("Type_{name}")
-        } else {
-            name.clone()
-        };
-        self.namespace.push(class_name);
         let _decos = decorator_list.into_iter().map(|deco| self.convert_expr(deco)).collect::<Vec<_>>();
         let _bases = bases.into_iter().map(|base| self.convert_expr(base)).collect::<Vec<_>>();
         self.register_name_info(&name, NameKind::Class);
         let ident = self.convert_ident(name, loc);
         let sig = Signature::Var(VarSignature::new(VarPattern::Ident(ident.clone()), None));
+        self.namespace.push(ident.inspect().to_string());
         let (base_type, methods) = self.extract_method_list(ident, body);
         let pos_args = if let Some(base) = base_type {
             vec![PosArg::new(base)]
@@ -628,7 +630,8 @@ impl ASTConverter {
             } else {
                 None
             };
-            self.names.insert(String::from(name), NameInfo::new(rename, 1));
+            let info = NameInfo::new(rename, self.namespace.last().unwrap().clone(), 1);
+            self.names.insert(String::from(name), info);
         }
     }
 
@@ -778,10 +781,10 @@ impl ASTConverter {
                     self.warns.push(warn);
                     Expr::Dummy(Dummy::empty())
                 } else {
-                    self.namespace.push(name.clone());
                     let decos = decorator_list.into_iter().map(|ex| Decorator(self.convert_expr(ex))).collect::<HashSet<_>>();
                     self.register_name_info(&name, NameKind::Function);
                     let ident = self.convert_ident(name, stmt.location);
+                    self.namespace.push(ident.inspect().to_string());
                     let params = self.convert_params(args);
                     let return_t = returns.map(|ret| self.convert_type_spec(ret));
                     let sig = Signature::Subr(SubrSignature::new(decos, ident, TypeBoundSpecs::empty(), params, return_t));

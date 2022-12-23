@@ -3,6 +3,9 @@ emp = Empty()
 
 class x(): pass
 y = x()
+# multiple class definitions are allowed
+class x(): pass
+y = x()
 
 class C:
     def __init__(x: int):
