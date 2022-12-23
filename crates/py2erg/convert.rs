@@ -313,7 +313,7 @@ impl ASTConverter {
                     UnaryOperator::Pos => (TokenKind::PrePlus, "+"),
                     // UnaryOperator::Not => (TokenKind::PreBitNot, "not"),
                     UnaryOperator::Neg => (TokenKind::PreMinus, "-"),
-                    UnaryOperator::Inv => (TokenKind::Minus, "~"),
+                    UnaryOperator::Inv => (TokenKind::PreBitNot, "~"),
                     _ => { return Expr::Dummy(Dummy::new(vec![rhs])) }
                 };
                 let op = Token::from_str(kind, cont);
