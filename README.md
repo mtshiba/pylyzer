@@ -1,6 +1,8 @@
-# pylyzer
+# pylyzer ⚡
 
 <a href="https://marketplace.visualstudio.com/items?itemName=pylyzer.pylyzer" target="_blank" rel="noreferrer noopener nofollow"><img src="https://img.shields.io/visual-studio-marketplace/v/pylyzer.pylyzer?style=flat&amp;label=VS%20Marketplace&amp;logo=visual-studio-code" alt="vsm-version"></a>
+<a href="https://github.com/mtshiba/pylyzer/releases"><img alt="Build status" src="https://img.shields.io/github/v/release/mtshiba/pylyzer.svg"></a>
+<a href="https://github.com/mtshiba/pylyzer/actions/workflows/rust.yml"><img alt="Build status" src="https://github.com/mtshiba/pylyzer/actions/workflows/rust.yml/badge.svg"></a>
 
 `pylyzer` is a static code analyzer / language server for Python written in Rust.
 
