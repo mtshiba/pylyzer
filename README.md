@@ -75,4 +75,6 @@ pylyzer converts Python ASTs to Erg ASTs and passes them to Erg's type checker. 
 * [ ] local packages resolving
 * [ ] compound type checking
 
+---
+
 <span id="1" style="font-size:x-small"><sup>1</sup> The performance test was conducted on MacBook (Early 2016) with 1.1 GHz Intel Core m3 processor and 8 GB 1867 MHz LPDDR3 memory.[↩](#f1)</span>
