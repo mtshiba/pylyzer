@@ -428,7 +428,7 @@ impl ASTConverter {
             ExpressionType::Attribute { value, name } => {
                 let obj = self.convert_expr(*value);
                 let name = self.convert_ident(name, expr.location);
-                Expr::Accessor(Accessor::attr(obj, name))
+                obj.attr_expr(name)
             }
             ExpressionType::Lambda { args, body } => {
                 let params = self.convert_params(args);
@@ -883,12 +883,14 @@ impl ASTConverter {
                 let mod_name = Expr::Lit(Literal::new(Token::new(TokenKind::StrLit, cont, stmt.location.row(), stmt.location.column() - 1)));
                 let args = Args::new(vec![PosArg::new(mod_name)], vec![], None);
                 let call = import_acc.call_expr(args);
+                self.register_name_info(module.as_ref().unwrap(), NameKind::Variable);
                 let mod_ident = self.convert_ident(module.unwrap(), stmt.location);
                 let mod_expr = Expr::Accessor(Accessor::Ident(mod_ident.clone()));
                 let var = VarSignature::new(VarPattern::Ident(mod_ident), None);
                 let moddef = Expr::Def(Def::new(Signature::Var(var), DefBody::new(EQUAL, Block::new(vec![call]), DefId(0))));
                 let mut imports = vec![];
                 for name in names {
+                    let ident = self.convert_ident(name.symbol.clone(), stmt.location);
                     let var = if let Some(alias) = name.alias {
                         self.register_name_info(&alias, NameKind::Variable);
                         VarSignature::new(VarPattern::Ident(self.convert_ident(alias, stmt.location)), None)
@@ -896,7 +898,7 @@ impl ASTConverter {
                         self.register_name_info(&name.symbol, NameKind::Variable);
                         VarSignature::new(VarPattern::Ident(self.convert_ident(name.symbol.clone(), stmt.location)), None)
                     };
-                    let attr = mod_expr.clone().attr_expr(self.convert_ident(name.symbol, stmt.location));
+                    let attr = mod_expr.clone().attr_expr(ident);
                     let def = Def::new(Signature::Var(var), DefBody::new(EQUAL, Block::new(vec![attr]), DefId(0)));
                     imports.push(Expr::Def(def));
                 }
