@@ -149,6 +149,30 @@ pub enum ShadowingMode {
     Visible,
 }
 
+/// AST must be converted in the following order:
+///
+/// Params -> Block -> Signature
+///
+/// If you convert it from left to right, for example
+///
+/// ```python
+/// i = 1
+/// i = i + 1
+/// ```
+///
+/// would be converted as follows. This is a mistake.
+///
+/// ```
+/// i = 1
+/// i = i2 + 1
+/// ```
+///
+/// The correct conversion is as follows.
+///
+/// ```python
+/// i = 1
+/// i2 = i + 1
+/// ```
 #[derive(Debug)]
 pub struct ASTConverter {
     cfg: ErgConfig,
