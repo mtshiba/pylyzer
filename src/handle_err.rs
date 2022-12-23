@@ -16,6 +16,15 @@ fn filter_error(_ctx: &Context, error: CompileError) -> Option<CompileError> {
             None
         }
         ErrorKind::VisibilityError => None,
+        // exclude doc strings
+        ErrorKind::UnusedWarning => {
+            let code = error.input.reread_lines(error.core.loc.ln_begin().unwrap(), error.core.loc.ln_end().unwrap());
+            if code[0].trim().starts_with("\"\"\"") {
+                None
+            } else {
+                Some(error)
+            }
+        }
         // ErrorKind::AssignError => handle_assign_error(error),
         _ => Some(error),
     }

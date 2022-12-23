@@ -227,7 +227,7 @@ dependencies = [
 [[package]]
 name = "erg_common"
 version = "0.6.0-beta.4"
-source = "git+https://github.com/erg-lang/erg?branch=main#d8f7e386c88fa59f141c30a28998f955eff64fc4"
+source = "git+https://github.com/erg-lang/erg?branch=main#bce00747af9b69191ba4e63f3db44afd51509b8b"
 dependencies = [
  "hermit-abi",
  "libc",
@@ -237,7 +237,7 @@ dependencies = [
 [[package]]
 name = "erg_compiler"
 version = "0.6.0-beta.4"
-source = "git+https://github.com/erg-lang/erg?branch=main#d8f7e386c88fa59f141c30a28998f955eff64fc4"
+source = "git+https://github.com/erg-lang/erg?branch=main#bce00747af9b69191ba4e63f3db44afd51509b8b"
 dependencies = [
  "erg_common",
  "erg_parser",
@@ -246,7 +246,7 @@ dependencies = [
 [[package]]
 name = "erg_parser"
 version = "0.6.0-beta.4"
-source = "git+https://github.com/erg-lang/erg?branch=main#d8f7e386c88fa59f141c30a28998f955eff64fc4"
+source = "git+https://github.com/erg-lang/erg?branch=main#bce00747af9b69191ba4e63f3db44afd51509b8b"
 dependencies = [
  "erg_common",
  "unicode-xid 0.2.4",

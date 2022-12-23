@@ -93,12 +93,13 @@ impl PythonAnalyzer {
         match self.checker.lower(erg_ast, mode) {
             Ok(mut artifact) => {
                 artifact.warns.extend(warns);
+                artifact.warns = handle_err::filter_errors(self.checker.get_mod_ctx(), artifact.warns);
                 Ok(artifact)
             }
             Err(iart) => {
                 let errors = handle_err::filter_errors(self.checker.get_mod_ctx(), iart.errors);
-                let ws = handle_err::filter_errors(self.checker.get_mod_ctx(), iart.warns);
-                warns.extend(ws);
+                warns.extend(iart.warns);
+                let warns = handle_err::filter_errors(self.checker.get_mod_ctx(), warns);
                 Err(IncompleteArtifact::new(iart.object, errors, warns))
             }
         }
