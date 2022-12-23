@@ -41,7 +41,13 @@ pylyzer can do more than the type checking. For example, it can detect out-of-bo
 
 While pytype/pyright's error reports are illegible, pylyzer shows where the error occurred and provides clear error messages.
 
-![reports](https://raw.githubusercontent.com/mtshiba/pylyzer/main/images/reports.png)
+### pylyzer
+
+![report](https://raw.githubusercontent.com/mtshiba/pylyzer/main/images/report.png)
+
+### pyright
+
+![pyright_report](https://raw.githubusercontent.com/mtshiba/pylyzer/main/images/pyright_report.png)
 
 ## How it works
 
