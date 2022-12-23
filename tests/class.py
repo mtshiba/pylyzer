@@ -1,6 +1,9 @@
 class Empty: pass
 emp = Empty()
 
+class x(): pass
+y = x()
+
 class C:
     def __init__(x: int):
         self.x = x

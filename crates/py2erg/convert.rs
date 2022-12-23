@@ -18,6 +18,25 @@ use erg_compiler::error::{CompileErrors};
 
 use crate::error::*;
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum NameKind {
+    Variable,
+    Class,
+    Function,
+}
+
+impl NameKind {
+    pub const fn is_variable(&self) -> bool {
+        matches!(self, Self::Variable)
+    }
+    pub const fn is_class(&self) -> bool {
+        matches!(self, Self::Class)
+    }
+    pub const fn is_function(&self) -> bool {
+        matches!(self, Self::Function)
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum BlockKind {
     If,
@@ -103,14 +122,16 @@ pub fn pyloc_to_ergloc(loc: PyLocation, cont_len: usize) -> erg_common::error::L
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct NameInfo {
+    rename: Option<String>,
     // last_defined_line: usize,
     defined_times: usize,
     referenced: HashSet<String>,
 }
 
 impl NameInfo {
-    pub fn new(defined_times: usize) -> Self {
+    pub fn new(rename: Option<String>, defined_times: usize) -> Self {
         Self {
+            rename,
             // last_defined_line,
             defined_times,
             referenced: HashSet::new(),
@@ -165,6 +186,7 @@ impl ASTConverter {
             if referrer != "<module>" {
                 name_info.add_referrer(referrer);
             }
+            let name = name_info.rename.as_ref().map_or_else(|| &name, |renamed| renamed);
             if name_info.defined_times > 1 {
                 if shadowing == ShadowingMode::Invisible {
                     // HACK: add zero-width characters as postfix
@@ -173,10 +195,10 @@ impl ASTConverter {
                     format!("{name}__{}", name_info.defined_times)
                 }
             } else {
-                name
+                name.clone()
             }
         } else {
-            let mut info = NameInfo::new(0);
+            let mut info = NameInfo::new(None, 0);
             info.add_referrer(referrer);
             self.names.insert(name.clone(), info);
             name
@@ -569,10 +591,15 @@ impl ASTConverter {
         decorator_list: Vec<Located<ExpressionType>>,
         loc: PyLocation,
     ) -> Expr {
-        self.namespace.push(name.clone());
+        let class_name = if !name.starts_with(char::is_uppercase) {
+            format!("Type_{name}")
+        } else {
+            name.clone()
+        };
+        self.namespace.push(class_name);
         let _decos = decorator_list.into_iter().map(|deco| self.convert_expr(deco)).collect::<Vec<_>>();
         let _bases = bases.into_iter().map(|base| self.convert_expr(base)).collect::<Vec<_>>();
-        self.register_name_info(&name);
+        self.register_name_info(&name, NameKind::Class);
         let ident = self.convert_ident(name, loc);
         let sig = Signature::Var(VarSignature::new(VarPattern::Ident(ident.clone()), None));
         let (base_type, methods) = self.extract_method_list(ident, body);
@@ -591,12 +618,17 @@ impl ASTConverter {
         Expr::ClassDef(classdef)
     }
 
-    fn register_name_info(&mut self, name: &str) {
+    fn register_name_info(&mut self, name: &str, kind: NameKind) {
         if let Some(name_info) = self.names.get_mut(name) {
             // name_info.last_defined_line = loc.row();
             name_info.defined_times += 1;
         } else {
-            self.names.insert(String::from(name), NameInfo::new(1));
+            let rename = if kind.is_class() && !name.starts_with(char::is_uppercase) {
+                Some(format!("Type_{name}"))
+            } else {
+                None
+            };
+            self.names.insert(String::from(name), NameInfo::new(rename, 1));
         }
     }
 
@@ -611,13 +643,13 @@ impl ASTConverter {
                             let block = Block::new(vec![self.convert_expr(value)]);
                             let body = DefBody::new(EQUAL, block, DefId(0));
                             // must register after convert_expr because value may be contain name (e.g. i = i + 1)
-                            self.register_name_info(&name);
+                            self.register_name_info(&name, NameKind::Variable);
                             let ident = self.convert_ident(name, stmt.location);
                             let sig = Signature::Var(VarSignature::new(VarPattern::Ident(ident), Some(t_spec)));
                             let def = Def::new(sig, body);
                             Expr::Def(def)
                         } else {
-                            self.register_name_info(&name);
+                            self.register_name_info(&name, NameKind::Variable);
                             let ident = self.convert_ident(name, stmt.location);
                             let tasc = TypeAscription::new(Expr::Accessor(Accessor::Ident(ident)), COLON, t_spec);
                             Expr::TypeAsc(tasc)
@@ -644,7 +676,7 @@ impl ASTConverter {
                         ExpressionType::Identifier { name } => {
                             let block = Block::new(vec![self.convert_expr(value)]);
                             let body = DefBody::new(EQUAL, block, DefId(0));
-                            self.register_name_info(&name);
+                            self.register_name_info(&name, NameKind::Variable);
                             let ident = self.convert_ident(name, stmt.location);
                             let sig = Signature::Var(VarSignature::new(VarPattern::Ident(ident), None));
                             let def = Def::new(sig, body);
@@ -688,7 +720,7 @@ impl ASTConverter {
                         match target.node {
                             ExpressionType::Identifier { name } => {
                                 let body = DefBody::new(EQUAL, Block::new(vec![value.clone()]), DefId(0));
-                                self.register_name_info(&name);
+                                self.register_name_info(&name, NameKind::Variable);
                                 let ident = self.convert_ident(name, stmt.location);
                                 let sig = Signature::Var(VarSignature::new(VarPattern::Ident(ident), None));
                                 let def = Expr::Def(Def::new(sig, body));
@@ -708,7 +740,7 @@ impl ASTConverter {
                     ExpressionType::Identifier { name } => {
                         let val = self.convert_expr(*value);
                         let prev_ident = self.convert_ident(name.clone(), stmt.location);
-                        self.register_name_info(&name);
+                        self.register_name_info(&name, NameKind::Variable);
                         let ident = self.convert_ident(name, stmt.location);
                         let bin = BinOp::new(op, Expr::Accessor(Accessor::Ident(prev_ident)), val);
                         let sig = Signature::Var(VarSignature::new(VarPattern::Ident(ident), None));
@@ -748,7 +780,7 @@ impl ASTConverter {
                 } else {
                     self.namespace.push(name.clone());
                     let decos = decorator_list.into_iter().map(|ex| Decorator(self.convert_expr(ex))).collect::<HashSet<_>>();
-                    self.register_name_info(&name);
+                    self.register_name_info(&name, NameKind::Function);
                     let ident = self.convert_ident(name, stmt.location);
                     let params = self.convert_params(args);
                     let return_t = returns.map(|ret| self.convert_type_spec(ret));
@@ -826,16 +858,16 @@ impl ASTConverter {
                 let mut imports = vec![];
                 for name in names {
                     let import_acc = Expr::Accessor(Accessor::Ident(self.convert_ident("__import__".to_string(), stmt.location)));
-                    let cont = format!("\"{}\"", name.symbol);
+                    let cont = format!("\"{}\"", name.symbol.split('.').next().unwrap());
                     let mod_name = Expr::Lit(Literal::new(Token::new(TokenKind::StrLit, cont, stmt.location.row(), stmt.location.column() - 1)));
                     let args = Args::new(vec![PosArg::new(mod_name)], vec![], None);
                     let call = import_acc.call_expr(args);
                     let def = if let Some(alias) = name.alias {
-                        self.register_name_info(&alias);
+                        self.register_name_info(&alias, NameKind::Variable);
                         let var = VarSignature::new(VarPattern::Ident(self.convert_ident(alias, stmt.location)), None);
                         Def::new(Signature::Var(var), DefBody::new(EQUAL, Block::new(vec![call]), DefId(0)))
                     } else {
-                        self.register_name_info(&name.symbol);
+                        self.register_name_info(&name.symbol, NameKind::Variable);
                         let var = VarSignature::new(VarPattern::Ident(self.convert_ident(name.symbol, stmt.location)), None);
                         Def::new(Signature::Var(var), DefBody::new(EQUAL, Block::new(vec![call]), DefId(0)))
                     };
@@ -856,10 +888,10 @@ impl ASTConverter {
                 let mut imports = vec![];
                 for name in names {
                     let var = if let Some(alias) = name.alias {
-                        self.register_name_info(&alias);
+                        self.register_name_info(&alias, NameKind::Variable);
                         VarSignature::new(VarPattern::Ident(self.convert_ident(alias, stmt.location)), None)
                     } else {
-                        self.register_name_info(&name.symbol);
+                        self.register_name_info(&name.symbol, NameKind::Variable);
                         VarSignature::new(VarPattern::Ident(self.convert_ident(name.symbol.clone(), stmt.location)), None)
                     };
                     let attr = mod_expr.clone().attr_expr(self.convert_ident(name.symbol, stmt.location));
