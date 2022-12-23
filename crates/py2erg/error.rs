@@ -5,7 +5,6 @@ use erg_compiler::error::CompileError;
 
 pub(crate) fn reassign_func_error(
     input: Input,
-    errno: usize,
     loc: Location,
     caused_by: String,
     name: &str,
@@ -19,7 +18,7 @@ pub(crate) fn reassign_func_error(
                 "traditional_chinese" => format!("{name}已宣告，已被引用。不建議再次賦值"),
                 "english" => format!("{name} has already been declared and referenced. It is not recommended to reassign such a function"),
             ),
-            errno,
+            1,
             ErrorKind::AssignError,
             loc,
         ),
