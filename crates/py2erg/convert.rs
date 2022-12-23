@@ -124,7 +124,6 @@ pub fn pyloc_to_ergloc(loc: PyLocation, cont_len: usize) -> erg_common::error::L
 pub struct NameInfo {
     rename: Option<String>,
     defined_in: String,
-    // last_defined_line: usize,
     defined_times: usize,
     referenced: HashSet<String>,
 }
@@ -133,7 +132,6 @@ impl NameInfo {
     pub fn new(rename: Option<String>, defined_in: String, defined_times: usize) -> Self {
         Self {
             rename,
-            // last_defined_line,
             defined_in,
             defined_times,
             referenced: HashSet::new(),
@@ -622,9 +620,10 @@ impl ASTConverter {
 
     fn register_name_info(&mut self, name: &str, kind: NameKind) {
         if let Some(name_info) = self.names.get_mut(name) {
-            // name_info.last_defined_line = loc.row();
             name_info.defined_times += 1;
         } else {
+            // In Erg, classes can only be defined in uppercase
+            // So if not, prefix it with `Type_`
             let rename = if kind.is_class() && !name.starts_with(char::is_uppercase) {
                 Some(format!("Type_{name}"))
             } else {
