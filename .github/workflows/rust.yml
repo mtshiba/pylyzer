@@ -17,10 +17,11 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - uses: Swatinem/rust-cache@v2
+    # installing is required for the tests
     - name: Build
       run: |
         rustup update stable
-        cargo build --verbose
+        cargo install --path .
     # Removed because it caused a segmentation fault and would not stop executing. Testing should be done locally.
     - name: Run tests
       run: cargo test --verbose
