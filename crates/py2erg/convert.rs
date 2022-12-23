@@ -494,17 +494,31 @@ impl ASTConverter {
         (Expr::Record(record), def)
     }
 
-    fn extract_method(&mut self, body: Vec<Located<StatementType>>) -> (Expr, ClassAttrs) {
-        let mut base_type = Expr::Tuple(Tuple::Normal(NormalTuple::new(Args::empty())));
+    fn gen_default_init(&self, line: usize) -> Def {
+        let call_ident = Identifier::new(Some(DOT), VarName::from_static("__call__"));
+        let params = Params::new(vec![], None, vec![], None);
+        let class_ident = Identifier::public_with_line(DOT, self.namespace.last().unwrap().into(), line);
+        let class_spec = TypeSpec::PreDeclTy(PreDeclTypeSpec::Simple(SimpleTypeSpec::new(class_ident, ConstArgs::empty())));
+        let sig = Signature::Subr(SubrSignature::new(HashSet::new(), call_ident, TypeBoundSpecs::empty(), params, Some(class_spec)));
+        let unreachable_acc = Identifier::new(Some(DOT), VarName::from_static("exit"));
+        let body = Expr::Accessor(Accessor::Ident(unreachable_acc)).call_expr(Args::empty());
+        let body = DefBody::new(EQUAL, Block::new(vec![body]), DefId(0));
+        Def::new(sig, body)
+    }
+
+    fn extract_method(&mut self, body: Vec<Located<StatementType>>) -> (Option<Expr>, ClassAttrs) {
+        let mut base_type = None;
         let mut attrs = vec![];
+        let mut init_is_defined = false;
         for stmt in body {
             let chunk = self.convert_statement(stmt, true);
             match chunk {
                 Expr::Def(def) => {
                     if def.is_subr() && &def.sig.ident().unwrap().inspect()[..] == "__init__" {
-                        let (base_t, call_def) = self.extract_init(def);
-                        base_type = base_t;
-                        attrs.push(ClassAttr::Def(call_def));
+                        let (base_t, init_def) = self.extract_init(def);
+                        base_type = Some(base_t);
+                        attrs.push(ClassAttr::Def(init_def));
+                        init_is_defined = true;
                     } else {
                         attrs.push(ClassAttr::Def(def));
                     }
@@ -513,10 +527,13 @@ impl ASTConverter {
                 _other => {} // TODO:
             }
         }
+        if !init_is_defined {
+            attrs.push(ClassAttr::Def(self.gen_default_init(0)));
+        }
         (base_type, ClassAttrs::new(attrs))
     }
 
-    fn extract_method_list(&mut self, ident: Identifier, body: Vec<Located<StatementType>>) -> (Expr, Vec<Methods>) {
+    fn extract_method_list(&mut self, ident: Identifier, body: Vec<Located<StatementType>>) -> (Option<Expr>, Vec<Methods>) {
         let class = TypeSpec::PreDeclTy(PreDeclTypeSpec::Simple(SimpleTypeSpec::new(ident, ConstArgs::empty())));
         let (base_type, attrs) = self.extract_method(body);
         let methods = Methods::new(class, DOT, attrs);
@@ -538,7 +555,12 @@ impl ASTConverter {
         let ident = self.convert_ident(name, loc);
         let sig = Signature::Var(VarSignature::new(VarPattern::Ident(ident.clone()), None));
         let (base_type, methods) = self.extract_method_list(ident, body);
-        let args = Args::new(vec![PosArg::new(base_type)], vec![], None);
+        let pos_args = if let Some(base) = base_type {
+            vec![PosArg::new(base)]
+        } else {
+            vec![]
+        };
+        let args = Args::new(pos_args, vec![], None);
         let class_acc = Expr::Accessor(Accessor::Ident(self.convert_ident("Class".to_string(), loc)));
         let class_call = class_acc.call_expr(args);
         let body = DefBody::new(EQUAL, Block::new(vec![class_call]), DefId(0));
