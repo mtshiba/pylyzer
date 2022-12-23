@@ -1,5 +1,7 @@
+use erg_common::config::ErgConfig;
 use erg_common::fresh::fresh_varname;
-use erg_common::traits::{Locational};
+use erg_common::traits::{Locational, Stream};
+use erg_compiler::artifact::CompleteArtifact;
 use rustpython_parser::ast::{StatementType, ExpressionType, Located, Program, Number, StringGroup, Operator, BooleanOperator, UnaryOperator, Suite, Parameters, Parameter, Comparison};
 use rustpython_parser::ast::Location as PyLocation;
 
@@ -11,6 +13,9 @@ use erg_compiler::erg_parser::ast::{
     BinOp, Lambda, LambdaSignature, TypeBoundSpecs, TypeSpec, SubrSignature, Decorator, NonDefaultParamSignature, DefaultParamSignature, ParamPattern, TypeSpecWithOp,
     Tuple, NormalTuple, Array, NormalArray, Set, NormalSet, Dict, NormalDict, PreDeclTypeSpec, SimpleTypeSpec, ConstArgs, AttrDef, UnaryOp, KeyValue, Dummy, TypeAscription, ClassDef, Record, Methods, NormalRecord,
 };
+use erg_compiler::error::{CompileErrors};
+
+use crate::error::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum BlockKind {
@@ -71,39 +76,47 @@ fn op_to_token(op: Operator) -> Token {
     Token::from_str(kind, cont)
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub fn pyloc_to_ergloc(loc: PyLocation, cont_len: usize) -> erg_common::error::Location {
+    erg_common::error::Location::range(loc.row(), loc.column(), loc.row(), loc.column()+cont_len)
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct NameInfo {
     // last_defined_line: usize,
     defined_times: usize,
+    referenced: HashSet<String>,
 }
 
 impl NameInfo {
-    pub const fn new(defined_times: usize) -> Self {
+    pub fn new(defined_times: usize) -> Self {
         Self {
             // last_defined_line,
             defined_times,
+            referenced: HashSet::new(),
         }
+    }
+
+    pub fn add_referrer(&mut self, referrer: String) {
+        self.referenced.insert(referrer);
     }
 }
 
 #[derive(Debug)]
 pub struct ASTConverter {
+    cfg: ErgConfig,
     namespace: Vec<String>,
     /// Erg does not allow variables to be defined multiple times, so rename them using this
     names: Vec<HashMap<String, NameInfo>>,
-}
-
-impl Default for ASTConverter {
-    fn default() -> Self {
-        Self::new()
-    }
+    warns: CompileErrors,
 }
 
 impl ASTConverter {
-    pub fn new() -> Self {
+    pub fn new(cfg: ErgConfig) -> Self {
         Self {
+            cfg,
             namespace: vec![String::from("<module>")],
             names: vec![HashMap::new()],
+            warns: CompileErrors::empty(),
         }
     }
 
@@ -116,7 +129,7 @@ impl ASTConverter {
         None
     }
 
-    fn _get_mut_name_global(&mut self, name: &str) -> Option<&mut NameInfo> {
+    fn get_mut_name_global(&mut self, name: &str) -> Option<&mut NameInfo> {
         for space in self.names.iter_mut().rev() {
             if let Some(name) = space.get_mut(name) {
                 return Some(name);
@@ -125,9 +138,13 @@ impl ASTConverter {
         None
     }
 
-    fn convert_ident(&self, name: String, loc: PyLocation) -> Identifier {
+    fn convert_ident(&mut self, name: String, loc: PyLocation) -> Identifier {
+        let referrer = self.namespace.last().unwrap().clone();
         let name = escape_name(name);
-        let cont = if let Some(name_info) = self.get_name_global(&name) {
+        let cont = if let Some(name_info) = self.get_mut_name_global(&name) {
+            if referrer != "<module>" {
+                name_info.add_referrer(referrer);
+            }
             if name_info.defined_times > 1 {
                 // HACK: add zero-width characters as postfix
                 format!("{name}{}", "\0".repeat(name_info.defined_times))
@@ -149,7 +166,7 @@ impl ASTConverter {
         ParamPattern::VarName(name)
     }
 
-    fn convert_nd_param(&self, param: Parameter) -> NonDefaultParamSignature {
+    fn convert_nd_param(&mut self, param: Parameter) -> NonDefaultParamSignature {
         let pat = Self::convert_param_pattern(param.arg, param.location);
         let t_spec = param.annotation
             .map(|anot| self.convert_type_spec(*anot))
@@ -162,7 +179,7 @@ impl ASTConverter {
     }
 
     // TODO: defaults
-    fn convert_params(&self, args: Box<Parameters>) -> Params {
+    fn convert_params(&mut self, args: Box<Parameters>) -> Params {
         let non_defaults = args.args.into_iter().map(|p| self.convert_nd_param(p)).collect();
         // let defaults = args. args.defaults.into_iter().map(convert_default_param).collect();
         Params::new(non_defaults, None, vec![], None)
@@ -182,7 +199,7 @@ impl ASTConverter {
     }
 
     /// (i, j) => $1 (i = $1[0]; j = $1[1])
-    fn convert_expr_to_param(&self, expr: Located<ExpressionType>) -> (NonDefaultParamSignature, Vec<Expr>) {
+    fn convert_expr_to_param(&mut self, expr: Located<ExpressionType>) -> (NonDefaultParamSignature, Vec<Expr>) {
         match expr.node {
             ExpressionType::Identifier { name } => (Self::convert_for_param(name, expr.location), vec![]),
             ExpressionType::Tuple { elements } => {
@@ -222,7 +239,7 @@ impl ASTConverter {
         Lambda::new(sig, op, Block::new(body), DefId(0))
     }
 
-    fn convert_type_spec(&self, expr: Located<ExpressionType>) -> TypeSpec {
+    fn convert_type_spec(&mut self, expr: Located<ExpressionType>) -> TypeSpec {
         match expr.node {
             ExpressionType::Identifier { name } =>
                 TypeSpec::PreDeclTy(PreDeclTypeSpec::Simple(SimpleTypeSpec::new(self.convert_ident(name, expr.location), ConstArgs::empty()))),
@@ -249,7 +266,7 @@ impl ASTConverter {
         (l_brace, r_brace)
     }
 
-    fn convert_expr(&self, expr: Located<ExpressionType>) -> Expr {
+    fn convert_expr(&mut self, expr: Located<ExpressionType>) -> Expr {
         match expr.node {
             ExpressionType::Number { value } => {
                 let (kind, cont) = match value {
@@ -668,19 +685,31 @@ impl ASTConverter {
                 decorator_list,
                 returns
             } => {
-                // TODO: If a function can be defined multiple times, which function is called in a recursive function?
-                self.namespace.push(name.clone());
-                let decos = decorator_list.into_iter().map(|ex| Decorator(self.convert_expr(ex))).collect::<HashSet<_>>();
-                self.register_name_info(&name);
-                let ident = self.convert_ident(name, stmt.location);
-                let params = self.convert_params(args);
-                let return_t = returns.map(|ret| self.convert_type_spec(ret));
-                let sig = Signature::Subr(SubrSignature::new(decos, ident, TypeBoundSpecs::empty(), params, return_t));
-                let block = self.convert_block(body, BlockKind::Function);
-                let body = DefBody::new(EQUAL, block, DefId(0));
-                let def = Def::new(sig, body);
-                self.namespace.pop();
-                Expr::Def(def)
+                // if reassigning of a function referenced by other functions is occurred, it is an error
+                if self.get_name_global(&name).map(|info| !info.referenced.is_empty()).unwrap_or(false) {
+                    let warn = reassign_func_error(
+                        self.cfg.input.clone(),
+                        line!() as usize,
+                        pyloc_to_ergloc(stmt.location, name.len()),
+                        self.namespace.join("."),
+                        &name
+                    );
+                    self.warns.push(warn);
+                    Expr::Dummy(Dummy::empty())
+                } else {
+                    self.namespace.push(name.clone());
+                    let decos = decorator_list.into_iter().map(|ex| Decorator(self.convert_expr(ex))).collect::<HashSet<_>>();
+                    self.register_name_info(&name);
+                    let ident = self.convert_ident(name, stmt.location);
+                    let params = self.convert_params(args);
+                    let return_t = returns.map(|ret| self.convert_type_spec(ret));
+                    let sig = Signature::Subr(SubrSignature::new(decos, ident, TypeBoundSpecs::empty(), params, return_t));
+                    let block = self.convert_block(body, BlockKind::Function);
+                    let body = DefBody::new(EQUAL, block, DefId(0));
+                    let def = Def::new(sig, body);
+                    self.namespace.pop();
+                    Expr::Def(def)
+                }
             }
             StatementType::ClassDef { name, body, bases, keywords: _, decorator_list } => {
                 self.convert_classdef(name, body, bases, decorator_list, stmt.location)
@@ -818,10 +847,10 @@ impl ASTConverter {
         }
     }
 
-    pub fn convert_program(mut self, program: Program) -> Module {
+    pub fn convert_program(mut self, program: Program) -> CompleteArtifact<Module> {
         let program = program.statements.into_iter()
             .map(|stmt| self.convert_statement(stmt, true))
             .collect();
-        Module::new(program)
+        CompleteArtifact::new(Module::new(program), self.warns)
     }
 }

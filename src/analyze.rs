@@ -81,13 +81,14 @@ impl PythonAnalyzer {
             let err = CompileError::new(core, self.cfg.input.clone(),  "".into());
             IncompleteArtifact::new(None, CompileErrors::from(err), CompileErrors::empty())
         })?;
-        let converter = py2erg::ASTConverter::new();
-        let erg_module = converter.convert_program(py_program);
+        let converter = py2erg::ASTConverter::new(self.cfg.copy());
+        let CompleteArtifact{ object: erg_module, mut warns } = converter.convert_program(py_program);
         let erg_ast = AST::new(erg_common::Str::rc(filename), erg_module);
         erg_common::log!("AST: {erg_ast}");
         self.checker.lower(erg_ast, mode).map_err(|iart| {
             let errors = handle_err::filter_errors(self.checker.get_mod_ctx(), iart.errors);
-            let warns = handle_err::filter_errors(self.checker.get_mod_ctx(), iart.warns);
+            let ws = handle_err::filter_errors(self.checker.get_mod_ctx(), iart.warns);
+            warns.extend(ws);
             IncompleteArtifact::new(iart.object, errors, warns)
         })
     }
