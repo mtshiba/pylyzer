@@ -5,6 +5,7 @@ use erg_compiler::artifact::CompleteArtifact;
 use rustpython_parser::ast::{StatementType, ExpressionType, Located, Program, Number, StringGroup, Operator, BooleanOperator, UnaryOperator, Suite, Parameters, Parameter, Comparison};
 use rustpython_parser::ast::Location as PyLocation;
 
+use erg_common::set;
 use erg_common::set::Set as HashSet;
 use erg_common::dict::Dict as HashMap;
 use erg_compiler::erg_parser::token::{Token, TokenKind, EQUAL, COLON, DOT};
@@ -101,57 +102,63 @@ impl NameInfo {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum ShadowingMode {
+    Invisible,
+    Visible,
+}
+
 #[derive(Debug)]
 pub struct ASTConverter {
     cfg: ErgConfig,
+    shadowing: ShadowingMode,
     namespace: Vec<String>,
     /// Erg does not allow variables to be defined multiple times, so rename them using this
-    names: Vec<HashMap<String, NameInfo>>,
+    names: HashMap<String, NameInfo>,
     warns: CompileErrors,
 }
 
 impl ASTConverter {
-    pub fn new(cfg: ErgConfig) -> Self {
+    pub fn new(cfg: ErgConfig, shadowing: ShadowingMode) -> Self {
         Self {
+            shadowing,
             cfg,
             namespace: vec![String::from("<module>")],
-            names: vec![HashMap::new()],
+            names: HashMap::new(),
             warns: CompileErrors::empty(),
         }
     }
 
-    fn get_name_global(&self, name: &str) -> Option<&NameInfo> {
-        for space in self.names.iter().rev() {
-            if let Some(name) = space.get(name) {
-                return Some(name);
-            }
-        }
-        None
+    fn get_name(&self, name: &str) -> Option<&NameInfo> {
+        self.names.get(name)
     }
 
-    fn get_mut_name_global(&mut self, name: &str) -> Option<&mut NameInfo> {
-        for space in self.names.iter_mut().rev() {
-            if let Some(name) = space.get_mut(name) {
-                return Some(name);
-            }
-        }
-        None
+    fn get_mut_name(&mut self, name: &str) -> Option<&mut NameInfo> {
+        self.names.get_mut(name)
     }
 
     fn convert_ident(&mut self, name: String, loc: PyLocation) -> Identifier {
+        let shadowing = self.shadowing;
         let referrer = self.namespace.last().unwrap().clone();
         let name = escape_name(name);
-        let cont = if let Some(name_info) = self.get_mut_name_global(&name) {
+        let cont = if let Some(name_info) = self.get_mut_name(&name) {
             if referrer != "<module>" {
                 name_info.add_referrer(referrer);
             }
             if name_info.defined_times > 1 {
-                // HACK: add zero-width characters as postfix
-                format!("{name}{}", "\0".repeat(name_info.defined_times))
+                if shadowing == ShadowingMode::Invisible {
+                    // HACK: add zero-width characters as postfix
+                    format!("{name}{}", "\0".repeat(name_info.defined_times))
+                } else {
+                    format!("{name}__{}", name_info.defined_times)
+                }
             } else {
                 name
             }
         } else {
+            let mut info = NameInfo::new(0);
+            info.add_referrer(referrer);
+            self.names.insert(name.clone(), info);
             name
         };
         let token = Token::new(TokenKind::Symbol, cont, loc.row(), loc.column() - 1);
@@ -542,11 +549,11 @@ impl ASTConverter {
     }
 
     fn register_name_info(&mut self, name: &str) {
-        if let Some(name_info) = self.names.last_mut().unwrap().get_mut(name) {
+        if let Some(name_info) = self.names.get_mut(name) {
             // name_info.last_defined_line = loc.row();
             name_info.defined_times += 1;
         } else {
-            self.names.last_mut().unwrap().insert(String::from(name), NameInfo::new(1));
+            self.names.insert(String::from(name), NameInfo::new(1));
         }
     }
 
@@ -686,10 +693,9 @@ impl ASTConverter {
                 returns
             } => {
                 // if reassigning of a function referenced by other functions is occurred, it is an error
-                if self.get_name_global(&name).map(|info| !info.referenced.is_empty()).unwrap_or(false) {
+                if self.get_name(&name).map(|info| info.defined_times > 0 && !info.referenced.difference(&set!{name.clone()}).is_empty()).unwrap_or(false) {
                     let warn = reassign_func_error(
                         self.cfg.input.clone(),
-                        line!() as usize,
                         pyloc_to_ergloc(stmt.location, name.len()),
                         self.namespace.join("."),
                         &name

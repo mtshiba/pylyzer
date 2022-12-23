@@ -6,6 +6,7 @@ use erg_compiler::context::Context;
 use erg_compiler::erg_parser::ast::AST;
 use erg_compiler::error::{CompileErrors, CompileError};
 use erg_compiler::lower::ASTLowerer;
+use py2erg::ShadowingMode;
 use py2erg::dump_decl_er;
 use rustpython_parser::parser;
 
@@ -68,6 +69,10 @@ impl Buildable for PythonAnalyzer {
 impl BuildRunnable for PythonAnalyzer {}
 
 impl PythonAnalyzer {
+    pub fn new(cfg: ErgConfig) -> Self {
+        Runnable::new(cfg)
+    }
+
     pub fn analyze(&mut self, py_code: String, mode: &str) -> Result<CompleteArtifact, IncompleteArtifact> {
         let filename = self.cfg.input.filename();
         let py_program = parser::parse_program(&py_code).map_err(|err| {
@@ -81,16 +86,22 @@ impl PythonAnalyzer {
             let err = CompileError::new(core, self.cfg.input.clone(),  "".into());
             IncompleteArtifact::new(None, CompileErrors::from(err), CompileErrors::empty())
         })?;
-        let converter = py2erg::ASTConverter::new(self.cfg.copy());
+        let converter = py2erg::ASTConverter::new(self.cfg.copy(), ShadowingMode::Invisible);
         let CompleteArtifact{ object: erg_module, mut warns } = converter.convert_program(py_program);
         let erg_ast = AST::new(erg_common::Str::rc(filename), erg_module);
         erg_common::log!("AST: {erg_ast}");
-        self.checker.lower(erg_ast, mode).map_err(|iart| {
-            let errors = handle_err::filter_errors(self.checker.get_mod_ctx(), iart.errors);
-            let ws = handle_err::filter_errors(self.checker.get_mod_ctx(), iart.warns);
-            warns.extend(ws);
-            IncompleteArtifact::new(iart.object, errors, warns)
-        })
+        match self.checker.lower(erg_ast, mode) {
+            Ok(mut artifact) => {
+                artifact.warns.extend(warns);
+                Ok(artifact)
+            }
+            Err(iart) => {
+                let errors = handle_err::filter_errors(self.checker.get_mod_ctx(), iart.errors);
+                let ws = handle_err::filter_errors(self.checker.get_mod_ctx(), iart.warns);
+                warns.extend(ws);
+                Err(IncompleteArtifact::new(iart.object, errors, warns))
+            }
+        }
     }
 
     pub fn run(&mut self) {

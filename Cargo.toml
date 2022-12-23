@@ -20,3 +20,6 @@ erg_compiler = { git = "https://github.com/erg-lang/erg", branch = "main" }
 erg_common = { git = "https://github.com/erg-lang/erg", branch = "main" }
 els = { git = "https://github.com/erg-lang/erg-language-server", branch = "main" }
 py2erg = { path = "./crates/py2erg" }
+
+[lib]
+path = "src/lib.rs"

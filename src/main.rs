@@ -9,7 +9,6 @@ use analyze::PythonAnalyzer;
 use els::Server;
 use erg_common::config::{Input, ErgConfig};
 use erg_common::spawn::exec_new_thread;
-use erg_common::traits::Runnable;
 
 pub fn parse_args() -> ErgConfig {
     let mut args = env::args();

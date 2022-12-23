@@ -8,4 +8,4 @@ rdi(0, 1, 2) # ERR
 
 print(export.test)
 print(export.add(1, 2))
-assert export.add("a", "b") == 1
+assert export.add("a", "b") == 1 # ERR
