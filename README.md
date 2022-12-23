@@ -52,9 +52,11 @@ pylyzer converts Python ASTs to Erg ASTs and passes them to Erg's type checker. 
 
 ## Limitation
 
-* pylyzer's type inspector only assumes (potentially) statically typed code, so you cannot use `exec`, etc.
+* pylyzer's type inspector only assumes (potentially) statically typed code, so you cannot check any code uses reflections, such as `exec`, `setattr`, etc.
 
 * Type checking of compound types such as Union types is not supported yet (will be implemented soon).
+
+* pylyzer has its own type declarations for the Python standard APIs. Typing of all APIs is not complete and may result in an error that such an API does not exist.
 
 ## TODOs
 

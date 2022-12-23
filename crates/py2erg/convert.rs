@@ -4,6 +4,7 @@ use rustpython_parser::ast::{StatementType, ExpressionType, Located, Program, Nu
 use rustpython_parser::ast::Location as PyLocation;
 
 use erg_common::set::Set as HashSet;
+use erg_common::dict::Dict as HashMap;
 use erg_compiler::erg_parser::token::{Token, TokenKind, EQUAL, COLON, DOT};
 use erg_compiler::erg_parser::ast::{
     Expr, Module, Signature, VarSignature, VarPattern, Params, Identifier, VarName, DefBody, DefId, Block, Def, Literal, Args, PosArg, Accessor, ClassAttrs, ClassAttr, RecordAttrs,
@@ -70,20 +71,73 @@ fn op_to_token(op: Operator) -> Token {
     Token::from_str(kind, cont)
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct NameInfo {
+    // last_defined_line: usize,
+    defined_times: usize,
+}
+
+impl NameInfo {
+    pub const fn new(defined_times: usize) -> Self {
+        Self {
+            // last_defined_line,
+            defined_times,
+        }
+    }
+}
+
+#[derive(Debug)]
 pub struct ASTConverter {
     namespace: Vec<String>,
+    /// Erg does not allow variables to be defined multiple times, so rename them using this
+    names: Vec<HashMap<String, NameInfo>>,
+}
+
+impl Default for ASTConverter {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl ASTConverter {
     pub fn new() -> Self {
         Self {
             namespace: vec![String::from("<module>")],
+            names: vec![HashMap::new()],
         }
     }
 
-    fn convert_ident(name: String, loc: PyLocation) -> Identifier {
-        let token = Token::new(TokenKind::Symbol, escape_name(name), loc.row(), loc.column() - 1);
+    fn get_name_global(&self, name: &str) -> Option<&NameInfo> {
+        for space in self.names.iter().rev() {
+            if let Some(name) = space.get(name) {
+                return Some(name);
+            }
+        }
+        None
+    }
+
+    fn _get_mut_name_global(&mut self, name: &str) -> Option<&mut NameInfo> {
+        for space in self.names.iter_mut().rev() {
+            if let Some(name) = space.get_mut(name) {
+                return Some(name);
+            }
+        }
+        None
+    }
+
+    fn convert_ident(&self, name: String, loc: PyLocation) -> Identifier {
+        let name = escape_name(name);
+        let cont = if let Some(name_info) = self.get_name_global(&name) {
+            if name_info.defined_times > 1 {
+                // HACK: add zero-width characters as postfix
+                format!("{name}{}", "\0".repeat(name_info.defined_times))
+            } else {
+                name
+            }
+        } else {
+            name
+        };
+        let token = Token::new(TokenKind::Symbol, cont, loc.row(), loc.column() - 1);
         let name = VarName::new(token);
         let dot = Token::new(TokenKind::Dot, ".", loc.row(), loc.column() - 1);
         Identifier::new(Some(dot), name)
@@ -95,10 +149,10 @@ impl ASTConverter {
         ParamPattern::VarName(name)
     }
 
-    fn convert_nd_param(param: Parameter) -> NonDefaultParamSignature {
+    fn convert_nd_param(&self, param: Parameter) -> NonDefaultParamSignature {
         let pat = Self::convert_param_pattern(param.arg, param.location);
         let t_spec = param.annotation
-            .map(|anot| Self::convert_type_spec(*anot))
+            .map(|anot| self.convert_type_spec(*anot))
             .map(|t_spec| TypeSpecWithOp::new(COLON, t_spec));
         NonDefaultParamSignature::new(pat, t_spec)
     }
@@ -108,8 +162,8 @@ impl ASTConverter {
     }
 
     // TODO: defaults
-    fn convert_params(args: Box<Parameters>) -> Params {
-        let non_defaults = args.args.into_iter().map(Self::convert_nd_param).collect();
+    fn convert_params(&self, args: Box<Parameters>) -> Params {
+        let non_defaults = args.args.into_iter().map(|p| self.convert_nd_param(p)).collect();
         // let defaults = args. args.defaults.into_iter().map(convert_default_param).collect();
         Params::new(non_defaults, None, vec![], None)
     }
@@ -128,7 +182,7 @@ impl ASTConverter {
     }
 
     /// (i, j) => $1 (i = $1[0]; j = $1[1])
-    fn convert_expr_to_param(expr: Located<ExpressionType>) -> (NonDefaultParamSignature, Vec<Expr>) {
+    fn convert_expr_to_param(&self, expr: Located<ExpressionType>) -> (NonDefaultParamSignature, Vec<Expr>) {
         match expr.node {
             ExpressionType::Identifier { name } => (Self::convert_for_param(name, expr.location), vec![]),
             ExpressionType::Tuple { elements } => {
@@ -138,9 +192,9 @@ impl ASTConverter {
                 let mut block = vec![];
                 for (i, elem) in elements.into_iter().enumerate() {
                     let index = Literal::new(Token::new(TokenKind::NatLit, i.to_string(), elem.location.row(), elem.location.column() - 1));
-                    let (param, mut blocks) = Self::convert_expr_to_param(elem);
+                    let (param, mut blocks) = self.convert_expr_to_param(elem);
                     let sig = Signature::Var(VarSignature::new(Self::param_pattern_to_var(param.pat), param.t_spec.map(|t| t.t_spec)));
-                    let method = tmp_expr.clone().attr_expr(Self::convert_ident("__Tuple_getitem__".to_string(), expr.location));
+                    let method = tmp_expr.clone().attr_expr(self.convert_ident("__Tuple_getitem__".to_string(), expr.location));
                     let args = Args::new(vec![PosArg::new(Expr::Lit(index))], vec![], None);
                     let tuple_acc = method.call_expr(args);
                     let body = DefBody::new(EQUAL, Block::new(vec![tuple_acc]), DefId(0));
@@ -159,7 +213,7 @@ impl ASTConverter {
     }
 
     fn convert_for_body(&mut self, lhs: Located<ExpressionType>, body: Suite) -> Lambda {
-        let (param, block) = Self::convert_expr_to_param(lhs);
+        let (param, block) = self.convert_expr_to_param(lhs);
         let params = Params::new(vec![param], None, vec![], None);
         let body = body.into_iter().map(|stmt| self.convert_statement(stmt, true)).collect::<Vec<_>>();
         let body = block.into_iter().chain(body).collect();
@@ -168,10 +222,10 @@ impl ASTConverter {
         Lambda::new(sig, op, Block::new(body), DefId(0))
     }
 
-    fn convert_type_spec(expr: Located<ExpressionType>) -> TypeSpec {
+    fn convert_type_spec(&self, expr: Located<ExpressionType>) -> TypeSpec {
         match expr.node {
             ExpressionType::Identifier { name } =>
-                TypeSpec::PreDeclTy(PreDeclTypeSpec::Simple(SimpleTypeSpec::new(Self::convert_ident(name, expr.location), ConstArgs::empty()))),
+                TypeSpec::PreDeclTy(PreDeclTypeSpec::Simple(SimpleTypeSpec::new(self.convert_ident(name, expr.location), ConstArgs::empty()))),
             _other => TypeSpec::Infer(Token::new(TokenKind::UBar, "_", expr.location.row(), expr.location.column() - 1)),
         }
     }
@@ -195,7 +249,7 @@ impl ASTConverter {
         (l_brace, r_brace)
     }
 
-    fn convert_expr(expr: Located<ExpressionType>) -> Expr {
+    fn convert_expr(&self, expr: Located<ExpressionType>) -> Expr {
         match expr.node {
             ExpressionType::Number { value } => {
                 let (kind, cont) = match value {
@@ -228,33 +282,33 @@ impl ASTConverter {
                 Expr::Lit(Literal::new(Token::new(TokenKind::EllipsisLit, "Ellipsis", expr.location.row(), expr.location.column() - 1)))
             }
             ExpressionType::IfExpression { test, body, orelse } => {
-                let block = Self::convert_expr(*body);
+                let block = self.convert_expr(*body);
                 let params = Params::new(vec![], None, vec![], None);
                 let sig = LambdaSignature::new(params.clone(), None, TypeBoundSpecs::empty());
                 let body = Lambda::new(sig, Token::DUMMY, Block::new(vec![block]), DefId(0));
-                let test = Self::convert_expr(*test);
-                let if_ident = Self::convert_ident("if".to_string(), expr.location);
+                let test = self.convert_expr(*test);
+                let if_ident = self.convert_ident("if".to_string(), expr.location);
                 let if_acc = Expr::Accessor(Accessor::Ident(if_ident));
-                let else_block = Self::convert_expr(*orelse);
+                let else_block = self.convert_expr(*orelse);
                 let sig = LambdaSignature::new(params, None, TypeBoundSpecs::empty());
                 let else_body = Lambda::new(sig, Token::DUMMY, Block::new(vec![else_block]), DefId(0));
                 let args = Args::new(vec![PosArg::new(test), PosArg::new(Expr::Lambda(body)), PosArg::new(Expr::Lambda(else_body))], vec![], None);
                 if_acc.call_expr(args)
             }
             ExpressionType::Call { function, args, keywords: _ } => {
-                let function = Self::convert_expr(*function);
-                let pos_args = args.into_iter().map(|ex| PosArg::new(Self::convert_expr(ex))).collect::<Vec<_>>();
+                let function = self.convert_expr(*function);
+                let pos_args = args.into_iter().map(|ex| PosArg::new(self.convert_expr(ex))).collect::<Vec<_>>();
                 let args = Args::new(pos_args, vec![], None);
                 function.call_expr(args)
             }
             ExpressionType::Binop { a, op, b } => {
-                let lhs = Self::convert_expr(*a);
-                let rhs = Self::convert_expr(*b);
+                let lhs = self.convert_expr(*a);
+                let rhs = self.convert_expr(*b);
                 let op = op_to_token(op);
                 Expr::BinOp(BinOp::new(op, lhs, rhs))
             }
             ExpressionType::Unop { op, a } => {
-                let rhs = Self::convert_expr(*a);
+                let rhs = self.convert_expr(*a);
                 let (kind, cont) = match op {
                     UnaryOperator::Pos => (TokenKind::PrePlus, "+"),
                     // UnaryOperator::Not => (TokenKind::PreBitNot, "not"),
@@ -267,8 +321,8 @@ impl ASTConverter {
             }
             // TODO
             ExpressionType::BoolOp { op, mut values } => {
-                let lhs = Self::convert_expr(values.remove(0));
-                let rhs = Self::convert_expr(values.remove(0));
+                let lhs = self.convert_expr(values.remove(0));
+                let rhs = self.convert_expr(values.remove(0));
                 let (kind, cont) = match op {
                     BooleanOperator::And => (TokenKind::AndOp, "and"),
                     BooleanOperator::Or => (TokenKind::OrOp, "or"),
@@ -278,8 +332,8 @@ impl ASTConverter {
             }
             // TODO: multiple comparisons
             ExpressionType::Compare { mut vals, mut ops } => {
-                let lhs = Self::convert_expr(vals.remove(0));
-                let rhs = Self::convert_expr(vals.remove(0));
+                let lhs = self.convert_expr(vals.remove(0));
+                let rhs = self.convert_expr(vals.remove(0));
                 let (kind, cont) = match ops.remove(0) {
                     Comparison::Equal => (TokenKind::Equal, "=="),
                     Comparison::NotEqual => (TokenKind::NotEq, "!="),
@@ -296,17 +350,17 @@ impl ASTConverter {
                 Expr::BinOp(BinOp::new(op, lhs, rhs))
             }
             ExpressionType::Identifier { name } => {
-                let ident = Self::convert_ident(name, expr.location);
+                let ident = self.convert_ident(name, expr.location);
                 Expr::Accessor(Accessor::Ident(ident))
             }
             ExpressionType::Attribute { value, name } => {
-                let obj = Self::convert_expr(*value);
-                let name = Self::convert_ident(name, expr.location);
+                let obj = self.convert_expr(*value);
+                let name = self.convert_ident(name, expr.location);
                 Expr::Accessor(Accessor::attr(obj, name))
             }
             ExpressionType::Lambda { args, body } => {
-                let params = Self::convert_params(args);
-                let body = vec![Self::convert_expr(*body)];
+                let params = self.convert_params(args);
+                let body = vec![self.convert_expr(*body)];
                 let sig = LambdaSignature::new(params, None, TypeBoundSpecs::empty());
                 let op = Token::from_str(TokenKind::ProcArrow, "=>");
                 Expr::Lambda(Lambda::new(sig, op, Block::new(body), DefId(0)))
@@ -314,7 +368,7 @@ impl ASTConverter {
             ExpressionType::List { elements } => {
                 let (l_sqbr, r_sqbr) = Self::gen_enclosure_tokens(TokenKind::LSqBr, elements.iter(), expr.location);
                 let elements = elements.into_iter()
-                    .map(|ex| PosArg::new(Self::convert_expr(ex)))
+                    .map(|ex| PosArg::new(self.convert_expr(ex)))
                     .collect::<Vec<_>>();
                 let elems = Args::new(elements, vec![], None);
                 Expr::Array(Array::Normal(NormalArray::new(l_sqbr, r_sqbr, elems)))
@@ -322,7 +376,7 @@ impl ASTConverter {
             ExpressionType::Set { elements } => {
                 let (l_brace, r_brace) = Self::gen_enclosure_tokens(TokenKind::LBrace, elements.iter(), expr.location);
                 let elements = elements.into_iter()
-                    .map(|ex| PosArg::new(Self::convert_expr(ex)))
+                    .map(|ex| PosArg::new(self.convert_expr(ex)))
                     .collect::<Vec<_>>();
                 let elems = Args::new(elements, vec![], None);
                 Expr::Set(Set::Normal(NormalSet::new(l_brace, r_brace, elems)))
@@ -331,21 +385,21 @@ impl ASTConverter {
                 let (l_brace, r_brace) = Self::gen_enclosure_tokens(TokenKind::LBrace, elements.iter().map(|(_, v)| v), expr.location);
                 let kvs = elements.into_iter()
                     .map(|(k, v)|
-                        KeyValue::new(k.map(Self::convert_expr).unwrap_or(Expr::Dummy(Dummy::empty())), Self::convert_expr(v))
+                        KeyValue::new(k.map(|k| self.convert_expr(k)).unwrap_or(Expr::Dummy(Dummy::empty())), self.convert_expr(v))
                     ).collect::<Vec<_>>();
                 Expr::Dict(Dict::Normal(NormalDict::new(l_brace, r_brace, kvs)))
             }
             ExpressionType::Tuple { elements } => {
                 let elements = elements.into_iter()
-                    .map(|ex| PosArg::new(Self::convert_expr(ex)))
+                    .map(|ex| PosArg::new(self.convert_expr(ex)))
                     .collect::<Vec<_>>();
                 let elems = Args::new(elements, vec![], None);
                 Expr::Tuple(Tuple::Normal(NormalTuple::new(elems)))
             }
             ExpressionType::Subscript { a, b } => {
-                let obj = Self::convert_expr(*a);
-                let method = obj.attr_expr(Self::convert_ident("__getitem__".to_string(), expr.location));
-                let args = Args::new(vec![PosArg::new(Self::convert_expr(*b))], vec![], None);
+                let obj = self.convert_expr(*a);
+                let method = obj.attr_expr(self.convert_ident("__getitem__".to_string(), expr.location));
+                let args = Args::new(vec![PosArg::new(self.convert_expr(*b))], vec![], None);
                 method.call_expr(args)
             }
             _other => {
@@ -454,13 +508,14 @@ impl ASTConverter {
         loc: PyLocation,
     ) -> Expr {
         self.namespace.push(name.clone());
-        let _decos = decorator_list.into_iter().map(Self::convert_expr).collect::<Vec<_>>();
-        let _bases = bases.into_iter().map(Self::convert_expr).collect::<Vec<_>>();
-        let ident = Self::convert_ident(name, loc);
+        let _decos = decorator_list.into_iter().map(|deco| self.convert_expr(deco)).collect::<Vec<_>>();
+        let _bases = bases.into_iter().map(|base| self.convert_expr(base)).collect::<Vec<_>>();
+        self.register_name_info(&name);
+        let ident = self.convert_ident(name, loc);
         let sig = Signature::Var(VarSignature::new(VarPattern::Ident(ident.clone()), None));
         let (base_type, methods) = self.extract_method_list(ident, body);
         let args = Args::new(vec![PosArg::new(base_type)], vec![], None);
-        let class_acc = Expr::Accessor(Accessor::Ident(Self::convert_ident("Class".to_string(), loc)));
+        let class_acc = Expr::Accessor(Accessor::Ident(self.convert_ident("Class".to_string(), loc)));
         let class_call = class_acc.call_expr(args);
         let body = DefBody::new(EQUAL, Block::new(vec![class_call]), DefId(0));
         let def = Def::new(sig, body);
@@ -469,17 +524,27 @@ impl ASTConverter {
         Expr::ClassDef(classdef)
     }
 
+    fn register_name_info(&mut self, name: &str) {
+        if let Some(name_info) = self.names.last_mut().unwrap().get_mut(name) {
+            // name_info.last_defined_line = loc.row();
+            name_info.defined_times += 1;
+        } else {
+            self.names.last_mut().unwrap().insert(String::from(name), NameInfo::new(1));
+        }
+    }
+
     fn convert_statement(&mut self, stmt: Located<StatementType>, dont_call_return: bool) -> Expr {
         match stmt.node {
-            StatementType::Expression { expression } => Self::convert_expr(expression),
+            StatementType::Expression { expression } => self.convert_expr(expression),
             StatementType::AnnAssign { target, annotation, value } => {
-                let t_spec = Self::convert_type_spec(*annotation);
+                let t_spec = self.convert_type_spec(*annotation);
                 match target.node {
                     ExpressionType::Identifier { name } => {
-                        let ident = Self::convert_ident(name, stmt.location);
+                        self.register_name_info(&name);
+                        let ident = self.convert_ident(name, stmt.location);
                         if let Some(value) = value {
                             let sig = Signature::Var(VarSignature::new(VarPattern::Ident(ident), Some(t_spec)));
-                            let block = Block::new(vec![Self::convert_expr(value)]);
+                            let block = Block::new(vec![self.convert_expr(value)]);
                             let body = DefBody::new(EQUAL, block, DefId(0));
                             let def = Def::new(sig, body);
                             Expr::Def(def)
@@ -489,9 +554,9 @@ impl ASTConverter {
                         }
                     }
                     ExpressionType::Attribute { value: attr, name } => {
-                        let attr = Self::convert_expr(*attr).attr(Self::convert_ident(name, target.location));
+                        let attr = self.convert_expr(*attr).attr(self.convert_ident(name, target.location));
                         if let Some(value) = value {
-                            let expr = Self::convert_expr(value);
+                            let expr = self.convert_expr(value);
                             let adef = AttrDef::new(attr, expr);
                             Expr::AttrDef(adef)
                         } else {
@@ -507,16 +572,17 @@ impl ASTConverter {
                     let lhs = targets.remove(0);
                     match lhs.node {
                         ExpressionType::Identifier { name } => {
-                            let ident = Self::convert_ident(name, stmt.location);
+                            self.register_name_info(&name);
+                            let ident = self.convert_ident(name, stmt.location);
                             let sig = Signature::Var(VarSignature::new(VarPattern::Ident(ident), None));
-                            let block = Block::new(vec![Self::convert_expr(value)]);
+                            let block = Block::new(vec![self.convert_expr(value)]);
                             let body = DefBody::new(EQUAL, block, DefId(0));
                             let def = Def::new(sig, body);
                             Expr::Def(def)
                         }
                         ExpressionType::Attribute { value: attr, name } => {
-                            let attr = Self::convert_expr(*attr).attr(Self::convert_ident(name, lhs.location));
-                            let expr = Self::convert_expr(value);
+                            let attr = self.convert_expr(*attr).attr(self.convert_ident(name, lhs.location));
+                            let expr = self.convert_expr(value);
                             let adef = AttrDef::new(attr, expr);
                             Expr::AttrDef(adef)
                         }
@@ -526,14 +592,14 @@ impl ASTConverter {
                             let tmp_ident = Identifier::new(Some(DOT), tmp_name);
                             let tmp_expr = Expr::Accessor(Accessor::Ident(tmp_ident.clone()));
                             let sig = Signature::Var(VarSignature::new(VarPattern::Ident(tmp_ident), None));
-                            let body = DefBody::new(EQUAL, Block::new(vec![Self::convert_expr(value)]), DefId(0));
+                            let body = DefBody::new(EQUAL, Block::new(vec![self.convert_expr(value)]), DefId(0));
                             let tmp_def = Expr::Def(Def::new(sig, body));
                             let mut defs = vec![tmp_def];
                             for (i, elem) in elements.into_iter().enumerate() {
                                 let index = Literal::new(Token::new(TokenKind::NatLit, i.to_string(), elem.location.row(), elem.location.column() - 1));
-                                let (param, mut blocks) = Self::convert_expr_to_param(elem);
+                                let (param, mut blocks) = self.convert_expr_to_param(elem);
                                 let sig = Signature::Var(VarSignature::new(Self::param_pattern_to_var(param.pat), param.t_spec.map(|t| t.t_spec)));
-                                let method = tmp_expr.clone().attr_expr(Self::convert_ident("__Tuple_getitem__".to_string(), stmt.location));
+                                let method = tmp_expr.clone().attr_expr(self.convert_ident("__Tuple_getitem__".to_string(), stmt.location));
                                 let args = Args::new(vec![PosArg::new(Expr::Lit(index))], vec![], None);
                                 let tuple_acc = method.call_expr(args);
                                 let body = DefBody::new(EQUAL, Block::new(vec![tuple_acc]), DefId(0));
@@ -546,12 +612,13 @@ impl ASTConverter {
                         _other => Expr::Dummy(Dummy::empty()),
                     }
                 } else {
-                    let value = Self::convert_expr(value);
+                    let value = self.convert_expr(value);
                     let mut defs = vec![];
                     for target in targets {
                         match target.node {
                             ExpressionType::Identifier { name } => {
-                                let ident = Self::convert_ident(name, stmt.location);
+                                self.register_name_info(&name);
+                                let ident = self.convert_ident(name, stmt.location);
                                 let sig = Signature::Var(VarSignature::new(VarPattern::Ident(ident), None));
                                 let body = DefBody::new(EQUAL, Block::new(vec![value.clone()]), DefId(0));
                                 let def = Expr::Def(Def::new(sig, body));
@@ -569,9 +636,11 @@ impl ASTConverter {
                 let op = op_to_token(op);
                 match target.node {
                     ExpressionType::Identifier { name } => {
-                        let ident = Self::convert_ident(name, stmt.location);
-                        let val = Self::convert_expr(*value);
-                        let bin = BinOp::new(op, Expr::Accessor(Accessor::Ident(ident.clone())), val);
+                        let prev_ident = self.convert_ident(name.clone(), stmt.location);
+                        self.register_name_info(&name);
+                        let ident = self.convert_ident(name, stmt.location);
+                        let val = self.convert_expr(*value);
+                        let bin = BinOp::new(op, Expr::Accessor(Accessor::Ident(prev_ident)), val);
                         let sig = Signature::Var(VarSignature::new(VarPattern::Ident(ident), None));
                         let block = Block::new(vec![Expr::BinOp(bin)]);
                         let body = DefBody::new(EQUAL, block, DefId(0));
@@ -579,8 +648,8 @@ impl ASTConverter {
                         Expr::Def(def)
                     }
                     ExpressionType::Attribute { value: attr, name } => {
-                        let attr = Self::convert_expr(*attr).attr(Self::convert_ident(name, target.location));
-                        let val = Self::convert_expr(*value);
+                        let attr = self.convert_expr(*attr).attr(self.convert_ident(name, target.location));
+                        let val = self.convert_expr(*value);
                         let bin = BinOp::new(op, Expr::Accessor(attr.clone()), val);
                         let adef = AttrDef::new(attr, Expr::BinOp(bin));
                         Expr::AttrDef(adef)
@@ -597,10 +666,11 @@ impl ASTConverter {
                 returns
             } => {
                 self.namespace.push(name.clone());
-                let decos = decorator_list.into_iter().map(|ex| Decorator(Self::convert_expr(ex))).collect::<HashSet<_>>();
-                let ident = Self::convert_ident(name, stmt.location);
-                let params = Self::convert_params(args);
-                let return_t = returns.map(Self::convert_type_spec);
+                let decos = decorator_list.into_iter().map(|ex| Decorator(self.convert_expr(ex))).collect::<HashSet<_>>();
+                self.register_name_info(&name);
+                let ident = self.convert_ident(name, stmt.location);
+                let params = self.convert_params(args);
+                let return_t = returns.map(|ret| self.convert_type_spec(ret));
                 let sig = Signature::Subr(SubrSignature::new(decos, ident, TypeBoundSpecs::empty(), params, return_t));
                 let block = self.convert_block(body, BlockKind::Function);
                 let body = DefBody::new(EQUAL, block, DefId(0));
@@ -613,8 +683,8 @@ impl ASTConverter {
             }
             StatementType::For { is_async: _, target, iter, body, orelse: _ } => {
                 let block = self.convert_for_body(*target, body);
-                let iter = Self::convert_expr(*iter);
-                let for_ident = Self::convert_ident("for".to_string(), stmt.location);
+                let iter = self.convert_expr(*iter);
+                let for_ident = self.convert_ident("for".to_string(), stmt.location);
                 let for_acc = Expr::Accessor(Accessor::Ident(for_ident));
                 for_acc.call_expr(Args::new(vec![PosArg::new(iter), PosArg::new(Expr::Lambda(block))], vec![], None))
             }
@@ -622,8 +692,8 @@ impl ASTConverter {
                 let block = self.convert_block(body, BlockKind::While);
                 let params = Params::new(vec![], None, vec![], None);
                 let body = Lambda::new(LambdaSignature::new(params, None, TypeBoundSpecs::empty()), Token::DUMMY, block, DefId(0));
-                let test = Self::convert_expr(test);
-                let while_ident = Self::convert_ident("while".to_string(), stmt.location);
+                let test = self.convert_expr(test);
+                let while_ident = self.convert_ident("while".to_string(), stmt.location);
                 let while_acc = Expr::Accessor(Accessor::Ident(while_ident));
                 while_acc.call_expr(Args::new(vec![PosArg::new(test), PosArg::new(Expr::Lambda(body))], vec![], None))
             }
@@ -632,8 +702,8 @@ impl ASTConverter {
                 let params = Params::new(vec![], None, vec![], None);
                 let sig = LambdaSignature::new(params.clone(), None, TypeBoundSpecs::empty());
                 let body = Lambda::new(sig, Token::DUMMY, block, DefId(0));
-                let test = Self::convert_expr(test);
-                let if_ident = Self::convert_ident("if".to_string(), stmt.location);
+                let test = self.convert_expr(test);
+                let if_ident = self.convert_ident("if".to_string(), stmt.location);
                 let if_acc = Expr::Accessor(Accessor::Ident(if_ident));
                 if let Some(orelse) = orelse {
                     let else_block = self.convert_block(orelse, BlockKind::If);
@@ -647,42 +717,42 @@ impl ASTConverter {
                 }
             }
             StatementType::Return { value } => {
-                let value = value.map(Self::convert_expr)
+                let value = value.map(|val| self.convert_expr(val))
                     .unwrap_or_else(||Expr::Tuple(Tuple::Normal(NormalTuple::new(Args::empty()))));
                 if dont_call_return {
                     value
                 } else {
-                    let func_acc = Expr::Accessor(Accessor::Ident(Self::convert_ident(self.namespace.last().unwrap().clone(), stmt.location)));
-                    let return_acc = Self::convert_ident("return".to_string(), stmt.location);
+                    let func_acc = Expr::Accessor(Accessor::Ident(self.convert_ident(self.namespace.last().unwrap().clone(), stmt.location)));
+                    let return_acc = self.convert_ident("return".to_string(), stmt.location);
                     let return_acc = Expr::Accessor(Accessor::attr(func_acc, return_acc));
                     erg_common::log!(err "{return_acc}");
                     return_acc.call_expr(Args::new(vec![PosArg::new(value)], vec![], None))
                 }
             }
             StatementType::Assert { test, msg } => {
-                let test = Self::convert_expr(test);
+                let test = self.convert_expr(test);
                 let args = if let Some(msg) = msg {
-                    let msg = Self::convert_expr(msg);
+                    let msg = self.convert_expr(msg);
                     Args::new(vec![PosArg::new(test), PosArg::new(msg)], vec![], None)
                 } else {
                     Args::new(vec![PosArg::new(test)], vec![], None)
                 };
-                let assert_acc = Expr::Accessor(Accessor::Ident(Self::convert_ident("assert".to_string(), stmt.location)));
+                let assert_acc = Expr::Accessor(Accessor::Ident(self.convert_ident("assert".to_string(), stmt.location)));
                 assert_acc.call_expr(args)
             }
             StatementType::Import { names } => {
                 let mut imports = vec![];
                 for name in names {
-                    let import_acc = Expr::Accessor(Accessor::Ident(Self::convert_ident("__import__".to_string(), stmt.location)));
+                    let import_acc = Expr::Accessor(Accessor::Ident(self.convert_ident("__import__".to_string(), stmt.location)));
                     let cont = format!("\"{}\"", name.symbol);
                     let mod_name = Expr::Lit(Literal::new(Token::new(TokenKind::StrLit, cont, stmt.location.row(), stmt.location.column() - 1)));
                     let args = Args::new(vec![PosArg::new(mod_name)], vec![], None);
                     let call = import_acc.call_expr(args);
                     let def = if let Some(alias) = name.alias {
-                        let var = VarSignature::new(VarPattern::Ident(Self::convert_ident(alias, stmt.location)), None);
+                        let var = VarSignature::new(VarPattern::Ident(self.convert_ident(alias, stmt.location)), None);
                         Def::new(Signature::Var(var), DefBody::new(EQUAL, Block::new(vec![call]), DefId(0)))
                     } else {
-                        let var = VarSignature::new(VarPattern::Ident(Self::convert_ident(name.symbol, stmt.location)), None);
+                        let var = VarSignature::new(VarPattern::Ident(self.convert_ident(name.symbol, stmt.location)), None);
                         Def::new(Signature::Var(var), DefBody::new(EQUAL, Block::new(vec![call]), DefId(0)))
                     };
                     imports.push(Expr::Def(def));
@@ -690,23 +760,23 @@ impl ASTConverter {
                 Expr::Dummy(Dummy::new(imports))
             }
             StatementType::ImportFrom { level: _, module, names } => {
-                let import_acc = Expr::Accessor(Accessor::Ident(Self::convert_ident("__import__".to_string(), stmt.location)));
+                let import_acc = Expr::Accessor(Accessor::Ident(self.convert_ident("__import__".to_string(), stmt.location)));
                 let cont = format!("\"{}\"", module.clone().unwrap());
                 let mod_name = Expr::Lit(Literal::new(Token::new(TokenKind::StrLit, cont, stmt.location.row(), stmt.location.column() - 1)));
                 let args = Args::new(vec![PosArg::new(mod_name)], vec![], None);
                 let call = import_acc.call_expr(args);
-                let mod_ident = Self::convert_ident(module.unwrap(), stmt.location);
+                let mod_ident = self.convert_ident(module.unwrap(), stmt.location);
                 let mod_expr = Expr::Accessor(Accessor::Ident(mod_ident.clone()));
                 let var = VarSignature::new(VarPattern::Ident(mod_ident), None);
                 let moddef = Expr::Def(Def::new(Signature::Var(var), DefBody::new(EQUAL, Block::new(vec![call]), DefId(0))));
                 let mut imports = vec![];
                 for name in names {
                     let var = if let Some(alias) = name.alias {
-                        VarSignature::new(VarPattern::Ident(Self::convert_ident(alias, stmt.location)), None)
+                        VarSignature::new(VarPattern::Ident(self.convert_ident(alias, stmt.location)), None)
                     } else {
-                        VarSignature::new(VarPattern::Ident(Self::convert_ident(name.symbol.clone(), stmt.location)), None)
+                        VarSignature::new(VarPattern::Ident(self.convert_ident(name.symbol.clone(), stmt.location)), None)
                     };
-                    let attr = mod_expr.clone().attr_expr(Self::convert_ident(name.symbol, stmt.location));
+                    let attr = mod_expr.clone().attr_expr(self.convert_ident(name.symbol, stmt.location));
                     let def = Def::new(Signature::Var(var), DefBody::new(EQUAL, Block::new(vec![attr]), DefId(0)));
                     imports.push(Expr::Def(def));
                 }
