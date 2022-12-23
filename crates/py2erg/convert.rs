@@ -238,6 +238,14 @@ impl ASTConverter {
         Identifier::new(Some(dot), name)
     }
 
+    // TODO: module member mangling
+    fn convert_attr_ident(&mut self, name: String, loc: PyLocation) -> Identifier {
+        let token = Token::new(TokenKind::Symbol, name, loc.row(), loc.column() - 1);
+        let name = VarName::new(token);
+        let dot = Token::new(TokenKind::Dot, ".", loc.row(), loc.column() - 1);
+        Identifier::new(Some(dot), name)
+    }
+
     fn convert_param_pattern(arg: String, loc: PyLocation) -> ParamPattern {
         let token = Token::new(TokenKind::Symbol, arg, loc.row(), loc.column() - 1);
         let name = VarName::new(token);
@@ -451,7 +459,7 @@ impl ASTConverter {
             }
             ExpressionType::Attribute { value, name } => {
                 let obj = self.convert_expr(*value);
-                let name = self.convert_ident(name, expr.location);
+                let name = self.convert_attr_ident(name, expr.location);
                 obj.attr_expr(name)
             }
             ExpressionType::Lambda { args, body } => {
@@ -682,7 +690,7 @@ impl ASTConverter {
                         }
                     }
                     ExpressionType::Attribute { value: attr, name } => {
-                        let attr = self.convert_expr(*attr).attr(self.convert_ident(name, target.location));
+                        let attr = self.convert_expr(*attr).attr(self.convert_attr_ident(name, target.location));
                         if let Some(value) = value {
                             let expr = self.convert_expr(value);
                             let adef = AttrDef::new(attr, expr);
@@ -709,7 +717,7 @@ impl ASTConverter {
                             Expr::Def(def)
                         }
                         ExpressionType::Attribute { value: attr, name } => {
-                            let attr = self.convert_expr(*attr).attr(self.convert_ident(name, lhs.location));
+                            let attr = self.convert_expr(*attr).attr(self.convert_attr_ident(name, lhs.location));
                             let expr = self.convert_expr(value);
                             let adef = AttrDef::new(attr, expr);
                             Expr::AttrDef(adef)
@@ -777,7 +785,7 @@ impl ASTConverter {
                     }
                     ExpressionType::Attribute { value: attr, name } => {
                         let val = self.convert_expr(*value);
-                        let attr = self.convert_expr(*attr).attr(self.convert_ident(name, target.location));
+                        let attr = self.convert_expr(*attr).attr(self.convert_attr_ident(name, target.location));
                         let bin = BinOp::new(op, Expr::Accessor(attr.clone()), val);
                         let adef = AttrDef::new(attr, Expr::BinOp(bin));
                         Expr::AttrDef(adef)

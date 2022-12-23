@@ -13,6 +13,8 @@ class C:
     def method(self):
         return self.x
 
-a = C(1).method() # OK
+c = C(1)
+assert c.x == 1
+a = c.method() # OK
 _: int = a + 1
 b = C("a").method() # ERR
