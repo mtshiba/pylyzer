@@ -525,12 +525,12 @@ impl ASTConverter {
         Block::new(new_block)
     }
 
-    fn find_init_self(&mut self, init_def: &Def) {
-        match &init_def.sig {
+    fn check_init_sig(&mut self, sig: &Signature) -> Option<()> {
+        match sig {
             Signature::Subr(subr) => {
                 if let Some(first) = subr.params.non_defaults.get(0) {
                     if first.inspect().map(|s| &s[..]) == Some("self") {
-                        return;
+                        return Some(());
                     }
                 }
                 self.errs.push(self_not_found_error(
@@ -538,6 +538,7 @@ impl ASTConverter {
                     subr.loc(),
                     self.namespace.join("."),
                 ));
+                Some(())
             }
             Signature::Var(var) => {
                 self.errs.push(init_var_error(
@@ -545,6 +546,7 @@ impl ASTConverter {
                     var.loc(),
                     self.namespace.join("."),
                 ));
+                None
             }
         }
     }
@@ -555,8 +557,8 @@ impl ASTConverter {
     //     self.z = z
     // ↓
     // {x: Int, y: Int, z: Never}, .__call__(x: Int, y: Int, z: Obj): Self = .unreachable()
-    fn extract_init(&mut self, init_def: Def) -> (Expr, Def) {
-        self.find_init_self(&init_def);
+    fn extract_init(&mut self, init_def: Def) -> Option<(Expr, Def)> {
+        self.check_init_sig(&init_def.sig)?;
         let l_brace = Token::new(TokenKind::LBrace, "{", init_def.ln_begin().unwrap_or(0), init_def.col_begin().unwrap_or(0));
         let r_brace = Token::new(TokenKind::RBrace, "}", init_def.ln_end().unwrap_or(0), init_def.col_end().unwrap_or(0));
         let Signature::Subr(sig) = init_def.sig else { unreachable!() };
@@ -601,7 +603,7 @@ impl ASTConverter {
         let body = Expr::Accessor(Accessor::Ident(unreachable_acc)).call_expr(Args::empty());
         let body = DefBody::new(EQUAL, Block::new(vec![body]), DefId(0));
         let def = Def::new(sig, body);
-        (Expr::Record(record), def)
+        Some((Expr::Record(record), def))
     }
 
     fn gen_default_init(&self, line: usize) -> Def {
@@ -624,11 +626,12 @@ impl ASTConverter {
             let chunk = self.convert_statement(stmt, true);
             match chunk {
                 Expr::Def(def) => {
-                    if def.is_subr() && &def.sig.ident().unwrap().inspect()[..] == "__init__" {
-                        let (base_t, init_def) = self.extract_init(def);
-                        base_type = Some(base_t);
-                        attrs.push(ClassAttr::Def(init_def));
-                        init_is_defined = true;
+                    if def.sig.ident().map(|id| &id.inspect()[..] == "__init__").unwrap_or(false) {
+                        if let Some((base_t, init_def)) = self.extract_init(def) {
+                            base_type = Some(base_t);
+                            attrs.push(ClassAttr::Def(init_def));
+                            init_is_defined = true;
+                        }
                     } else {
                         attrs.push(ClassAttr::Def(def));
                     }
@@ -833,13 +836,13 @@ impl ASTConverter {
             } => {
                 // if reassigning of a function referenced by other functions is occurred, it is an error
                 if self.get_name(&name).map(|info| info.defined_times > 0 && !info.referenced.difference(&set!{name.clone()}).is_empty()).unwrap_or(false) {
-                    let warn = reassign_func_error(
+                    let err = reassign_func_error(
                         self.cfg.input.clone(),
                         pyloc_to_ergloc(stmt.location, name.len()),
                         self.namespace.join("."),
                         &name
                     );
-                    self.warns.push(warn);
+                    self.errs.push(err);
                     Expr::Dummy(Dummy::empty())
                 } else {
                     let decos = decorator_list.into_iter().map(|ex| Decorator(self.convert_expr(ex))).collect::<HashSet<_>>();

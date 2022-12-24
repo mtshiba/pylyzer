@@ -59,10 +59,10 @@ pub(crate) fn init_var_error(
         ErrorCore::new(
             vec![SubMessage::only_loc(loc)],
             switch_lang!(
-                "japanese" => format!("__init__はメソッドです。メンバ変数として宣言することはできません"),
-                "simplified_chinese" => format!("__init__是方法。不能声明为变量"),
+                "japanese" => format!("`__init__`はメソッドです。メンバ変数として宣言するべきではありません"),
+                "simplified_chinese" => format!("__init__是方法。不能宣告为变量"),
                 "traditional_chinese" => format!("__init__是方法。不能宣告為變量"),
-                "english" => format!("__init__ is a method. It cannot be declared as a member variable"),
+                "english" => format!("`__init__` should be a method. It should not be defined as a member variable"),
             ),
             3,
             ErrorKind::NameError,

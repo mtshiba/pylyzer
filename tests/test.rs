@@ -46,6 +46,11 @@ fn exec_class() {
 }
 
 #[test]
-fn exec_e0001() {
-    expect("tests/e0001.py", 1, 0);
+fn exec_errors() {
+    expect("tests/errors.py", 0, 3);
+}
+
+#[test]
+fn exec_warns() {
+    expect("tests/warns.py", 2, 0);
 }
