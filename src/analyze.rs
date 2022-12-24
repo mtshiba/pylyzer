@@ -87,17 +87,22 @@ impl PythonAnalyzer {
             IncompleteArtifact::new(None, CompileErrors::from(err), CompileErrors::empty())
         })?;
         let converter = py2erg::ASTConverter::new(self.cfg.copy(), ShadowingMode::Invisible);
-        let CompleteArtifact{ object: erg_module, mut warns } = converter.convert_program(py_program);
+        let IncompleteArtifact{ object: Some(erg_module), mut errors, mut warns } = converter.convert_program(py_program) else { unreachable!() };
         let erg_ast = AST::new(erg_common::Str::rc(filename), erg_module);
         erg_common::log!("AST: {erg_ast}");
         match self.checker.lower(erg_ast, mode) {
             Ok(mut artifact) => {
                 artifact.warns.extend(warns);
                 artifact.warns = handle_err::filter_errors(self.checker.get_mod_ctx(), artifact.warns);
-                Ok(artifact)
+                if errors.is_empty() {
+                    Ok(artifact)
+                } else {
+                    Err(IncompleteArtifact::new(Some(artifact.object), errors, artifact.warns))
+                }
             }
             Err(iart) => {
-                let errors = handle_err::filter_errors(self.checker.get_mod_ctx(), iart.errors);
+                errors.extend(iart.errors);
+                let errors = handle_err::filter_errors(self.checker.get_mod_ctx(), errors);
                 warns.extend(iart.warns);
                 let warns = handle_err::filter_errors(self.checker.get_mod_ctx(), warns);
                 Err(IncompleteArtifact::new(iart.object, errors, warns))

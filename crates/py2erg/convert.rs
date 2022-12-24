@@ -1,7 +1,7 @@
 use erg_common::config::ErgConfig;
 use erg_common::fresh::fresh_varname;
 use erg_common::traits::{Locational, Stream};
-use erg_compiler::artifact::CompleteArtifact;
+use erg_compiler::artifact::{IncompleteArtifact};
 use rustpython_parser::ast::{StatementType, ExpressionType, Located, Program, Number, StringGroup, Operator, BooleanOperator, UnaryOperator, Suite, Parameters, Parameter, Comparison};
 use rustpython_parser::ast::Location as PyLocation;
 
@@ -181,6 +181,7 @@ pub struct ASTConverter {
     /// Erg does not allow variables to be defined multiple times, so rename them using this
     names: HashMap<String, NameInfo>,
     warns: CompileErrors,
+    errs: CompileErrors,
 }
 
 impl ASTConverter {
@@ -191,6 +192,7 @@ impl ASTConverter {
             namespace: vec![String::from("<module>")],
             names: HashMap::new(),
             warns: CompileErrors::empty(),
+            errs: CompileErrors::empty(),
         }
     }
 
@@ -523,35 +525,63 @@ impl ASTConverter {
         Block::new(new_block)
     }
 
-    // def __init__(self, x: Int, y: Int):
+    fn find_init_self(&mut self, init_def: &Def) {
+        match &init_def.sig {
+            Signature::Subr(subr) => {
+                if let Some(first) = subr.params.non_defaults.get(0) {
+                    if first.inspect().map(|s| &s[..]) == Some("self") {
+                        return;
+                    }
+                }
+                self.errs.push(self_not_found_error(
+                    self.cfg.input.clone(),
+                    subr.loc(),
+                    self.namespace.join("."),
+                ));
+            }
+            Signature::Var(var) => {
+                self.errs.push(init_var_error(
+                    self.cfg.input.clone(),
+                    var.loc(),
+                    self.namespace.join("."),
+                ));
+            }
+        }
+    }
+
+    // def __init__(self, x: Int, y: Int, z):
     //     self.x = x
     //     self.y = y
+    //     self.z = z
     // ↓
-    // {x: Int, y: Int}, .__call__(x: Int, y: Int): Self = .unreachable()
-    fn extract_init(&self, def: Def) -> (Expr, Def) {
-        let l_brace = Token::new(TokenKind::LBrace, "{", def.ln_begin().unwrap_or(0), def.col_begin().unwrap_or(0));
-        let r_brace = Token::new(TokenKind::RBrace, "}", def.ln_end().unwrap_or(0), def.col_end().unwrap_or(0));
-        let Signature::Subr(sig) = def.sig else { unreachable!() };
+    // {x: Int, y: Int, z: Never}, .__call__(x: Int, y: Int, z: Obj): Self = .unreachable()
+    fn extract_init(&mut self, init_def: Def) -> (Expr, Def) {
+        self.find_init_self(&init_def);
+        let l_brace = Token::new(TokenKind::LBrace, "{", init_def.ln_begin().unwrap_or(0), init_def.col_begin().unwrap_or(0));
+        let r_brace = Token::new(TokenKind::RBrace, "}", init_def.ln_end().unwrap_or(0), init_def.col_end().unwrap_or(0));
+        let Signature::Subr(sig) = init_def.sig else { unreachable!() };
         let mut fields = vec![];
         let mut params = vec![];
-        for chunk in def.body.block {
+        for chunk in init_def.body.block {
             #[allow(clippy::single_match)]
             match chunk {
                 Expr::AttrDef(adef) => {
                     let Accessor::Attr(attr) = adef.attr else { break; };
                     if attr.obj.get_name().map(|s| &s[..]) == Some("self") {
-                        let typ_name = if let Some(t_spec_op) = sig.params.non_defaults.iter()
+                        let (param_typ_name, arg_typ_name) = if let Some(t_spec_op) = sig.params.non_defaults.iter()
                             .find(|&param| param.inspect() == Some(attr.ident.inspect()))
                             .and_then(|param| param.t_spec.as_ref()) {
-                                t_spec_op.t_spec.to_string().replace('.', "")
+                                let typ_name = t_spec_op.t_spec.to_string().replace('.', "");
+                                (typ_name.clone(), typ_name)
                             } else {
-                                "Never".to_string()
+                                ("Obj".to_string(), "Never".to_string()) // accept any type, can be any type
                             };
-                        let typ_ident = Identifier::public_with_line(DOT, typ_name.into(), attr.obj.ln_begin().unwrap_or(0));
-                        let typ_spec = TypeSpec::PreDeclTy(PreDeclTypeSpec::Simple(SimpleTypeSpec::new(typ_ident.clone(), ConstArgs::empty())));
-                        let typ_spec = TypeSpecWithOp::new(COLON, typ_spec);
-                        params.push(NonDefaultParamSignature::new(ParamPattern::VarName(attr.ident.name.clone()), Some(typ_spec)));
-                        let typ = Expr::Accessor(Accessor::Ident(typ_ident));
+                        let param_typ_ident = Identifier::public_with_line(DOT, param_typ_name.into(), attr.obj.ln_begin().unwrap_or(0));
+                        let param_typ_spec = TypeSpec::PreDeclTy(PreDeclTypeSpec::Simple(SimpleTypeSpec::new(param_typ_ident.clone(), ConstArgs::empty())));
+                        let param_typ_spec = TypeSpecWithOp::new(COLON, param_typ_spec);
+                        let arg_typ_ident = Identifier::public_with_line(DOT, arg_typ_name.into(), attr.obj.ln_begin().unwrap_or(0));
+                        params.push(NonDefaultParamSignature::new(ParamPattern::VarName(attr.ident.name.clone()), Some(param_typ_spec)));
+                        let typ = Expr::Accessor(Accessor::Ident(arg_typ_ident));
                         let sig = Signature::Var(VarSignature::new(VarPattern::Ident(attr.ident), None));
                         let body = DefBody::new(EQUAL, Block::new(vec![typ]), DefId(0));
                         let field_type_def = Def::new(sig, body);
@@ -964,10 +994,10 @@ impl ASTConverter {
         }
     }
 
-    pub fn convert_program(mut self, program: Program) -> CompleteArtifact<Module> {
+    pub fn convert_program(mut self, program: Program) -> IncompleteArtifact<Module> {
         let program = program.statements.into_iter()
             .map(|stmt| self.convert_statement(stmt, true))
             .collect();
-        CompleteArtifact::new(Module::new(program), self.warns)
+        IncompleteArtifact::new(Some(Module::new(program)), self.errs, self.warns)
     }
 }

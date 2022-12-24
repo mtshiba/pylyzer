@@ -26,3 +26,49 @@ pub(crate) fn reassign_func_error(
         caused_by,
     )
 }
+
+pub(crate) fn self_not_found_error(
+    input: Input,
+    loc: Location,
+    caused_by: String,
+) -> CompileError {
+    CompileError::new(
+        ErrorCore::new(
+            vec![SubMessage::only_loc(loc)],
+            switch_lang!(
+                "japanese" => format!("このメソッドは第一引数にselfを取るべきですが、見つかりませんでした"),
+                "simplified_chinese" => format!("该方法应该有第一个参数self，但是没有找到"),
+                "traditional_chinese" => format!("該方法應該有第一個參數self，但是沒有找到"),
+                "english" => format!("This method should have the first parameter `self`, but it was not found"),
+            ),
+            2,
+            ErrorKind::NameError,
+            loc,
+        ),
+        input,
+        caused_by,
+    )
+}
+
+pub(crate) fn init_var_error(
+    input: Input,
+    loc: Location,
+    caused_by: String,
+) -> CompileError {
+    CompileError::new(
+        ErrorCore::new(
+            vec![SubMessage::only_loc(loc)],
+            switch_lang!(
+                "japanese" => format!("__init__はメソッドです。メンバ変数として宣言することはできません"),
+                "simplified_chinese" => format!("__init__是方法。不能声明为变量"),
+                "traditional_chinese" => format!("__init__是方法。不能宣告為變量"),
+                "english" => format!("__init__ is a method. It cannot be declared as a member variable"),
+            ),
+            3,
+            ErrorKind::NameError,
+            loc,
+        ),
+        input,
+        caused_by,
+    )
+}
