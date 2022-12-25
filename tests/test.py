@@ -28,4 +28,5 @@ print(dic["c"]) # ERR
 a = [1, 2, 3]
 print(a[4]) # ERR
 
+a_: str
 a_  = "aa" if True else "bb"

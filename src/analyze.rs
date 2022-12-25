@@ -86,10 +86,15 @@ impl PythonAnalyzer {
             let err = CompileError::new(core, self.cfg.input.clone(),  "".into());
             IncompleteArtifact::new(None, CompileErrors::from(err), CompileErrors::empty())
         })?;
-        let converter = py2erg::ASTConverter::new(self.cfg.copy(), ShadowingMode::Invisible);
+        let shadowing = if cfg!(feature = "debug") {
+            ShadowingMode::Visible
+        } else {
+            ShadowingMode::Invisible
+        };
+        let converter = py2erg::ASTConverter::new(self.cfg.copy(), shadowing);
         let IncompleteArtifact{ object: Some(erg_module), mut errors, mut warns } = converter.convert_program(py_program) else { unreachable!() };
         let erg_ast = AST::new(erg_common::Str::rc(filename), erg_module);
-        erg_common::log!("AST: {erg_ast}");
+        erg_common::log!("AST:\n{erg_ast}");
         match self.checker.lower(erg_ast, mode) {
             Ok(mut artifact) => {
                 artifact.warns.extend(warns);

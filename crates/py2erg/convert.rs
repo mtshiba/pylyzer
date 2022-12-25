@@ -716,7 +716,7 @@ impl ASTConverter {
                             let def = Def::new(sig, body);
                             Expr::Def(def)
                         } else {
-                            self.register_name_info(&name, NameKind::Variable);
+                            // no registration because it's just a type ascription
                             let ident = self.convert_ident(name, stmt.location);
                             let tasc = TypeAscription::new(Expr::Accessor(Accessor::Ident(ident)), COLON, t_spec);
                             Expr::TypeAsc(tasc)
