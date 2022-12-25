@@ -19,7 +19,7 @@ version = "0.0.1"
 authors = ["Shunsuke Shibayama <sbym1346@gmail.com>"]
 license = "MIT OR Apache-2.0"
 edition = "2021"
-repository = "https://github.com/mtshiba/plylyzer"
+repository = "https://github.com/mtshiba/pylyzer"
 
 [workspace.dependencies]
 erg_common = "0.6.0"
