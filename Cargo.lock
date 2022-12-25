@@ -205,11 +205,12 @@ checksum = "90e5c1c8368803113bf0c9584fc495a58b86dc8a29edbf8fe877d21d9507e797"
 
 [[package]]
 name = "els"
-version = "0.1.11"
-source = "git+https://github.com/erg-lang/erg-language-server?branch=main#208699a02b1905f93d5169490f88cfe0b1a367cc"
+version = "0.1.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5bee43c19b4f4255878f0ce4bfbc597dbc8af7bdd4fce251867ee0ac38babc93"
 dependencies = [
- "erg_common",
- "erg_compiler",
+ "erg_common 0.6.0",
+ "erg_compiler 0.6.0",
  "lsp-types",
  "serde",
  "serde_json",
@@ -235,12 +236,33 @@ dependencies = [
 ]
 
 [[package]]
+name = "erg_common"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "80ed4a7d49b050048992d4e157ac4f007f4ace9dc96c1a4626a7ff3d423ff63d"
+dependencies = [
+ "hermit-abi",
+ "libc",
+ "winapi",
+]
+
+[[package]]
 name = "erg_compiler"
 version = "0.6.0-beta.4"
 source = "git+https://github.com/erg-lang/erg?branch=main#1c607cfe5ba87b0dc37c4a3393629c023d85e317"
 dependencies = [
- "erg_common",
- "erg_parser",
+ "erg_common 0.6.0-beta.4",
+ "erg_parser 0.6.0-beta.4",
+]
+
+[[package]]
+name = "erg_compiler"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c49feacca8f83d59c54815e4d5ad2948af469f7bd56bf08306e72014123c986c"
+dependencies = [
+ "erg_common 0.6.0",
+ "erg_parser 0.6.0",
 ]
 
 [[package]]
@@ -248,7 +270,17 @@ name = "erg_parser"
 version = "0.6.0-beta.4"
 source = "git+https://github.com/erg-lang/erg?branch=main#1c607cfe5ba87b0dc37c4a3393629c023d85e317"
 dependencies = [
- "erg_common",
+ "erg_common 0.6.0-beta.4",
+ "unicode-xid 0.2.4",
+]
+
+[[package]]
+name = "erg_parser"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "968d84b4a3a55df83f60d1f252c557bfc0b09ec0dfe24e153662f919d3779cce"
+dependencies = [
+ "erg_common 0.6.0",
  "unicode-xid 0.2.4",
 ]
 
@@ -506,8 +538,8 @@ dependencies = [
 name = "py2erg"
 version = "0.1.0"
 dependencies = [
- "erg_common",
- "erg_compiler",
+ "erg_common 0.6.0-beta.4",
+ "erg_compiler 0.6.0-beta.4",
  "rustpython-parser",
 ]
 
@@ -516,8 +548,8 @@ name = "pylyzer"
 version = "0.0.1"
 dependencies = [
  "els",
- "erg_common",
- "erg_compiler",
+ "erg_common 0.6.0",
+ "erg_compiler 0.6.0",
  "py2erg",
  "rustpython-parser",
 ]
