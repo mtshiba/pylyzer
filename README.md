@@ -8,6 +8,12 @@
 
 ## Installation
 
+### cargo (rust package manager)
+
+```bash
+cargo install pylyzer
+```
+
 ### pip
 
 ```bash
@@ -15,15 +21,7 @@ pip install pylyzer
 ```
 
 If installed this way, type resolution for the standard libraries is not available.
-If you want to use it, you need to install [Erg](https://github.com/mtshiba/ergup).
-
-### cargo (rust package manager)
-
-```bash
-cargo install pylyzer
-```
-
-or download the binary from [the releases page](https://github.com/mtshiba/pylyzer/releases).
+If you want to use it, you need to [install Erg](https://github.com/mtshiba/ergup).
 
 ## What is the advantage over pylint, pyright, pytype, etc.?
 
