@@ -1,9 +1,25 @@
 use std::io::Write;
 use std::path::PathBuf;
 
+use erg_common::log;
 use erg_common::config::Input;
 use erg_compiler::hir::{HIR, Expr};
 use erg_compiler::ty::HasType;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CheckStatus {
+    Succeed,
+    Failed,
+}
+
+impl CheckStatus {
+    pub const fn is_succeed(&self) -> bool {
+        matches!(self, CheckStatus::Succeed)
+    }
+    pub const fn is_failed(&self) -> bool {
+        matches!(self, CheckStatus::Failed)
+    }
+}
 
 pub struct DeclFile {
     pub filename: String,
@@ -14,8 +30,8 @@ fn escape_type(typ: String) -> String {
     typ.replace('%', "Type_")
 }
 
-pub fn gen_decl_er(hir: HIR) -> DeclFile {
-    let mut code = "".to_string();
+pub fn gen_decl_er(hir: HIR, status: CheckStatus) -> DeclFile {
+    let mut code = if status.is_failed() { "# failed\n".to_string() } else { "# succeed\n".to_string() };
     for chunk in hir.module.into_iter() {
         match chunk {
             Expr::Def(def) => {
@@ -32,12 +48,13 @@ pub fn gen_decl_er(hir: HIR) -> DeclFile {
         }
         code.push('\n');
     }
+    log!("code:\n{code}");
     let filename = hir.name.replace(".py", ".d.er");
     DeclFile { filename, code }
 }
 
-pub fn dump_decl_er(input: Input, hir: HIR) {
-    let file = gen_decl_er(hir);
+pub fn dump_decl_er(input: Input, hir: HIR, status: CheckStatus) {
+    let file = gen_decl_er(hir, status);
     let mut path = if let Input::File(path) = input { path } else { PathBuf::new() };
     path.pop();
     path.push("__pycache__");

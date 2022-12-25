@@ -1,4 +1,5 @@
 use erg_common::traits::{Runnable, Stream};
+use erg_common::style::{GREEN, BLUE, RED, YELLOW, RESET};
 use erg_common::config::{ErgConfig};
 use erg_common::error::{MultiErrorDisplay, ErrorCore, ErrorKind};
 use erg_compiler::artifact::{BuildRunnable, CompleteArtifact, IncompleteArtifact, Buildable};
@@ -6,7 +7,7 @@ use erg_compiler::context::Context;
 use erg_compiler::erg_parser::ast::AST;
 use erg_compiler::error::{CompileErrors, CompileError};
 use erg_compiler::lower::ASTLowerer;
-use py2erg::ShadowingMode;
+use py2erg::{CheckStatus, ShadowingMode};
 use py2erg::dump_decl_er;
 use rustpython_parser::parser;
 
@@ -118,33 +119,39 @@ impl PythonAnalyzer {
     pub fn run(&mut self) {
         let filename = self.cfg.input.filename();
         let py_code = self.cfg.input.read();
-        println!("Start checking: {filename}");
+        println!("{BLUE}Start checking{RESET}: {filename}");
         match self.analyze(py_code, "exec") {
             Ok(artifact) => {
                 if !artifact.warns.is_empty() {
-                    println!("Found warnings: {}", artifact.warns.len());
+                    println!("{YELLOW}Found {} warnings{RESET}: {}", artifact.warns.len(), self.cfg.input.filename());
                     artifact.warns.fmt_all_stderr();
                 }
-                println!("All checks OK.");
+                println!("{GREEN}All checks OK{RESET}: {}", self.cfg.input.filename());
                 if self.cfg.output_dir.is_some() {
-                    dump_decl_er(self.cfg.input.clone(), artifact.object);
+                    dump_decl_er(self.cfg.input.clone(), artifact.object, CheckStatus::Succeed);
                     println!("A declaration file has been generated to __pycache__ directory.");
                 }
                 std::process::exit(0);
             }
             Err(artifact) => {
                 if !artifact.warns.is_empty() {
-                    println!("Found warnings: {}", artifact.warns.len());
+                    println!("{YELLOW}Found {} warnings{RESET}: {}", artifact.warns.len(), self.cfg.input.filename());
                     artifact.warns.fmt_all_stderr();
                 }
-                if artifact.errors.is_empty() {
-                    println!("All checks OK.");
-                    std::process::exit(0);
+                let code = if artifact.errors.is_empty() {
+                    println!("{GREEN}All checks OK{RESET}: {}", self.cfg.input.filename());
+                    0
                 } else {
-                    println!("Found errors: {}", artifact.errors.len());
+                    println!("{RED}Found {} errors{RESET}: {}", artifact.errors.len(), self.cfg.input.filename());
                     artifact.errors.fmt_all_stderr();
-                    std::process::exit(1);
+                    1
+                };
+                // Even if type checking fails, some APIs are still valid, so generate a file
+                if self.cfg.output_dir.is_some() {
+                    dump_decl_er(self.cfg.input.clone(), artifact.object.unwrap(), CheckStatus::Failed);
+                    println!("A declaration file has been generated to __pycache__ directory.");
                 }
+                std::process::exit(code);
             }
         }
     }
