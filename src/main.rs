@@ -27,6 +27,7 @@ pub fn parse_args() -> ErgConfig {
             }
             "--server" => {
                 cfg.mode = "server";
+                cfg.quiet_repl = true;
             }
             "--dump-decl" => {
                 cfg.output_dir = Some("");
