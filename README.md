@@ -80,6 +80,7 @@ pylyzer converts Python ASTs to Erg ASTs and passes them to Erg's type checker. 
 * [x] local scripts resolving
 * [ ] local packages resolving
 * [ ] compound type checking
+* [ ] type assertion
 
 ---
 

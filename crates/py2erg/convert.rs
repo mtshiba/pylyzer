@@ -355,6 +355,11 @@ impl ASTConverter {
         (l_brace, r_brace)
     }
 
+    fn mutate_expr(expr: Expr) -> Expr {
+        let mut_op = Token::new(TokenKind::Mutate, "!", expr.ln_begin().unwrap_or(0), expr.col_begin().unwrap_or(0));
+        Expr::UnaryOp(UnaryOp::new(mut_op, expr))
+    }
+
     fn convert_expr(&mut self, expr: Located<ExpressionType>) -> Expr {
         match expr.node {
             ExpressionType::Number { value } => {
@@ -477,7 +482,8 @@ impl ASTConverter {
                     .map(|ex| PosArg::new(self.convert_expr(ex)))
                     .collect::<Vec<_>>();
                 let elems = Args::new(elements, vec![], None);
-                Expr::Array(Array::Normal(NormalArray::new(l_sqbr, r_sqbr, elems)))
+                let arr = Expr::Array(Array::Normal(NormalArray::new(l_sqbr, r_sqbr, elems)));
+                Self::mutate_expr(arr)
             }
             ExpressionType::Set { elements } => {
                 let (l_brace, r_brace) = Self::gen_enclosure_tokens(TokenKind::LBrace, elements.iter(), expr.location);
@@ -485,7 +491,8 @@ impl ASTConverter {
                     .map(|ex| PosArg::new(self.convert_expr(ex)))
                     .collect::<Vec<_>>();
                 let elems = Args::new(elements, vec![], None);
-                Expr::Set(Set::Normal(NormalSet::new(l_brace, r_brace, elems)))
+                let set = Expr::Set(Set::Normal(NormalSet::new(l_brace, r_brace, elems)));
+                Self::mutate_expr(set)
             }
             ExpressionType::Dict { elements } => {
                 let (l_brace, r_brace) = Self::gen_enclosure_tokens(TokenKind::LBrace, elements.iter().map(|(_, v)| v), expr.location);
@@ -493,7 +500,8 @@ impl ASTConverter {
                     .map(|(k, v)|
                         KeyValue::new(k.map(|k| self.convert_expr(k)).unwrap_or(Expr::Dummy(Dummy::empty())), self.convert_expr(v))
                     ).collect::<Vec<_>>();
-                Expr::Dict(Dict::Normal(NormalDict::new(l_brace, r_brace, kvs)))
+                let dict = Expr::Dict(Dict::Normal(NormalDict::new(l_brace, r_brace, kvs)));
+                Self::mutate_expr(dict)
             }
             ExpressionType::Tuple { elements } => {
                 let elements = elements.into_iter()
