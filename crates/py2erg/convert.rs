@@ -452,8 +452,8 @@ impl ASTConverter {
                     Comparison::LessOrEqual => (TokenKind::LessEq, "<="),
                     Comparison::Greater => (TokenKind::Gre, ">"),
                     Comparison::GreaterOrEqual => (TokenKind::GreEq, ">="),
-                    Comparison::Is => (TokenKind::IsOp, "is"),
-                    Comparison::IsNot => (TokenKind::IsNotOp, "isnot"),
+                    Comparison::Is => (TokenKind::IsOp, "is!"),
+                    Comparison::IsNot => (TokenKind::IsNotOp, "isnot!"),
                     Comparison::In => (TokenKind::InOp, "in"),
                     Comparison::NotIn => (TokenKind::NotInOp, "notin"),
                 };
