@@ -15,8 +15,14 @@ for i in [1, 2, 3]:
     j = i + "aa"
     print(j)
 
+i: int # OK
+i = 1
+i: str # ERR
+i = "aa" if True else "bb"
+i: str # OK
+
 while "aaa": # ERR
-    print("invalid")
+    i += 1 # ERR
     break
 
 class C:
@@ -27,9 +33,3 @@ print(dic["c"]) # ERR
 
 a = [1, 2, 3]
 print(a[4]) # ERR
-
-i: int # OK
-i = 1
-i: str # ERR
-i = "aa" if True else "bb"
-i: str # OK

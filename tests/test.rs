@@ -1,12 +1,16 @@
 use std::path::PathBuf;
 
-use erg_common::traits::Stream;
 use erg_common::config::{ErgConfig, Input};
-use erg_compiler::artifact::{IncompleteArtifact, CompleteArtifact};
+use erg_common::traits::Stream;
+use erg_compiler::artifact::{CompleteArtifact, IncompleteArtifact};
 use pylyzer::PythonAnalyzer;
 
 pub fn exec_analyzer(file_path: &'static str) -> Result<CompleteArtifact, IncompleteArtifact> {
-    let cfg = ErgConfig { python_compatible_mode: true, input: Input::File(PathBuf::from(file_path)), ..Default::default() };
+    let cfg = ErgConfig {
+        python_compatible_mode: true,
+        input: Input::File(PathBuf::from(file_path)),
+        ..Default::default()
+    };
     let mut analyzer = PythonAnalyzer::new(cfg);
     let py_code = analyzer.cfg.input.read();
     analyzer.analyze(py_code, "exec")
@@ -27,7 +31,7 @@ pub fn expect(file_path: &'static str, warns: usize, errors: usize) {
 
 #[test]
 fn exec_test() {
-    expect("tests/test.py", 0, 9);
+    expect("tests/test.py", 0, 10);
 }
 
 #[test]

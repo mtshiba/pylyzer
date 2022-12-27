@@ -1,6 +1,6 @@
-use erg_common::switch_lang;
 use erg_common::config::Input;
-use erg_common::error::{Location, ErrorCore, ErrorKind, SubMessage};
+use erg_common::error::{ErrorCore, ErrorKind, Location, SubMessage};
+use erg_common::switch_lang;
 use erg_compiler::error::CompileError;
 
 pub(crate) fn reassign_func_error(
@@ -27,11 +27,7 @@ pub(crate) fn reassign_func_error(
     )
 }
 
-pub(crate) fn self_not_found_error(
-    input: Input,
-    loc: Location,
-    caused_by: String,
-) -> CompileError {
+pub(crate) fn self_not_found_error(input: Input, loc: Location, caused_by: String) -> CompileError {
     CompileError::new(
         ErrorCore::new(
             vec![SubMessage::only_loc(loc)],
@@ -50,11 +46,7 @@ pub(crate) fn self_not_found_error(
     )
 }
 
-pub(crate) fn init_var_error(
-    input: Input,
-    loc: Location,
-    caused_by: String,
-) -> CompileError {
+pub(crate) fn init_var_error(input: Input, loc: Location, caused_by: String) -> CompileError {
     CompileError::new(
         ErrorCore::new(
             vec![SubMessage::only_loc(loc)],

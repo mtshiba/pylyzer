@@ -1,11 +1,14 @@
 use erg_common::error::ErrorKind;
 use erg_common::log;
 // use erg_common::style::{remove_style, StyledString, Color};
-use erg_compiler::error::{CompileErrors, CompileError};
 use erg_compiler::context::Context;
+use erg_compiler::error::{CompileError, CompileErrors};
 
 pub(crate) fn filter_errors(ctx: &Context, errors: CompileErrors) -> CompileErrors {
-    errors.into_iter().filter_map(|error| filter_error(ctx, error)).collect()
+    errors
+        .into_iter()
+        .filter_map(|error| filter_error(ctx, error))
+        .collect()
 }
 
 fn filter_error(_ctx: &Context, error: CompileError) -> Option<CompileError> {
@@ -18,7 +21,10 @@ fn filter_error(_ctx: &Context, error: CompileError) -> Option<CompileError> {
         ErrorKind::VisibilityError => None,
         // exclude doc strings
         ErrorKind::UnusedWarning => {
-            let code = error.input.reread_lines(error.core.loc.ln_begin().unwrap(), error.core.loc.ln_end().unwrap());
+            let code = error.input.reread_lines(
+                error.core.loc.ln_begin().unwrap(),
+                error.core.loc.ln_end().unwrap(),
+            );
             if code[0].trim().starts_with("\"\"\"") {
                 None
             } else {

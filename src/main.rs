@@ -1,5 +1,5 @@
-mod handle_err;
 mod analyze;
+mod handle_err;
 
 use std::env;
 use std::path::PathBuf;
@@ -7,13 +7,16 @@ use std::str::FromStr;
 
 use analyze::PythonAnalyzer;
 use els::Server;
-use erg_common::config::{Input, ErgConfig};
+use erg_common::config::{ErgConfig, Input};
 use erg_common::spawn::exec_new_thread;
 
 pub fn parse_args() -> ErgConfig {
     let mut args = env::args();
     args.next(); // "pylyzer"
-    let mut cfg = ErgConfig{ python_compatible_mode: true, ..ErgConfig::default() };
+    let mut cfg = ErgConfig {
+        python_compatible_mode: true,
+        ..ErgConfig::default()
+    };
     while let Some(arg) = args.next() {
         match &arg[..] {
             "--" => {

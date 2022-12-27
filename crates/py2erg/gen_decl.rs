@@ -1,9 +1,9 @@
 use std::io::Write;
 use std::path::PathBuf;
 
-use erg_common::log;
 use erg_common::config::Input;
-use erg_compiler::hir::{HIR, Expr};
+use erg_common::log;
+use erg_compiler::hir::{Expr, HIR};
 use erg_compiler::ty::HasType;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -31,7 +31,11 @@ fn escape_type(typ: String) -> String {
 }
 
 pub fn gen_decl_er(hir: HIR, status: CheckStatus) -> DeclFile {
-    let mut code = if status.is_failed() { "# failed\n".to_string() } else { "# succeed\n".to_string() };
+    let mut code = if status.is_failed() {
+        "# failed\n".to_string()
+    } else {
+        "# succeed\n".to_string()
+    };
     for chunk in hir.module.into_iter() {
         match chunk {
             Expr::Def(def) => {
@@ -55,7 +59,11 @@ pub fn gen_decl_er(hir: HIR, status: CheckStatus) -> DeclFile {
 
 pub fn dump_decl_er(input: Input, hir: HIR, status: CheckStatus) {
     let file = gen_decl_er(hir, status);
-    let mut path = if let Input::File(path) = input { path } else { PathBuf::new() };
+    let mut path = if let Input::File(path) = input {
+        path
+    } else {
+        PathBuf::new()
+    };
     path.pop();
     path.push("__pycache__");
     let pycache_dir = path.as_path();

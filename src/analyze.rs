@@ -1,14 +1,14 @@
+use erg_common::config::ErgConfig;
+use erg_common::error::{ErrorCore, ErrorKind, MultiErrorDisplay};
+use erg_common::style::{BLUE, GREEN, RED, RESET, YELLOW};
 use erg_common::traits::{Runnable, Stream};
-use erg_common::style::{GREEN, BLUE, RED, YELLOW, RESET};
-use erg_common::config::{ErgConfig};
-use erg_common::error::{MultiErrorDisplay, ErrorCore, ErrorKind};
-use erg_compiler::artifact::{BuildRunnable, CompleteArtifact, IncompleteArtifact, Buildable};
+use erg_compiler::artifact::{BuildRunnable, Buildable, CompleteArtifact, IncompleteArtifact};
 use erg_compiler::context::Context;
 use erg_compiler::erg_parser::ast::AST;
-use erg_compiler::error::{CompileErrors, CompileError};
+use erg_compiler::error::{CompileError, CompileErrors};
 use erg_compiler::lower::ASTLowerer;
-use py2erg::{CheckStatus, ShadowingMode};
 use py2erg::dump_decl_er;
+use py2erg::{CheckStatus, ShadowingMode};
 use rustpython_parser::parser;
 
 use crate::handle_err;
@@ -22,13 +22,10 @@ pub struct PythonAnalyzer {
 impl Runnable for PythonAnalyzer {
     type Err = CompileError;
     type Errs = CompileErrors;
-    const NAME: &'static str =  "Python Analyzer";
+    const NAME: &'static str = "Python Analyzer";
     fn new(cfg: ErgConfig) -> Self {
         let checker = ASTLowerer::new(cfg.clone());
-        Self {
-            checker,
-            cfg,
-        }
+        Self { checker, cfg }
     }
     #[inline]
     fn cfg(&self) -> &ErgConfig {
@@ -74,7 +71,11 @@ impl PythonAnalyzer {
         Runnable::new(cfg)
     }
 
-    pub fn analyze(&mut self, py_code: String, mode: &str) -> Result<CompleteArtifact, IncompleteArtifact> {
+    pub fn analyze(
+        &mut self,
+        py_code: String,
+        mode: &str,
+    ) -> Result<CompleteArtifact, IncompleteArtifact> {
         let filename = self.cfg.input.filename();
         let py_program = parser::parse_program(&py_code).map_err(|err| {
             let core = ErrorCore::new(
@@ -82,9 +83,9 @@ impl PythonAnalyzer {
                 err.to_string(),
                 0,
                 ErrorKind::SyntaxError,
-                erg_common::error::Location::Line(err.location.row())
+                erg_common::error::Location::Line(err.location.row()),
             );
-            let err = CompileError::new(core, self.cfg.input.clone(),  "".into());
+            let err = CompileError::new(core, self.cfg.input.clone(), "".into());
             IncompleteArtifact::new(None, CompileErrors::from(err), CompileErrors::empty())
         })?;
         let shadowing = if cfg!(feature = "debug") {
@@ -99,11 +100,16 @@ impl PythonAnalyzer {
         match self.checker.lower(erg_ast, mode) {
             Ok(mut artifact) => {
                 artifact.warns.extend(warns);
-                artifact.warns = handle_err::filter_errors(self.checker.get_mod_ctx(), artifact.warns);
+                artifact.warns =
+                    handle_err::filter_errors(self.checker.get_mod_ctx(), artifact.warns);
                 if errors.is_empty() {
                     Ok(artifact)
                 } else {
-                    Err(IncompleteArtifact::new(Some(artifact.object), errors, artifact.warns))
+                    Err(IncompleteArtifact::new(
+                        Some(artifact.object),
+                        errors,
+                        artifact.warns,
+                    ))
                 }
             }
             Err(iart) => {
@@ -123,32 +129,52 @@ impl PythonAnalyzer {
         match self.analyze(py_code, "exec") {
             Ok(artifact) => {
                 if !artifact.warns.is_empty() {
-                    println!("{YELLOW}Found {} warnings{RESET}: {}", artifact.warns.len(), self.cfg.input.filename());
+                    println!(
+                        "{YELLOW}Found {} warnings{RESET}: {}",
+                        artifact.warns.len(),
+                        self.cfg.input.filename()
+                    );
                     artifact.warns.fmt_all_stderr();
                 }
                 println!("{GREEN}All checks OK{RESET}: {}", self.cfg.input.filename());
                 if self.cfg.output_dir.is_some() {
-                    dump_decl_er(self.cfg.input.clone(), artifact.object, CheckStatus::Succeed);
+                    dump_decl_er(
+                        self.cfg.input.clone(),
+                        artifact.object,
+                        CheckStatus::Succeed,
+                    );
                     println!("A declaration file has been generated to __pycache__ directory.");
                 }
                 std::process::exit(0);
             }
             Err(artifact) => {
                 if !artifact.warns.is_empty() {
-                    println!("{YELLOW}Found {} warnings{RESET}: {}", artifact.warns.len(), self.cfg.input.filename());
+                    println!(
+                        "{YELLOW}Found {} warnings{RESET}: {}",
+                        artifact.warns.len(),
+                        self.cfg.input.filename()
+                    );
                     artifact.warns.fmt_all_stderr();
                 }
                 let code = if artifact.errors.is_empty() {
                     println!("{GREEN}All checks OK{RESET}: {}", self.cfg.input.filename());
                     0
                 } else {
-                    println!("{RED}Found {} errors{RESET}: {}", artifact.errors.len(), self.cfg.input.filename());
+                    println!(
+                        "{RED}Found {} errors{RESET}: {}",
+                        artifact.errors.len(),
+                        self.cfg.input.filename()
+                    );
                     artifact.errors.fmt_all_stderr();
                     1
                 };
                 // Even if type checking fails, some APIs are still valid, so generate a file
                 if self.cfg.output_dir.is_some() {
-                    dump_decl_er(self.cfg.input.clone(), artifact.object.unwrap(), CheckStatus::Failed);
+                    dump_decl_er(
+                        self.cfg.input.clone(),
+                        artifact.object.unwrap(),
+                        CheckStatus::Failed,
+                    );
                     println!("A declaration file has been generated to __pycache__ directory.");
                 }
                 std::process::exit(code);
