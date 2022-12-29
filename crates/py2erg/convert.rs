@@ -435,7 +435,7 @@ impl ASTConverter {
         (l_brace, r_brace)
     }
 
-    fn mutate_expr(expr: Expr) -> Expr {
+    fn _mutate_expr(expr: Expr) -> Expr {
         let mut_op = Token::new(
             TokenKind::Mutate,
             "!",
@@ -604,8 +604,8 @@ impl ASTConverter {
                     .map(|ex| PosArg::new(self.convert_expr(ex)))
                     .collect::<Vec<_>>();
                 let elems = Args::new(elements, vec![], None);
-                let arr = Expr::Array(Array::Normal(NormalArray::new(l_sqbr, r_sqbr, elems)));
-                Self::mutate_expr(arr)
+                Expr::Array(Array::Normal(NormalArray::new(l_sqbr, r_sqbr, elems)))
+                // Self::mutate_expr(arr)
             }
             ExpressionType::Set { elements } => {
                 let (l_brace, r_brace) =
@@ -615,8 +615,8 @@ impl ASTConverter {
                     .map(|ex| PosArg::new(self.convert_expr(ex)))
                     .collect::<Vec<_>>();
                 let elems = Args::new(elements, vec![], None);
-                let set = Expr::Set(Set::Normal(NormalSet::new(l_brace, r_brace, elems)));
-                Self::mutate_expr(set)
+                Expr::Set(Set::Normal(NormalSet::new(l_brace, r_brace, elems)))
+                // Self::mutate_expr(set)
             }
             ExpressionType::Dict { elements } => {
                 let (l_brace, r_brace) = Self::gen_enclosure_tokens(
@@ -634,8 +634,8 @@ impl ASTConverter {
                         )
                     })
                     .collect::<Vec<_>>();
-                let dict = Expr::Dict(Dict::Normal(NormalDict::new(l_brace, r_brace, kvs)));
-                Self::mutate_expr(dict)
+                Expr::Dict(Dict::Normal(NormalDict::new(l_brace, r_brace, kvs)))
+                // Self::mutate_expr(dict)
             }
             ExpressionType::Tuple { elements } => {
                 let elements = elements
