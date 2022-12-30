@@ -13,10 +13,7 @@ use erg_common::spawn::exec_new_thread;
 pub fn parse_args() -> ErgConfig {
     let mut args = env::args();
     args.next(); // "pylyzer"
-    let mut cfg = ErgConfig {
-        python_compatible_mode: true,
-        ..ErgConfig::default()
-    };
+    let mut cfg = ErgConfig::default();
     while let Some(arg) = args.next() {
         match &arg[..] {
             "--" => {

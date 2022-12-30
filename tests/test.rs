@@ -7,7 +7,6 @@ use pylyzer::PythonAnalyzer;
 
 pub fn exec_analyzer(file_path: &'static str) -> Result<CompleteArtifact, IncompleteArtifact> {
     let cfg = ErgConfig {
-        python_compatible_mode: true,
         input: Input::File(PathBuf::from(file_path)),
         ..Default::default()
     };

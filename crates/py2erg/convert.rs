@@ -1,16 +1,10 @@
 use erg_common::config::ErgConfig;
-use erg_common::fresh::fresh_varname;
-use erg_common::traits::{Locational, Stream};
-use erg_compiler::artifact::IncompleteArtifact;
-use rustpython_parser::ast::Location as PyLocation;
-use rustpython_parser::ast::{
-    BooleanOperator, Comparison, ExpressionType, Located, Number, Operator, Parameter, Parameters,
-    Program, StatementType, StringGroup, Suite, UnaryOperator,
-};
-
 use erg_common::dict::Dict as HashMap;
-use erg_common::set;
+use erg_common::fresh::fresh_varname;
 use erg_common::set::Set as HashSet;
+use erg_common::traits::{Locational, Stream};
+use erg_common::{log, set};
+use erg_compiler::artifact::IncompleteArtifact;
 use erg_compiler::erg_parser::ast::{
     Accessor, Args, Array, BinOp, Block, ClassAttr, ClassAttrs, ClassDef, ConstArgs, Decorator,
     Def, DefBody, DefId, DefaultParamSignature, Dict, Dummy, Expr, Identifier, KeyValue, Lambda,
@@ -21,6 +15,11 @@ use erg_compiler::erg_parser::ast::{
 };
 use erg_compiler::erg_parser::token::{Token, TokenKind, COLON, DOT, EQUAL};
 use erg_compiler::error::CompileErrors;
+use rustpython_parser::ast::Location as PyLocation;
+use rustpython_parser::ast::{
+    BooleanOperator, Comparison, ExpressionType, Located, Number, Operator, Parameter, Parameters,
+    Program, StatementType, StringGroup, Suite, UnaryOperator,
+};
 
 use crate::error::*;
 
@@ -127,9 +126,39 @@ pub fn pyloc_to_ergloc(loc: PyLocation, cont_len: usize) -> erg_common::error::L
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum DefinedPlace {
+    Known(String),
+    Unknown,
+}
+
+impl PartialEq<str> for DefinedPlace {
+    fn eq(&self, other: &str) -> bool {
+        match self {
+            Self::Known(s) => s == other,
+            Self::Unknown => false,
+        }
+    }
+}
+
+impl PartialEq<String> for DefinedPlace {
+    fn eq(&self, other: &String) -> bool {
+        match self {
+            Self::Known(s) => s == other,
+            Self::Unknown => false,
+        }
+    }
+}
+
+impl DefinedPlace {
+    pub const fn is_unknown(&self) -> bool {
+        matches!(self, Self::Unknown)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct NameInfo {
     rename: Option<String>,
-    defined_in: String,
+    defined_in: DefinedPlace,
     defined_block_id: usize,
     defined_times: usize,
     referenced: HashSet<String>,
@@ -138,7 +167,7 @@ pub struct NameInfo {
 impl NameInfo {
     pub fn new(
         rename: Option<String>,
-        defined_in: String,
+        defined_in: DefinedPlace,
         defined_block_id: usize,
         defined_times: usize,
     ) -> Self {
@@ -230,6 +259,29 @@ impl ASTConverter {
         self.namespace.last().unwrap().clone()
     }
 
+    fn register_name_info(&mut self, name: &str, kind: NameKind) {
+        let cur_namespace = self.cur_namespace();
+        if let Some(name_info) = self.names.get_mut(name) {
+            if name_info.defined_in == cur_namespace {
+                name_info.defined_times += 1;
+            } else if name_info.defined_in.is_unknown() {
+                name_info.defined_in = DefinedPlace::Known(cur_namespace);
+                name_info.defined_times += 1;
+            }
+        } else {
+            // In Erg, classes can only be defined in uppercase
+            // So if not, prefix it with `Type_`
+            let rename = if kind.is_class() && !name.starts_with(char::is_uppercase) {
+                Some(format!("Type_{name}"))
+            } else {
+                None
+            };
+            let defined_in = DefinedPlace::Known(self.cur_namespace());
+            let info = NameInfo::new(rename, defined_in, self.cur_block_id(), 1);
+            self.names.insert(String::from(name), info);
+        }
+    }
+
     fn convert_ident(&mut self, name: String, loc: PyLocation) -> Identifier {
         let shadowing = self.shadowing;
         let name = escape_name(name);
@@ -260,7 +312,12 @@ impl ASTConverter {
                 }
             }
         } else {
-            let mut info = NameInfo::new(None, cur_namespace.clone(), cur_block_id, 0);
+            let defined_in = if self.cur_namespace() == "<module>" {
+                DefinedPlace::Known(self.cur_namespace())
+            } else {
+                DefinedPlace::Unknown
+            };
+            let mut info = NameInfo::new(None, defined_in, cur_block_id, 0);
             info.add_referrer(cur_namespace);
             self.names.insert(name.clone(), info);
             name
@@ -279,14 +336,14 @@ impl ASTConverter {
         Identifier::new(Some(dot), name)
     }
 
-    fn convert_param_pattern(arg: String, loc: PyLocation) -> ParamPattern {
-        let token = Token::new(TokenKind::Symbol, arg, loc.row(), loc.column() - 1);
-        let name = VarName::new(token);
-        ParamPattern::VarName(name)
+    fn convert_param_pattern(&mut self, arg: String, loc: PyLocation) -> ParamPattern {
+        self.register_name_info(&arg, NameKind::Variable);
+        let ident = self.convert_ident(arg, loc);
+        ParamPattern::VarName(ident.name)
     }
 
     fn convert_nd_param(&mut self, param: Parameter) -> NonDefaultParamSignature {
-        let pat = Self::convert_param_pattern(param.arg, param.location);
+        let pat = self.convert_param_pattern(param.arg, param.location);
         let t_spec = param
             .annotation
             .map(|anot| self.convert_type_spec(*anot))
@@ -309,8 +366,8 @@ impl ASTConverter {
         Params::new(non_defaults, None, vec![], None)
     }
 
-    fn convert_for_param(name: String, loc: PyLocation) -> NonDefaultParamSignature {
-        let pat = Self::convert_param_pattern(name, loc);
+    fn convert_for_param(&mut self, name: String, loc: PyLocation) -> NonDefaultParamSignature {
+        let pat = self.convert_param_pattern(name, loc);
         let t_spec = None;
         NonDefaultParamSignature::new(pat, t_spec)
     }
@@ -330,7 +387,7 @@ impl ASTConverter {
     ) -> (NonDefaultParamSignature, Vec<Expr>) {
         match expr.node {
             ExpressionType::Identifier { name } => {
-                (Self::convert_for_param(name, expr.location), vec![])
+                (self.convert_for_param(name, expr.location), vec![])
             }
             ExpressionType::Tuple { elements } => {
                 let tmp = fresh_varname();
@@ -590,8 +647,10 @@ impl ASTConverter {
                 obj.attr_expr(name)
             }
             ExpressionType::Lambda { args, body } => {
+                self.namespace.push("<lambda>".to_string());
                 let params = self.convert_params(args);
                 let body = vec![self.convert_expr(*body)];
+                self.namespace.pop();
                 let sig = LambdaSignature::new(params, None, TypeBoundSpecs::empty());
                 let op = Token::from_str(TokenKind::ProcArrow, "=>");
                 Expr::Lambda(Lambda::new(sig, op, Block::new(body), DefId(0)))
@@ -653,7 +712,7 @@ impl ASTConverter {
                 method.call_expr(args)
             }
             _other => {
-                erg_common::log!(err "unimplemented: {:?}", _other);
+                log!(err "unimplemented: {:?}", _other);
                 Expr::Dummy(Dummy::empty())
             }
         }
@@ -903,22 +962,6 @@ impl ASTConverter {
         let classdef = ClassDef::new(def, methods);
         self.namespace.pop();
         Expr::ClassDef(classdef)
-    }
-
-    fn register_name_info(&mut self, name: &str, kind: NameKind) {
-        if let Some(name_info) = self.names.get_mut(name) {
-            name_info.defined_times += 1;
-        } else {
-            // In Erg, classes can only be defined in uppercase
-            // So if not, prefix it with `Type_`
-            let rename = if kind.is_class() && !name.starts_with(char::is_uppercase) {
-                Some(format!("Type_{name}"))
-            } else {
-                None
-            };
-            let info = NameInfo::new(rename, self.cur_namespace(), self.cur_block_id(), 1);
-            self.names.insert(String::from(name), info);
-        }
     }
 
     fn convert_statement(&mut self, stmt: Located<StatementType>, dont_call_return: bool) -> Expr {
@@ -1240,7 +1283,6 @@ impl ASTConverter {
                     ));
                     let return_acc = self.convert_ident("return".to_string(), stmt.location);
                     let return_acc = Expr::Accessor(Accessor::attr(func_acc, return_acc));
-                    erg_common::log!(err "{return_acc}");
                     return_acc.call_expr(Args::new(vec![PosArg::new(value)], vec![], None))
                 }
             }
@@ -1377,8 +1419,24 @@ impl ASTConverter {
                 };
                 Expr::Dummy(Dummy::new(dummy))
             }
+            StatementType::With {
+                is_async: _,
+                mut items,
+                body,
+            } => {
+                let item = items.remove(0);
+                let context_expr = self.convert_expr(item.context_expr);
+                let body = self.convert_for_body(item.optional_vars.unwrap(), body);
+                let with_ident = self.convert_ident("with".to_string(), stmt.location);
+                let with_acc = Expr::Accessor(Accessor::Ident(with_ident));
+                with_acc.call_expr(Args::new(
+                    vec![PosArg::new(context_expr), PosArg::new(Expr::Lambda(body))],
+                    vec![],
+                    None,
+                ))
+            }
             _other => {
-                erg_common::log!(err "unimplemented: {:?}", _other);
+                log!(err "unimplemented: {:?}", _other);
                 Expr::Dummy(Dummy::empty())
             }
         }
