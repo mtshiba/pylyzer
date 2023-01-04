@@ -44,6 +44,11 @@ fn exec_export() {
 }
 
 #[test]
+fn exec_func() {
+    expect("tests/func.py", 0, 1);
+}
+
+#[test]
 fn exec_class() {
     expect("tests/class.py", 0, 1);
 }

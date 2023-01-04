@@ -3,7 +3,7 @@ use erg_common::error::{ErrorCore, ErrorKind, MultiErrorDisplay};
 use erg_common::style::{BLUE, GREEN, RED, RESET, YELLOW};
 use erg_common::traits::{Runnable, Stream};
 use erg_compiler::artifact::{BuildRunnable, Buildable, CompleteArtifact, IncompleteArtifact};
-use erg_compiler::context::Context;
+use erg_compiler::context::ModuleContext;
 use erg_compiler::erg_parser::ast::AST;
 use erg_compiler::error::{CompileError, CompileErrors};
 use erg_compiler::lower::ASTLowerer;
@@ -56,10 +56,10 @@ impl Buildable for PythonAnalyzer {
     fn build(&mut self, code: String, mode: &str) -> Result<CompleteArtifact, IncompleteArtifact> {
         self.analyze(code, mode)
     }
-    fn pop_context(&mut self) -> Option<Context> {
+    fn pop_context(&mut self) -> Option<ModuleContext> {
         self.checker.pop_mod_ctx()
     }
-    fn get_context(&self) -> Option<&Context> {
+    fn get_context(&self) -> Option<&ModuleContext> {
         Some(self.checker.get_mod_ctx())
     }
 }

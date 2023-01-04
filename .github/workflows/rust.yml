@@ -21,7 +21,7 @@ jobs:
     - name: Build
       run: |
         rustup update stable
-        cargo install --path .
+        cargo install --debug --path .
     # Removed because it caused a segmentation fault and would not stop executing. Testing should be done locally.
     - name: Run tests
       run: cargo test --verbose
