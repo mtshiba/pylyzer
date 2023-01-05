@@ -2,10 +2,12 @@ use erg_common::config::ErgConfig;
 use erg_common::error::{ErrorCore, ErrorKind, MultiErrorDisplay};
 use erg_common::style::{BLUE, GREEN, RED, RESET, YELLOW};
 use erg_common::traits::{Runnable, Stream};
+use erg_common::Str;
 use erg_compiler::artifact::{BuildRunnable, Buildable, CompleteArtifact, IncompleteArtifact};
 use erg_compiler::context::ModuleContext;
 use erg_compiler::erg_parser::ast::AST;
 use erg_compiler::error::{CompileError, CompileErrors};
+use erg_compiler::global::SharedCompilerResource;
 use erg_compiler::lower::ASTLowerer;
 use py2erg::dump_decl_er;
 use py2erg::{CheckStatus, ShadowingMode};
@@ -53,6 +55,13 @@ impl Runnable for PythonAnalyzer {
 }
 
 impl Buildable for PythonAnalyzer {
+    fn inherit(cfg: ErgConfig, shared: SharedCompilerResource) -> Self {
+        let mod_name = Str::rc(cfg.input.file_stem());
+        Self {
+            cfg: cfg.copy(),
+            checker: ASTLowerer::new_with_cache(cfg, mod_name, shared),
+        }
+    }
     fn build(&mut self, code: String, mode: &str) -> Result<CompleteArtifact, IncompleteArtifact> {
         self.analyze(code, mode)
     }
@@ -83,7 +92,7 @@ impl PythonAnalyzer {
                 err.to_string(),
                 0,
                 ErrorKind::SyntaxError,
-                erg_common::error::Location::Line(err.location.row()),
+                erg_common::error::Location::Line(err.location.row() as u32),
             );
             let err = CompileError::new(core, self.cfg.input.clone(), "".into());
             IncompleteArtifact::new(None, CompileErrors::from(err), CompileErrors::empty())

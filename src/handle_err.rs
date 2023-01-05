@@ -22,8 +22,8 @@ fn filter_error(_ctx: &ModuleContext, error: CompileError) -> Option<CompileErro
         // exclude doc strings
         ErrorKind::UnusedWarning => {
             let code = error.input.reread_lines(
-                error.core.loc.ln_begin().unwrap(),
-                error.core.loc.ln_end().unwrap(),
+                error.core.loc.ln_begin().unwrap_or(1) as usize,
+                error.core.loc.ln_end().unwrap_or(1) as usize,
             );
             if code[0].trim().starts_with("\"\"\"") {
                 None

@@ -63,7 +63,7 @@ impl BlockKind {
     }
 }
 
-/// Variables are automatically rewritten with `python_compatible_mode`,
+/// Variables are automatically rewritten with `py_compatible`,
 /// but types are rewritten here because they are complex components used inseparably in the Erg system.
 fn escape_name(name: String) -> String {
     match &name[..] {
@@ -122,7 +122,12 @@ fn op_to_token(op: Operator) -> Token {
 }
 
 pub fn pyloc_to_ergloc(loc: PyLocation, cont_len: usize) -> erg_common::error::Location {
-    erg_common::error::Location::range(loc.row(), loc.column(), loc.row(), loc.column() + cont_len)
+    erg_common::error::Location::range(
+        loc.row() as u32,
+        loc.column() as u32,
+        loc.row() as u32,
+        (loc.column() + cont_len) as u32,
+    )
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -322,17 +327,37 @@ impl ASTConverter {
             self.names.insert(name.clone(), info);
             name
         };
-        let token = Token::new(TokenKind::Symbol, cont, loc.row(), loc.column() - 1);
+        let token = Token::new(
+            TokenKind::Symbol,
+            cont,
+            loc.row() as u32,
+            loc.column() as u32 - 1,
+        );
         let name = VarName::new(token);
-        let dot = Token::new(TokenKind::Dot, ".", loc.row(), loc.column() - 1);
+        let dot = Token::new(
+            TokenKind::Dot,
+            ".",
+            loc.row() as u32,
+            loc.column() as u32 - 1,
+        );
         Identifier::new(Some(dot), name)
     }
 
     // TODO: module member mangling
     fn convert_attr_ident(&mut self, name: String, loc: PyLocation) -> Identifier {
-        let token = Token::new(TokenKind::Symbol, name, loc.row(), loc.column() - 1);
+        let token = Token::new(
+            TokenKind::Symbol,
+            name,
+            loc.row() as u32,
+            loc.column() as u32 - 1,
+        );
         let name = VarName::new(token);
-        let dot = Token::new(TokenKind::Dot, ".", loc.row(), loc.column() - 1);
+        let dot = Token::new(
+            TokenKind::Dot,
+            ".",
+            loc.row() as u32,
+            loc.column() as u32 - 1,
+        );
         Identifier::new(Some(dot), name)
     }
 
@@ -391,7 +416,8 @@ impl ASTConverter {
             }
             ExpressionType::Tuple { elements } => {
                 let tmp = fresh_varname();
-                let tmp_name = VarName::from_str_and_line((&tmp).into(), expr.location.row());
+                let tmp_name =
+                    VarName::from_str_and_line((&tmp).into(), expr.location.row() as u32);
                 let tmp_expr = Expr::Accessor(Accessor::Ident(Identifier::new(
                     Some(DOT),
                     tmp_name.clone(),
@@ -401,8 +427,8 @@ impl ASTConverter {
                     let index = Literal::new(Token::new(
                         TokenKind::NatLit,
                         i.to_string(),
-                        elem.location.row(),
-                        elem.location.column() - 1,
+                        elem.location.row() as u32,
+                        elem.location.column() as u32 - 1,
                     ));
                     let (param, mut blocks) = self.convert_expr_to_param(elem);
                     let sig = Signature::Var(VarSignature::new(
@@ -426,8 +452,8 @@ impl ASTConverter {
                 let token = Token::new(
                     TokenKind::UBar,
                     "_",
-                    expr.location.row(),
-                    expr.location.column() - 1,
+                    expr.location.row() as u32,
+                    expr.location.column() as u32 - 1,
                 );
                 (
                     NonDefaultParamSignature::new(ParamPattern::Discard(token), None),
@@ -461,8 +487,8 @@ impl ASTConverter {
             _other => TypeSpec::Infer(Token::new(
                 TokenKind::UBar,
                 "_",
-                expr.location.row(),
-                expr.location.column() - 1,
+                expr.location.row() as u32,
+                expr.location.column() as u32 - 1,
             )),
         }
     }
@@ -487,8 +513,13 @@ impl ASTConverter {
             let last = elems.last().unwrap();
             (last.location.row(), last.location.column())
         };
-        let l_brace = Token::new(l_kind, l_cont, expr_loc.row(), expr_loc.column() - 1);
-        let r_brace = Token::new(r_kind, r_cont, l_end, c_end);
+        let l_brace = Token::new(
+            l_kind,
+            l_cont,
+            expr_loc.row() as u32,
+            expr_loc.column() as u32 - 1,
+        );
+        let r_brace = Token::new(r_kind, r_cont, l_end as u32, c_end as u32);
         (l_brace, r_brace)
     }
 
@@ -512,7 +543,12 @@ impl ASTConverter {
                         return Expr::Dummy(Dummy::new(vec![]));
                     }
                 };
-                let token = Token::new(kind, cont, expr.location.row(), expr.location.column() - 1);
+                let token = Token::new(
+                    kind,
+                    cont,
+                    expr.location.row() as u32,
+                    expr.location.column() as u32 - 1,
+                );
                 Expr::Lit(Literal::new(token))
             }
             ExpressionType::String { value } => {
@@ -524,34 +560,34 @@ impl ASTConverter {
                 let token = Token::new(
                     TokenKind::StrLit,
                     value,
-                    expr.location.row(),
-                    expr.location.column() - 2,
+                    expr.location.row() as u32,
+                    expr.location.column() as u32 - 2,
                 );
                 Expr::Lit(Literal::new(token))
             }
             ExpressionType::False => Expr::Lit(Literal::new(Token::new(
                 TokenKind::BoolLit,
                 "False",
-                expr.location.row(),
-                expr.location.column() - 1,
+                expr.location.row() as u32,
+                expr.location.column() as u32 - 1,
             ))),
             ExpressionType::True => Expr::Lit(Literal::new(Token::new(
                 TokenKind::BoolLit,
                 "True",
-                expr.location.row(),
-                expr.location.column() - 1,
+                expr.location.row() as u32,
+                expr.location.column() as u32 - 1,
             ))),
             ExpressionType::None => Expr::Lit(Literal::new(Token::new(
                 TokenKind::NoneLit,
                 "None",
-                expr.location.row(),
-                expr.location.column() - 1,
+                expr.location.row() as u32,
+                expr.location.column() as u32 - 1,
             ))),
             ExpressionType::Ellipsis => Expr::Lit(Literal::new(Token::new(
                 TokenKind::EllipsisLit,
                 "Ellipsis",
-                expr.location.row(),
-                expr.location.column() - 1,
+                expr.location.row() as u32,
+                expr.location.column() as u32 - 1,
             ))),
             ExpressionType::IfExpression { test, body, orelse } => {
                 let block = self.convert_expr(*body);
@@ -861,7 +897,7 @@ impl ASTConverter {
         let call_ident = Identifier::new(Some(DOT), VarName::from_static("__call__"));
         let params = Params::new(vec![], None, vec![], None);
         let class_ident =
-            Identifier::public_with_line(DOT, self.namespace.last().unwrap().into(), line);
+            Identifier::public_with_line(DOT, self.namespace.last().unwrap().into(), line as u32);
         let class_spec = TypeSpec::PreDeclTy(PreDeclTypeSpec::Simple(SimpleTypeSpec::new(
             class_ident,
             ConstArgs::empty(),
@@ -1038,8 +1074,10 @@ impl ASTConverter {
                         }
                         ExpressionType::Tuple { elements } => {
                             let tmp = fresh_varname();
-                            let tmp_name =
-                                VarName::from_str_and_line((&tmp).into(), stmt.location.row());
+                            let tmp_name = VarName::from_str_and_line(
+                                (&tmp).into(),
+                                stmt.location.row() as u32,
+                            );
                             let tmp_ident = Identifier::new(Some(DOT), tmp_name);
                             let tmp_expr = Expr::Accessor(Accessor::Ident(tmp_ident.clone()));
                             let sig = Signature::Var(VarSignature::new(
@@ -1057,8 +1095,8 @@ impl ASTConverter {
                                 let index = Literal::new(Token::new(
                                     TokenKind::NatLit,
                                     i.to_string(),
-                                    elem.location.row(),
-                                    elem.location.column() - 1,
+                                    elem.location.row() as u32,
+                                    elem.location.column() as u32 - 1,
                                 ));
                                 let (param, mut blocks) = self.convert_expr_to_param(elem);
                                 let sig = Signature::Var(VarSignature::new(
@@ -1309,8 +1347,8 @@ impl ASTConverter {
                     let mod_name = Expr::Lit(Literal::new(Token::new(
                         TokenKind::StrLit,
                         cont,
-                        stmt.location.row(),
-                        stmt.location.column() - 1,
+                        stmt.location.row() as u32,
+                        stmt.location.column() as u32 - 1,
                     )));
                     let args = Args::new(vec![PosArg::new(mod_name)], vec![], None);
                     let call = import_acc.call_expr(args);
@@ -1351,8 +1389,8 @@ impl ASTConverter {
                 let mod_name = Expr::Lit(Literal::new(Token::new(
                     TokenKind::StrLit,
                     cont,
-                    stmt.location.row(),
-                    stmt.location.column() - 1,
+                    stmt.location.row() as u32,
+                    stmt.location.column() as u32 - 1,
                 )));
                 let args = Args::new(vec![PosArg::new(mod_name)], vec![], None);
                 let call = import_acc.call_expr(args);
