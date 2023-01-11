@@ -7,7 +7,7 @@ use std::str::FromStr;
 
 use analyze::PythonAnalyzer;
 use els::Server;
-use erg_common::config::{ErgConfig, Input};
+use erg_common::config::{ErgConfig, ErgMode, Input};
 use erg_common::spawn::exec_new_thread;
 
 pub fn parse_args() -> ErgConfig {
@@ -26,7 +26,7 @@ pub fn parse_args() -> ErgConfig {
                 cfg.input = Input::Str(args.next().expect("the value of `-c` is not passed"));
             }
             "--server" => {
-                cfg.mode = "server";
+                cfg.mode = ErgMode::LanguageServer;
                 cfg.quiet_repl = true;
             }
             "--dump-decl" => {
@@ -74,7 +74,7 @@ For more information try `pylyzer --help`"
 
 fn run() {
     let cfg = parse_args();
-    if cfg.mode == "server" {
+    if cfg.mode == ErgMode::LanguageServer {
         let mut lang_server = Server::<PythonAnalyzer>::new(cfg);
         lang_server.run().unwrap_or_else(|_| {
             std::process::exit(1);

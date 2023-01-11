@@ -7,8 +7,8 @@ use erg_compiler::artifact::{BuildRunnable, Buildable, CompleteArtifact, Incompl
 use erg_compiler::context::ModuleContext;
 use erg_compiler::erg_parser::ast::AST;
 use erg_compiler::error::{CompileError, CompileErrors};
-use erg_compiler::global::SharedCompilerResource;
 use erg_compiler::lower::ASTLowerer;
+use erg_compiler::module::SharedCompilerResource;
 use py2erg::dump_decl_er;
 use py2erg::{CheckStatus, ShadowingMode};
 use rustpython_parser::parser;
