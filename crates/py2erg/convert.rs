@@ -406,6 +406,21 @@ impl ASTConverter {
     }
 
     /// (i, j) => $1 (i = $1[0]; j = $1[1])
+    fn convert_opt_expr_to_param(
+        &mut self,
+        expr: Option<Located<ExpressionType>>,
+    ) -> (NonDefaultParamSignature, Vec<Expr>) {
+        if let Some(expr) = expr {
+            self.convert_expr_to_param(expr)
+        } else {
+            let token = Token::new(TokenKind::UBar, "_", 0, 0);
+            (
+                NonDefaultParamSignature::new(ParamPattern::Discard(token), None),
+                vec![],
+            )
+        }
+    }
+
     fn convert_expr_to_param(
         &mut self,
         expr: Located<ExpressionType>,
@@ -463,8 +478,8 @@ impl ASTConverter {
         }
     }
 
-    fn convert_for_body(&mut self, lhs: Located<ExpressionType>, body: Suite) -> Lambda {
-        let (param, block) = self.convert_expr_to_param(lhs);
+    fn convert_for_body(&mut self, lhs: Option<Located<ExpressionType>>, body: Suite) -> Lambda {
+        let (param, block) = self.convert_opt_expr_to_param(lhs);
         let params = Params::new(vec![param], None, vec![], None);
         self.block_id_counter += 1;
         self.block_ids.push(self.block_id_counter);
@@ -1098,7 +1113,8 @@ impl ASTConverter {
                                     elem.location.row() as u32,
                                     elem.location.column() as u32 - 1,
                                 ));
-                                let (param, mut blocks) = self.convert_expr_to_param(elem);
+                                let (param, mut blocks) =
+                                    self.convert_opt_expr_to_param(Some(elem));
                                 let sig = Signature::Var(VarSignature::new(
                                     Self::param_pattern_to_var(param.pat),
                                     param.t_spec.map(|t| t.t_spec),
@@ -1251,7 +1267,7 @@ impl ASTConverter {
                 orelse: _,
             } => {
                 let iter = self.convert_expr(*iter);
-                let block = self.convert_for_body(*target, body);
+                let block = self.convert_for_body(Some(*target), body);
                 let for_ident = self.convert_ident("for".to_string(), stmt.location);
                 let for_acc = Expr::Accessor(Accessor::Ident(for_ident));
                 for_acc.call_expr(Args::new(
@@ -1385,7 +1401,8 @@ impl ASTConverter {
                 let import_acc = Expr::Accessor(Accessor::Ident(
                     self.convert_ident("__import__".to_string(), stmt.location),
                 ));
-                let cont = format!("\"{}\"", module.clone().unwrap());
+                // from . import foo ==> import "./foo"
+                let cont = format!("\"{}\"", module.clone().unwrap_or(names[0].symbol.clone()));
                 let mod_name = Expr::Lit(Literal::new(Token::new(
                     TokenKind::StrLit,
                     cont,
@@ -1464,7 +1481,7 @@ impl ASTConverter {
             } => {
                 let item = items.remove(0);
                 let context_expr = self.convert_expr(item.context_expr);
-                let body = self.convert_for_body(item.optional_vars.unwrap(), body);
+                let body = self.convert_for_body(item.optional_vars, body);
                 let with_ident = self.convert_ident("with".to_string(), stmt.location);
                 let with_acc = Expr::Accessor(Accessor::Ident(with_ident));
                 with_acc.call_expr(Args::new(
