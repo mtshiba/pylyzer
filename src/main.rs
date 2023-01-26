@@ -40,7 +40,7 @@ pub fn parse_args() -> ErgConfig {
                     .expect("the value of `--verbose` is not a number");
             }
             "-V" | "--version" => {
-                println!("Erg {}", env!("CARGO_PKG_VERSION"));
+                println!("pylyzer {}", env!("CARGO_PKG_VERSION"));
                 std::process::exit(0);
             }
             other if other.starts_with('-') => {

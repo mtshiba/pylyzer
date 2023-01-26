@@ -252,8 +252,8 @@ checksum = "90e5c1c8368803113bf0c9584fc495a58b86dc8a29edbf8fe877d21d9507e797"
 
 [[package]]
 name = "els"
-version = "0.1.14-nightly.1"
-source = "git+https://github.com/erg-lang/erg?branch=main#c8253e89019445766657c0270f8213dba0fa4c94"
+version = "0.1.15"
+source = "git+https://github.com/erg-lang/erg?branch=main#4b08fd21a286916b0f3e3499aec2b9299082516d"
 dependencies = [
  "erg_common",
  "erg_compiler",
@@ -273,8 +273,8 @@ dependencies = [
 
 [[package]]
 name = "erg_common"
-version = "0.6.2-nightly.1"
-source = "git+https://github.com/erg-lang/erg?branch=main#c8253e89019445766657c0270f8213dba0fa4c94"
+version = "0.6.3"
+source = "git+https://github.com/erg-lang/erg?branch=main#4b08fd21a286916b0f3e3499aec2b9299082516d"
 dependencies = [
  "backtrace-on-stack-overflow",
  "hermit-abi",
@@ -284,8 +284,8 @@ dependencies = [
 
 [[package]]
 name = "erg_compiler"
-version = "0.6.2-nightly.1"
-source = "git+https://github.com/erg-lang/erg?branch=main#c8253e89019445766657c0270f8213dba0fa4c94"
+version = "0.6.3"
+source = "git+https://github.com/erg-lang/erg?branch=main#4b08fd21a286916b0f3e3499aec2b9299082516d"
 dependencies = [
  "erg_common",
  "erg_parser",
@@ -293,8 +293,8 @@ dependencies = [
 
 [[package]]
 name = "erg_parser"
-version = "0.6.2-nightly.1"
-source = "git+https://github.com/erg-lang/erg?branch=main#c8253e89019445766657c0270f8213dba0fa4c94"
+version = "0.6.3"
+source = "git+https://github.com/erg-lang/erg?branch=main#4b08fd21a286916b0f3e3499aec2b9299082516d"
 dependencies = [
  "erg_common",
  "unicode-xid 0.2.4",
@@ -349,9 +349,9 @@ dependencies = [
 
 [[package]]
 name = "gimli"
-version = "0.27.0"
+version = "0.27.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dec7af912d60cdbd3677c1af9352ebae6fb8394d165568a2234df0fa00f87793"
+checksum = "221996f774192f0f718773def8201c4ae31f02616a54ccfc2d358bb0e5cefdec"
 
 [[package]]
 name = "hermit-abi"
@@ -527,9 +527,9 @@ dependencies = [
 
 [[package]]
 name = "object"
-version = "0.30.2"
+version = "0.30.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2b8c786513eb403643f2a88c244c2aaa270ef2153f55094587d0c48a3cf22a83"
+checksum = "ea86265d3d3dcb6a27fc51bd29a4bf387fae9d2986b823079d4986af253eb439"
 dependencies = [
  "memchr",
 ]
@@ -589,9 +589,9 @@ checksum = "925383efa346730478fb4838dbe9137d2a47675ad789c546d150a6e1dd4ab31c"
 
 [[package]]
 name = "proc-macro2"
-version = "1.0.49"
+version = "1.0.50"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "57a8eca9f9c4ffde41714334dee777596264c7825420f521abc92b5b5deb63a5"
+checksum = "6ef7d57beacfaf2d8aee5937dab7b7f28de3cb8b1828479bb5de2a7106f2bae2"
 dependencies = [
  "unicode-ident",
 ]
@@ -1011,9 +1011,9 @@ dependencies = [
 
 [[package]]
 name = "unicode-bidi"
-version = "0.3.8"
+version = "0.3.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "099b7128301d285f79ddd55b9a83d5e6b9e97c92e0ea0daebee7263e932de992"
+checksum = "d54675592c1dbefd78cbd98db9bacd89886e1ca50692a0692baefffdeb92dd58"
 
 [[package]]
 name = "unicode-ident"

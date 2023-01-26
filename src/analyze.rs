@@ -132,8 +132,8 @@ impl PythonAnalyzer {
     }
 
     pub fn run(&mut self) {
-        let filename = self.cfg.input.filename();
         let py_code = self.cfg.input.read();
+        let filename = self.cfg.input.filename();
         println!("{BLUE}Start checking{RESET}: {filename}");
         match self.analyze(py_code, "exec") {
             Ok(artifact) => {
