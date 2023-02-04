@@ -1,6 +1,7 @@
 use erg_common::config::ErgConfig;
 use erg_common::error::{ErrorCore, ErrorKind, MultiErrorDisplay};
-use erg_common::style::{BLUE, GREEN, RED, RESET, YELLOW};
+use erg_common::style::colors::{BLUE, GREEN, RED, YELLOW};
+use erg_common::style::RESET;
 use erg_common::traits::{Runnable, Stream};
 use erg_common::Str;
 use erg_compiler::artifact::{BuildRunnable, Buildable, CompleteArtifact, IncompleteArtifact};
@@ -56,7 +57,7 @@ impl Runnable for PythonAnalyzer {
 
 impl Buildable for PythonAnalyzer {
     fn inherit(cfg: ErgConfig, shared: SharedCompilerResource) -> Self {
-        let mod_name = Str::rc(cfg.input.file_stem());
+        let mod_name = Str::rc(&cfg.input.file_stem());
         Self {
             cfg: cfg.copy(),
             checker: ASTLowerer::new_with_cache(cfg, mod_name, shared),
@@ -104,7 +105,7 @@ impl PythonAnalyzer {
         };
         let converter = py2erg::ASTConverter::new(self.cfg.copy(), shadowing);
         let IncompleteArtifact{ object: Some(erg_module), mut errors, mut warns } = converter.convert_program(py_program) else { unreachable!() };
-        let erg_ast = AST::new(erg_common::Str::rc(filename), erg_module);
+        let erg_ast = AST::new(erg_common::Str::rc(&filename), erg_module);
         erg_common::log!("AST:\n{erg_ast}");
         match self.checker.lower(erg_ast, mode) {
             Ok(mut artifact) => {

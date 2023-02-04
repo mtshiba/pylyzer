@@ -1,0 +1,11 @@
+[alias]
+r = "run"
+rd = "run --features debug"
+b = "build"
+bd = "build --features debug"
+r_re = "run --release"
+rd_re = "run --features debug --release"
+b_re = "build --release"
+bd_re = "build --features debug --release"
+i = "install --path ."
+di = "install --path . --debug --features debug"

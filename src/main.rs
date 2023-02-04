@@ -23,7 +23,7 @@ pub fn parse_args() -> ErgConfig {
                 break;
             }
             "-c" | "--code" => {
-                cfg.input = Input::Str(args.next().expect("the value of `-c` is not passed"));
+                cfg.input = Input::str(args.next().expect("the value of `-c` is not passed"));
             }
             "--server" => {
                 cfg.mode = ErgMode::LanguageServer;
@@ -58,7 +58,7 @@ For more information try `pylyzer --help`"
             _ => {
                 cfg.input = Input::File(
                     PathBuf::from_str(&arg[..])
-                        .unwrap_or_else(|_| panic!("invalid file path: {}", arg)),
+                        .unwrap_or_else(|_| panic!("invalid file path: {arg}")),
                 );
                 if let Some("--") = args.next().as_ref().map(|s| &s[..]) {
                     for arg in args {
