@@ -210,7 +210,7 @@ pub enum ShadowingMode {
 ///
 /// would be converted as follows. This is a mistake.
 ///
-/// ```
+/// ```python
 /// i = 1
 /// i = i2 + 1
 /// ```
@@ -453,7 +453,7 @@ impl ASTConverter {
                     let method = tmp_expr.clone().attr_expr(
                         self.convert_ident("__Tuple_getitem__".to_string(), expr.location),
                     );
-                    let args = Args::new(vec![PosArg::new(Expr::Lit(index))], vec![], None);
+                    let args = Args::new(vec![PosArg::new(Expr::Lit(index))], None, vec![], None);
                     let tuple_acc = method.call_expr(args);
                     let body = DefBody::new(EQUAL, Block::new(vec![tuple_acc]), DefId(0));
                     let def = Expr::Def(Def::new(sig, body));
@@ -616,13 +616,12 @@ impl ASTConverter {
                 let sig = LambdaSignature::new(params, None, TypeBoundSpecs::empty());
                 let else_body =
                     Lambda::new(sig, Token::DUMMY, Block::new(vec![else_block]), DefId(0));
-                let args = Args::new(
+                let args = Args::pos_only(
                     vec![
                         PosArg::new(test),
                         PosArg::new(Expr::Lambda(body)),
                         PosArg::new(Expr::Lambda(else_body)),
                     ],
-                    vec![],
                     None,
                 );
                 if_acc.call_expr(args)
@@ -637,7 +636,7 @@ impl ASTConverter {
                     .into_iter()
                     .map(|ex| PosArg::new(self.convert_expr(ex)))
                     .collect::<Vec<_>>();
-                let args = Args::new(pos_args, vec![], None);
+                let args = Args::pos_only(pos_args, None);
                 function.call_expr(args)
             }
             ExpressionType::Binop { a, op, b } => {
@@ -713,7 +712,7 @@ impl ASTConverter {
                     .into_iter()
                     .map(|ex| PosArg::new(self.convert_expr(ex)))
                     .collect::<Vec<_>>();
-                let elems = Args::new(elements, vec![], None);
+                let elems = Args::pos_only(elements, None);
                 Expr::Array(Array::Normal(NormalArray::new(l_sqbr, r_sqbr, elems)))
                 // Self::mutate_expr(arr)
             }
@@ -724,7 +723,7 @@ impl ASTConverter {
                     .into_iter()
                     .map(|ex| PosArg::new(self.convert_expr(ex)))
                     .collect::<Vec<_>>();
-                let elems = Args::new(elements, vec![], None);
+                let elems = Args::pos_only(elements, None);
                 Expr::Set(Set::Normal(NormalSet::new(l_brace, r_brace, elems)))
                 // Self::mutate_expr(set)
             }
@@ -752,14 +751,14 @@ impl ASTConverter {
                     .into_iter()
                     .map(|ex| PosArg::new(self.convert_expr(ex)))
                     .collect::<Vec<_>>();
-                let elems = Args::new(elements, vec![], None);
+                let elems = Args::pos_only(elements, None);
                 Expr::Tuple(Tuple::Normal(NormalTuple::new(elems)))
             }
             ExpressionType::Subscript { a, b } => {
                 let obj = self.convert_expr(*a);
                 let method =
                     obj.attr_expr(self.convert_ident("__getitem__".to_string(), expr.location));
-                let args = Args::new(vec![PosArg::new(self.convert_expr(*b))], vec![], None);
+                let args = Args::pos_only(vec![PosArg::new(self.convert_expr(*b))], None);
                 method.call_expr(args)
             }
             _other => {
@@ -1003,7 +1002,7 @@ impl ASTConverter {
         } else {
             vec![]
         };
-        let args = Args::new(pos_args, vec![], None);
+        let args = Args::pos_only(pos_args, None);
         let class_acc = Expr::Accessor(Accessor::Ident(
             self.convert_ident("Class".to_string(), loc),
         ));
@@ -1125,7 +1124,7 @@ impl ASTConverter {
                                         stmt.location,
                                     ));
                                 let args =
-                                    Args::new(vec![PosArg::new(Expr::Lit(index))], vec![], None);
+                                    Args::pos_only(vec![PosArg::new(Expr::Lit(index))], None);
                                 let tuple_acc = method.call_expr(args);
                                 let body =
                                     DefBody::new(EQUAL, Block::new(vec![tuple_acc]), DefId(0));
@@ -1270,9 +1269,8 @@ impl ASTConverter {
                 let block = self.convert_for_body(Some(*target), body);
                 let for_ident = self.convert_ident("for".to_string(), stmt.location);
                 let for_acc = Expr::Accessor(Accessor::Ident(for_ident));
-                for_acc.call_expr(Args::new(
+                for_acc.call_expr(Args::pos_only(
                     vec![PosArg::new(iter), PosArg::new(Expr::Lambda(block))],
-                    vec![],
                     None,
                 ))
             }
@@ -1288,9 +1286,8 @@ impl ASTConverter {
                 let body = Lambda::new(empty_sig, Token::DUMMY, block, DefId(0));
                 let while_ident = self.convert_ident("while".to_string(), stmt.location);
                 let while_acc = Expr::Accessor(Accessor::Ident(while_ident));
-                while_acc.call_expr(Args::new(
+                while_acc.call_expr(Args::pos_only(
                     vec![PosArg::new(test), PosArg::new(Expr::Lambda(body))],
-                    vec![],
                     None,
                 ))
             }
@@ -1306,20 +1303,18 @@ impl ASTConverter {
                     let else_block = self.convert_block(orelse, BlockKind::If);
                     let sig = LambdaSignature::new(params, None, TypeBoundSpecs::empty());
                     let else_body = Lambda::new(sig, Token::DUMMY, else_block, DefId(0));
-                    let args = Args::new(
+                    let args = Args::pos_only(
                         vec![
                             PosArg::new(test),
                             PosArg::new(Expr::Lambda(body)),
                             PosArg::new(Expr::Lambda(else_body)),
                         ],
-                        vec![],
                         None,
                     );
                     if_acc.call_expr(args)
                 } else {
-                    let args = Args::new(
+                    let args = Args::pos_only(
                         vec![PosArg::new(test), PosArg::new(Expr::Lambda(body))],
-                        vec![],
                         None,
                     );
                     if_acc.call_expr(args)
@@ -1337,16 +1332,16 @@ impl ASTConverter {
                     ));
                     let return_acc = self.convert_ident("return".to_string(), stmt.location);
                     let return_acc = Expr::Accessor(Accessor::attr(func_acc, return_acc));
-                    return_acc.call_expr(Args::new(vec![PosArg::new(value)], vec![], None))
+                    return_acc.call_expr(Args::pos_only(vec![PosArg::new(value)], None))
                 }
             }
             StatementType::Assert { test, msg } => {
                 let test = self.convert_expr(test);
                 let args = if let Some(msg) = msg {
                     let msg = self.convert_expr(msg);
-                    Args::new(vec![PosArg::new(test), PosArg::new(msg)], vec![], None)
+                    Args::pos_only(vec![PosArg::new(test), PosArg::new(msg)], None)
                 } else {
-                    Args::new(vec![PosArg::new(test)], vec![], None)
+                    Args::pos_only(vec![PosArg::new(test)], None)
                 };
                 let assert_acc = Expr::Accessor(Accessor::Ident(
                     self.convert_ident("assert".to_string(), stmt.location),
@@ -1366,7 +1361,7 @@ impl ASTConverter {
                         stmt.location.row() as u32,
                         stmt.location.column() as u32 - 1,
                     )));
-                    let args = Args::new(vec![PosArg::new(mod_name)], vec![], None);
+                    let args = Args::pos_only(vec![PosArg::new(mod_name)], None);
                     let call = import_acc.call_expr(args);
                     let def = if let Some(alias) = name.alias {
                         self.register_name_info(&alias, NameKind::Variable);
@@ -1412,7 +1407,7 @@ impl ASTConverter {
                     stmt.location.row() as u32,
                     stmt.location.column() as u32 - 1,
                 )));
-                let args = Args::new(vec![PosArg::new(mod_name)], vec![], None);
+                let args = Args::new(vec![PosArg::new(mod_name)], None, vec![], None);
                 let call = import_acc.call_expr(args);
                 self.register_name_info(module.as_ref().unwrap(), NameKind::Variable);
                 let mod_ident = self.convert_ident(module.unwrap(), stmt.location);
@@ -1487,9 +1482,8 @@ impl ASTConverter {
                 let body = self.convert_for_body(item.optional_vars, body);
                 let with_ident = self.convert_ident("with".to_string(), stmt.location);
                 let with_acc = Expr::Accessor(Accessor::Ident(with_ident));
-                with_acc.call_expr(Args::new(
+                with_acc.call_expr(Args::pos_only(
                     vec![PosArg::new(context_expr), PosArg::new(Expr::Lambda(body))],
-                    vec![],
                     None,
                 ))
             }
