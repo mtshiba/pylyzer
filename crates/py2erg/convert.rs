@@ -976,6 +976,13 @@ impl ASTConverter {
         (base_type, vec![methods])
     }
 
+    /// ```python
+    /// class Foo: pass
+    /// ```
+    /// ↓
+    /// ```erg
+    /// Foo = Inheritable Class()
+    /// ```
     fn convert_classdef(
         &mut self,
         name: String,
@@ -1007,7 +1014,12 @@ impl ASTConverter {
             self.convert_ident("Class".to_string(), loc),
         ));
         let class_call = class_acc.call_expr(args);
-        let body = DefBody::new(EQUAL, Block::new(vec![class_call]), DefId(0));
+        let inheritable_acc = Expr::Accessor(Accessor::Ident(
+            self.convert_ident("Inheritable".to_string(), loc),
+        ));
+        let inheritable_call =
+            inheritable_acc.call_expr(Args::pos_only(vec![PosArg::new(class_call)], None));
+        let body = DefBody::new(EQUAL, Block::new(vec![inheritable_call]), DefId(0));
         let def = Def::new(sig, body);
         let classdef = ClassDef::new(def, methods);
         self.namespace.pop();
