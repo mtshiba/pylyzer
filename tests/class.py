@@ -20,3 +20,10 @@ assert c.y == 2 # OK, c.y == "a" is also OK
 a = c.method() # OK
 _: int = a + 1
 b = C("a").method() # ERR
+
+class D:
+    c: int
+    def __init__(self, c):
+        self.c = c
+
+c1 = D(1).c + 1
