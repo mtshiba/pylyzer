@@ -252,8 +252,9 @@ checksum = "7fcaabb2fef8c910e7f4c7ce9f67a1283a1715879a7c230ca9d6d1ae31f16d91"
 
 [[package]]
 name = "els"
-version = "0.1.16-nightly.1"
-source = "git+https://github.com/erg-lang/erg?branch=main#42ceab31e6a5be018682392565d2169b7096fe02"
+version = "0.1.17-nightly.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f1673baf84122a20bdd635dbe9a354a637fdbed48d015dede90524106d2f58d1"
 dependencies = [
  "erg_common",
  "erg_compiler",
@@ -273,8 +274,9 @@ dependencies = [
 
 [[package]]
 name = "erg_common"
-version = "0.6.4-nightly.1"
-source = "git+https://github.com/erg-lang/erg?branch=main#42ceab31e6a5be018682392565d2169b7096fe02"
+version = "0.6.5-nightly.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bef5341295c84d749e574c0d358993f8be7799aed9ed9e137f690c2c38042547"
 dependencies = [
  "backtrace-on-stack-overflow",
  "hermit-abi",
@@ -284,8 +286,9 @@ dependencies = [
 
 [[package]]
 name = "erg_compiler"
-version = "0.6.4-nightly.1"
-source = "git+https://github.com/erg-lang/erg?branch=main#42ceab31e6a5be018682392565d2169b7096fe02"
+version = "0.6.5-nightly.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "56f13f38e0c160e52d13ecbf45a69a6a3e8b048415ce8ba0a434ca6f1ef418d1"
 dependencies = [
  "erg_common",
  "erg_parser",
@@ -293,8 +296,9 @@ dependencies = [
 
 [[package]]
 name = "erg_parser"
-version = "0.6.4-nightly.1"
-source = "git+https://github.com/erg-lang/erg?branch=main#42ceab31e6a5be018682392565d2169b7096fe02"
+version = "0.6.5-nightly.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "158c517a502b751bfefd0a2d233a6987d8b667854cd5398c4880a4f39ff81c5c"
 dependencies = [
  "erg_common",
  "unicode-xid 0.2.4",
@@ -598,7 +602,7 @@ dependencies = [
 
 [[package]]
 name = "py2erg"
-version = "0.0.5"
+version = "0.0.6"
 dependencies = [
  "erg_common",
  "erg_compiler",
@@ -607,7 +611,7 @@ dependencies = [
 
 [[package]]
 name = "pylyzer"
-version = "0.0.5"
+version = "0.0.6"
 dependencies = [
  "els",
  "erg_common",
@@ -836,9 +840,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.92"
+version = "1.0.93"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7434af0dc1cbd59268aa98b4c22c131c0584d2232f6fb166efb993e2832e896a"
+checksum = "cad406b69c91885b5107daf2c29572f6c8cdb3c66826821e286c533490c0bc76"
 dependencies = [
  "itoa",
  "ryu",

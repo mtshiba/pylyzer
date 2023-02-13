@@ -14,7 +14,6 @@ use erg_compiler::erg_parser::ast::{
     TypeBoundSpecs, TypeSpec, TypeSpecWithOp, UnaryOp, VarName, VarPattern, VarSignature,
 };
 use erg_compiler::erg_parser::token::{Token, TokenKind, COLON, DOT, EQUAL};
-use erg_compiler::erg_parser::Parser;
 use erg_compiler::error::CompileErrors;
 use rustpython_parser::ast::Location as PyLocation;
 use rustpython_parser::ast::{
@@ -22,6 +21,8 @@ use rustpython_parser::ast::{
     Program, StatementType, StringGroup, Suite, UnaryOperator,
 };
 
+use crate::ast_util::length;
+use crate::clone::clone_loc_expr;
 use crate::error::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -372,8 +373,13 @@ impl ASTConverter {
         let pat = self.convert_param_pattern(param.arg, param.location);
         let t_spec = param
             .annotation
-            .map(|anot| self.convert_type_spec(*anot))
-            .map(|t_spec| TypeSpecWithOp::new(COLON, t_spec));
+            .map(|anot| {
+                (
+                    self.convert_type_spec(clone_loc_expr(&anot)),
+                    self.convert_expr(*anot),
+                )
+            })
+            .map(|(t_spec, expr)| TypeSpecWithOp::new(COLON, t_spec, expr));
         NonDefaultParamSignature::new(pat, t_spec)
     }
 
@@ -551,13 +557,14 @@ impl ASTConverter {
     }
 
     fn convert_expr(&mut self, expr: Located<ExpressionType>) -> Expr {
+        let expr_len = length(&expr.node);
         match expr.node {
             ExpressionType::Number { value } => {
                 let (kind, cont) = match value {
                     Number::Integer { value } => (TokenKind::IntLit, value.to_string()),
                     Number::Float { value } => (TokenKind::RatioLit, value.to_string()),
                     Number::Complex { .. } => {
-                        return Expr::Dummy(Dummy::new(vec![]));
+                        return Expr::Dummy(Dummy::new(None, vec![]));
                     }
                 };
                 let token = Token::new(
@@ -570,7 +577,7 @@ impl ASTConverter {
             }
             ExpressionType::String { value } => {
                 let StringGroup::Constant{ value } = value else {
-                    return Expr::Dummy(Dummy::new(vec![]));
+                    return Expr::Dummy(Dummy::new(None, vec![]));
                 };
                 let value = format!("\"{value}\"");
                 // column - 2 because of the quotes
@@ -638,7 +645,22 @@ impl ASTConverter {
                     .into_iter()
                     .map(|ex| PosArg::new(self.convert_expr(ex)))
                     .collect::<Vec<_>>();
-                let args = Args::pos_only(pos_args, None);
+                let paren = {
+                    let lp = Token::new(
+                        TokenKind::LParen,
+                        "(",
+                        expr.location.row() as u32,
+                        expr.location.column() as u32 - 1,
+                    );
+                    let rp = Token::new(
+                        TokenKind::RParen,
+                        ")",
+                        expr.location.row() as u32,
+                        (expr.location.column() + expr_len) as u32 - 1,
+                    );
+                    (lp, rp)
+                };
+                let args = Args::pos_only(pos_args, Some(paren));
                 function.call_expr(args)
             }
             ExpressionType::Binop { a, op, b } => {
@@ -654,7 +676,7 @@ impl ASTConverter {
                     // UnaryOperator::Not => (TokenKind::PreBitNot, "not"),
                     UnaryOperator::Neg => (TokenKind::PreMinus, "-"),
                     UnaryOperator::Inv => (TokenKind::PreBitNot, "~"),
-                    _ => return Expr::Dummy(Dummy::new(vec![rhs])),
+                    _ => return Expr::Dummy(Dummy::new(None, vec![rhs])),
                 };
                 let op = Token::from_str(kind, cont);
                 Expr::UnaryOp(UnaryOp::new(op, rhs))
@@ -694,8 +716,12 @@ impl ASTConverter {
                 Expr::Accessor(Accessor::Ident(ident))
             }
             ExpressionType::Attribute { value, name } => {
+                let attr_name_loc = PyLocation::new(
+                    value.location.row(),
+                    value.location.column() + length(&value.node) + 1,
+                );
                 let obj = self.convert_expr(*value);
-                let name = self.convert_attr_ident(name, expr.location);
+                let name = self.convert_attr_ident(name, attr_name_loc);
                 obj.attr_expr(name)
             }
             ExpressionType::Lambda { args, body } => {
@@ -740,7 +766,7 @@ impl ASTConverter {
                     .map(|(k, v)| {
                         KeyValue::new(
                             k.map(|k| self.convert_expr(k))
-                                .unwrap_or(Expr::Dummy(Dummy::empty())),
+                                .unwrap_or(Expr::Dummy(Dummy::new(None, vec![]))),
                             self.convert_expr(v),
                         )
                     })
@@ -765,7 +791,7 @@ impl ASTConverter {
             }
             _other => {
                 log!(err "unimplemented: {:?}", _other);
-                Expr::Dummy(Dummy::empty())
+                Expr::Dummy(Dummy::new(None, vec![]))
             }
         }
     }
@@ -859,7 +885,8 @@ impl ASTConverter {
                         let param_typ_spec = TypeSpec::PreDeclTy(PreDeclTypeSpec::Simple(
                             SimpleTypeSpec::new(param_typ_ident.clone(), ConstArgs::empty()),
                         ));
-                        let param_typ_spec = TypeSpecWithOp::new(COLON, param_typ_spec);
+                        let expr = Expr::Accessor(Accessor::Ident(param_typ_ident.clone()));
+                        let param_typ_spec = TypeSpecWithOp::new(COLON, param_typ_spec, expr);
                         let arg_typ_ident = Identifier::public_with_line(
                             DOT,
                             arg_typ_name.into(),
@@ -976,9 +1003,7 @@ impl ASTConverter {
                             continue;
                         }
                     };
-                    let Ok(expr) = Parser::type_spec_to_expr(type_asc.t_spec.clone()) else {
-                        continue;
-                    };
+                    let expr = *type_asc.t_spec.t_spec_as_expr;
                     let body = DefBody::new(EQUAL, Block::new(vec![expr]), DefId(0));
                     let def = Def::new(sig, body);
                     match &mut base_type {
@@ -1057,14 +1082,15 @@ impl ASTConverter {
                 &name,
             );
             self.errs.push(err);
-            Expr::Dummy(Dummy::empty())
+            Expr::Dummy(Dummy::new(None, vec![]))
         } else {
             let decos = decorator_list
                 .into_iter()
                 .map(|ex| Decorator(self.convert_expr(ex)))
                 .collect::<HashSet<_>>();
             self.register_name_info(&name, NameKind::Function);
-            let ident = self.convert_ident(name, loc);
+            let func_name_loc = PyLocation::new(loc.row(), loc.column() + 4);
+            let ident = self.convert_ident(name, func_name_loc);
             self.namespace.push(ident.inspect().to_string());
             let params = self.convert_params(args);
             let return_t = returns.map(|ret| self.convert_type_spec(ret));
@@ -1107,7 +1133,8 @@ impl ASTConverter {
             .map(|base| self.convert_expr(base))
             .collect::<Vec<_>>();
         self.register_name_info(&name, NameKind::Class);
-        let ident = self.convert_ident(name, loc);
+        let class_name_loc = PyLocation::new(loc.row(), loc.column() + 6);
+        let ident = self.convert_ident(name, class_name_loc);
         let sig = Signature::Var(VarSignature::new(VarPattern::Ident(ident.clone()), None));
         self.namespace.push(ident.inspect().to_string());
         let (base_type, methods) = self.extract_method_list(ident, body);
@@ -1141,6 +1168,7 @@ impl ASTConverter {
                 annotation,
                 value,
             } => {
+                let anot = self.convert_expr(clone_loc_expr(&annotation));
                 let t_spec = self.convert_type_spec(*annotation);
                 match target.node {
                     ExpressionType::Identifier { name } => {
@@ -1159,11 +1187,9 @@ impl ASTConverter {
                         } else {
                             // no registration because it's just a type ascription
                             let ident = self.convert_ident(name, stmt.location);
-                            let tasc = TypeAscription::new(
-                                Expr::Accessor(Accessor::Ident(ident)),
-                                COLON,
-                                t_spec,
-                            );
+                            let t_spec = TypeSpecWithOp::new(COLON, t_spec, anot);
+                            let tasc =
+                                TypeAscription::new(Expr::Accessor(Accessor::Ident(ident)), t_spec);
                             Expr::TypeAscription(tasc)
                         }
                     }
@@ -1176,11 +1202,12 @@ impl ASTConverter {
                             let redef = ReDef::new(attr, expr);
                             Expr::ReDef(redef)
                         } else {
-                            let tasc = TypeAscription::new(Expr::Accessor(attr), COLON, t_spec);
+                            let t_spec = TypeSpecWithOp::new(COLON, t_spec, anot);
+                            let tasc = TypeAscription::new(Expr::Accessor(attr), t_spec);
                             Expr::TypeAscription(tasc)
                         }
                     }
-                    _other => Expr::Dummy(Dummy::empty()),
+                    _other => Expr::Dummy(Dummy::new(None, vec![])),
                 }
             }
             StatementType::Assign { mut targets, value } => {
@@ -1198,9 +1225,13 @@ impl ASTConverter {
                             Expr::Def(def)
                         }
                         ExpressionType::Attribute { value: attr, name } => {
+                            let attr_name_loc = PyLocation::new(
+                                attr.location.row(),
+                                attr.location.column() + length(&attr.node) + 1,
+                            );
                             let attr = self
                                 .convert_expr(*attr)
-                                .attr(self.convert_attr_ident(name, lhs.location));
+                                .attr(self.convert_attr_ident(name, attr_name_loc));
                             let expr = self.convert_expr(value);
                             let adef = ReDef::new(attr, expr);
                             Expr::ReDef(adef)
@@ -1251,9 +1282,9 @@ impl ASTConverter {
                                 defs.push(def);
                                 defs.append(&mut blocks);
                             }
-                            Expr::Dummy(Dummy::new(defs))
+                            Expr::Dummy(Dummy::new(None, defs))
                         }
-                        _other => Expr::Dummy(Dummy::empty()),
+                        _other => Expr::Dummy(Dummy::new(None, vec![])),
                     }
                 } else {
                     let value = self.convert_expr(value);
@@ -1273,11 +1304,11 @@ impl ASTConverter {
                                 defs.push(def);
                             }
                             _other => {
-                                defs.push(Expr::Dummy(Dummy::empty()));
+                                defs.push(Expr::Dummy(Dummy::new(None, vec![])));
                             }
                         }
                     }
-                    Expr::Dummy(Dummy::new(defs))
+                    Expr::Dummy(Dummy::new(None, defs))
                 }
             }
             StatementType::AugAssign { target, op, value } => {
@@ -1318,7 +1349,7 @@ impl ASTConverter {
                         let adef = ReDef::new(attr, Expr::BinOp(bin));
                         Expr::ReDef(adef)
                     }
-                    _other => Expr::Dummy(Dummy::empty()),
+                    _other => Expr::Dummy(Dummy::new(None, vec![])),
                 }
             }
             StatementType::FunctionDef {
@@ -1464,7 +1495,7 @@ impl ASTConverter {
                     };
                     imports.push(Expr::Def(def));
                 }
-                Expr::Dummy(Dummy::new(imports))
+                Expr::Dummy(Dummy::new(None, imports))
             }
             StatementType::ImportFrom {
                 level: _,
@@ -1521,6 +1552,7 @@ impl ASTConverter {
                     imports.push(Expr::Def(def));
                 }
                 let imports = Dummy::new(
+                    None,
                     vec![moddef]
                         .into_iter()
                         .chain(imports.into_iter())
@@ -1548,7 +1580,7 @@ impl ASTConverter {
                         .collect(),
                     (None, None) => chunks.collect(),
                 };
-                Expr::Dummy(Dummy::new(dummy))
+                Expr::Dummy(Dummy::new(None, dummy))
             }
             StatementType::With {
                 is_async: _,
@@ -1567,7 +1599,7 @@ impl ASTConverter {
             }
             _other => {
                 log!(err "unimplemented: {:?}", _other);
-                Expr::Dummy(Dummy::empty())
+                Expr::Dummy(Dummy::new(None, vec![]))
             }
         }
     }
