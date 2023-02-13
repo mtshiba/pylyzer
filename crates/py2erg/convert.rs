@@ -557,7 +557,6 @@ impl ASTConverter {
     }
 
     fn convert_expr(&mut self, expr: Located<ExpressionType>) -> Expr {
-        let expr_len = length(&expr.node);
         match expr.node {
             ExpressionType::Number { value } => {
                 let (kind, cont) = match value {
@@ -645,18 +644,22 @@ impl ASTConverter {
                     .into_iter()
                     .map(|ex| PosArg::new(self.convert_expr(ex)))
                     .collect::<Vec<_>>();
+                let last_col = pos_args
+                    .last()
+                    .and_then(|last| last.col_end())
+                    .unwrap_or(function.col_end().unwrap_or(0));
                 let paren = {
                     let lp = Token::new(
                         TokenKind::LParen,
                         "(",
                         expr.location.row() as u32,
-                        expr.location.column() as u32 - 1,
+                        function.col_end().unwrap_or(0) + 1,
                     );
                     let rp = Token::new(
                         TokenKind::RParen,
                         ")",
                         expr.location.row() as u32,
-                        (expr.location.column() + expr_len) as u32 - 1,
+                        last_col + 1,
                     );
                     (lp, rp)
                 };
@@ -716,11 +719,11 @@ impl ASTConverter {
                 Expr::Accessor(Accessor::Ident(ident))
             }
             ExpressionType::Attribute { value, name } => {
-                let attr_name_loc = PyLocation::new(
-                    value.location.row(),
-                    value.location.column() + length(&value.node) + 1,
-                );
                 let obj = self.convert_expr(*value);
+                let attr_name_loc = PyLocation::new(
+                    obj.ln_end().unwrap_or(1) as usize,
+                    obj.col_end().unwrap_or(1) as usize + 2,
+                );
                 let name = self.convert_attr_ident(name, attr_name_loc);
                 obj.attr_expr(name)
             }
