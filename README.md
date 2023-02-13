@@ -45,12 +45,6 @@ pylyzer can do more than the type checking. For example, it can detect out-of-bo
 
 While pytype/pyright's error reports are illegible, pylyzer shows where the error occurred and provides clear error messages.
 
-* Rich LSP support
-
-![lsp_support](https://raw.githubusercontent.com/mtshiba/pylyzer/main/images/lsp_support.png)
-
-pylyzer as a language server supports various features, such as completion and renaming.
-
 ### pylyzer
 
 ![report](https://raw.githubusercontent.com/mtshiba/pylyzer/main/images/report.png)
@@ -58,6 +52,12 @@ pylyzer as a language server supports various features, such as completion and r
 ### pyright
 
 ![pyright_report](https://raw.githubusercontent.com/mtshiba/pylyzer/main/images/pyright_report.png)
+
+* Rich LSP support
+
+pylyzer as a language server supports various features, such as completion and renaming.
+
+![lsp_support](https://raw.githubusercontent.com/mtshiba/pylyzer/main/images/lsp_support.png)
 
 ## How it works
 
