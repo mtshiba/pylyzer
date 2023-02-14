@@ -39,13 +39,15 @@ pub fn gen_decl_er(hir: HIR, status: CheckStatus) -> DeclFile {
     for chunk in hir.module.into_iter() {
         match chunk {
             Expr::Def(def) => {
+                let name = def.sig.ident().inspect().replace('\0', "");
                 let typ = def.sig.ident().ref_t().to_string();
                 let typ = escape_type(typ);
-                let decl = format!(".{}: {typ}", def.sig.ident().inspect());
+                let decl = format!(".{name}: {typ}");
                 code += &decl;
             }
             Expr::ClassDef(def) => {
-                let decl = format!(".{}: ClassType", def.sig.ident().inspect());
+                let name = def.sig.ident().inspect().replace('\0', "");
+                let decl = format!(".{name}: ClassType");
                 code += &decl;
             }
             _ => {}
