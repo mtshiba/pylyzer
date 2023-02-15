@@ -1,8 +1,10 @@
-use std::io::Write;
+use std::fs::File;
+use std::io::{BufWriter, Write};
 use std::path::PathBuf;
 
 use erg_common::config::Input;
 use erg_common::log;
+use erg_compiler::context::register::PylyzerStatus;
 use erg_compiler::hir::{Expr, HIR};
 use erg_compiler::ty::HasType;
 
@@ -30,12 +32,19 @@ fn escape_type(typ: String) -> String {
     typ.replace('%', "Type_")
 }
 
-pub fn gen_decl_er(hir: HIR, status: CheckStatus) -> DeclFile {
-    let mut code = if status.is_failed() {
-        "# failed\n".to_string()
+pub fn gen_decl_er(input: &Input, hir: HIR, status: CheckStatus) -> DeclFile {
+    let timestamp = if let Input::File(file) = input {
+        let metadata = std::fs::metadata(file).unwrap();
+        metadata.modified().unwrap()
     } else {
-        "# succeed\n".to_string()
+        std::time::SystemTime::now()
     };
+    let status = PylyzerStatus {
+        succeed: status.is_succeed(),
+        file: input.full_path(),
+        timestamp,
+    };
+    let mut code = format!("{status}\n");
     for chunk in hir.module.into_iter() {
         match chunk {
             Expr::Def(def) => {
@@ -60,7 +69,7 @@ pub fn gen_decl_er(hir: HIR, status: CheckStatus) -> DeclFile {
 }
 
 pub fn dump_decl_er(input: Input, hir: HIR, status: CheckStatus) {
-    let file = gen_decl_er(hir, status);
+    let file = gen_decl_er(&input, hir, status);
     let mut path = if let Input::File(path) = input {
         path
     } else {
@@ -72,7 +81,7 @@ pub fn dump_decl_er(input: Input, hir: HIR, status: CheckStatus) {
     if !pycache_dir.exists() {
         std::fs::create_dir(pycache_dir).unwrap();
     }
-    let f = std::fs::File::create(pycache_dir.join(file.filename)).unwrap();
-    let mut f = std::io::BufWriter::new(f);
+    let f = File::create(pycache_dir.join(file.filename)).unwrap();
+    let mut f = BufWriter::new(f);
     f.write_all(file.code.as_bytes()).unwrap();
 }

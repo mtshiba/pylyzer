@@ -253,7 +253,7 @@ checksum = "7fcaabb2fef8c910e7f4c7ce9f67a1283a1715879a7c230ca9d6d1ae31f16d91"
 [[package]]
 name = "els"
 version = "0.1.17"
-source = "git+https://github.com/erg-lang/erg?branch=main#99db34b61c925e751a53f03d514131b9c2ea59bb"
+source = "git+https://github.com/erg-lang/erg?branch=main#305763f251edb5c535214bbc3d2ff1ad913780d0"
 dependencies = [
  "erg_common",
  "erg_compiler",
@@ -274,7 +274,7 @@ dependencies = [
 [[package]]
 name = "erg_common"
 version = "0.6.5"
-source = "git+https://github.com/erg-lang/erg?branch=main#99db34b61c925e751a53f03d514131b9c2ea59bb"
+source = "git+https://github.com/erg-lang/erg?branch=main#305763f251edb5c535214bbc3d2ff1ad913780d0"
 dependencies = [
  "backtrace-on-stack-overflow",
  "hermit-abi",
@@ -285,7 +285,7 @@ dependencies = [
 [[package]]
 name = "erg_compiler"
 version = "0.6.5"
-source = "git+https://github.com/erg-lang/erg?branch=main#99db34b61c925e751a53f03d514131b9c2ea59bb"
+source = "git+https://github.com/erg-lang/erg?branch=main#305763f251edb5c535214bbc3d2ff1ad913780d0"
 dependencies = [
  "erg_common",
  "erg_parser",
@@ -294,7 +294,7 @@ dependencies = [
 [[package]]
 name = "erg_parser"
 version = "0.6.5"
-source = "git+https://github.com/erg-lang/erg?branch=main#99db34b61c925e751a53f03d514131b9c2ea59bb"
+source = "git+https://github.com/erg-lang/erg?branch=main#305763f251edb5c535214bbc3d2ff1ad913780d0"
 dependencies = [
  "erg_common",
  "unicode-xid 0.2.4",
@@ -349,9 +349,9 @@ dependencies = [
 
 [[package]]
 name = "gimli"
-version = "0.27.1"
+version = "0.27.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "221996f774192f0f718773def8201c4ae31f02616a54ccfc2d358bb0e5cefdec"
+checksum = "ad0a93d233ebf96623465aad4046a8d3aa4da22d4f4beba5388838c8a434bbb4"
 
 [[package]]
 name = "hermit-abi"
