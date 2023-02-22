@@ -252,8 +252,8 @@ checksum = "7fcaabb2fef8c910e7f4c7ce9f67a1283a1715879a7c230ca9d6d1ae31f16d91"
 
 [[package]]
 name = "els"
-version = "0.1.17"
-source = "git+https://github.com/erg-lang/erg?branch=main#305763f251edb5c535214bbc3d2ff1ad913780d0"
+version = "0.1.18"
+source = "git+https://github.com/erg-lang/erg?branch=main#23cbbe30719af994dc299438f9b35acef4ddc19c"
 dependencies = [
  "erg_common",
  "erg_compiler",
@@ -273,8 +273,8 @@ dependencies = [
 
 [[package]]
 name = "erg_common"
-version = "0.6.5"
-source = "git+https://github.com/erg-lang/erg?branch=main#305763f251edb5c535214bbc3d2ff1ad913780d0"
+version = "0.6.6"
+source = "git+https://github.com/erg-lang/erg?branch=main#23cbbe30719af994dc299438f9b35acef4ddc19c"
 dependencies = [
  "backtrace-on-stack-overflow",
  "hermit-abi",
@@ -284,8 +284,8 @@ dependencies = [
 
 [[package]]
 name = "erg_compiler"
-version = "0.6.5"
-source = "git+https://github.com/erg-lang/erg?branch=main#305763f251edb5c535214bbc3d2ff1ad913780d0"
+version = "0.6.6"
+source = "git+https://github.com/erg-lang/erg?branch=main#23cbbe30719af994dc299438f9b35acef4ddc19c"
 dependencies = [
  "erg_common",
  "erg_parser",
@@ -293,8 +293,8 @@ dependencies = [
 
 [[package]]
 name = "erg_parser"
-version = "0.6.5"
-source = "git+https://github.com/erg-lang/erg?branch=main#305763f251edb5c535214bbc3d2ff1ad913780d0"
+version = "0.6.6"
+source = "git+https://github.com/erg-lang/erg?branch=main#23cbbe30719af994dc299438f9b35acef4ddc19c"
 dependencies = [
  "erg_common",
  "unicode-xid 0.2.4",

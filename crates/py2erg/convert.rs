@@ -1052,11 +1052,12 @@ impl ASTConverter {
         body: Vec<Located<StatementType>>,
     ) -> (Option<Expr>, Vec<Methods>) {
         let class = TypeSpec::PreDeclTy(PreDeclTypeSpec::Simple(SimpleTypeSpec::new(
-            ident,
+            ident.clone(),
             ConstArgs::empty(),
         )));
+        let class_as_expr = Expr::Accessor(Accessor::Ident(ident));
         let (base_type, attrs) = self.extract_method(body);
-        let methods = Methods::new(class, DOT, attrs);
+        let methods = Methods::new(class, class_as_expr, DOT, attrs);
         (base_type, vec![methods])
     }
 
