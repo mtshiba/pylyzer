@@ -125,8 +125,11 @@ impl PythonAnalyzer {
             Err(iart) => {
                 errors.extend(iart.errors);
                 let errors = handle_err::filter_errors(self.checker.get_mod_ctx(), errors);
+                let (errors, _warns) =
+                    handle_err::downgrade_errors(self.checker.get_mod_ctx(), errors);
                 warns.extend(iart.warns);
-                let warns = handle_err::filter_errors(self.checker.get_mod_ctx(), warns);
+                let mut warns = handle_err::filter_errors(self.checker.get_mod_ctx(), warns);
+                warns.extend(_warns);
                 Err(IncompleteArtifact::new(iart.object, errors, warns))
             }
         }
