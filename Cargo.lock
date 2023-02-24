@@ -253,7 +253,7 @@ checksum = "7fcaabb2fef8c910e7f4c7ce9f67a1283a1715879a7c230ca9d6d1ae31f16d91"
 [[package]]
 name = "els"
 version = "0.1.18"
-source = "git+https://github.com/erg-lang/erg?branch=py-structural#5cddba369e9124f846348e0a690d3b84b252366a"
+source = "git+https://github.com/erg-lang/erg?branch=main#f604338d996fdee827c51386e23b26b6c0159389"
 dependencies = [
  "erg_common",
  "erg_compiler",
@@ -274,7 +274,7 @@ dependencies = [
 [[package]]
 name = "erg_common"
 version = "0.6.6"
-source = "git+https://github.com/erg-lang/erg?branch=py-structural#5cddba369e9124f846348e0a690d3b84b252366a"
+source = "git+https://github.com/erg-lang/erg?branch=main#f604338d996fdee827c51386e23b26b6c0159389"
 dependencies = [
  "backtrace-on-stack-overflow",
  "hermit-abi",
@@ -285,7 +285,7 @@ dependencies = [
 [[package]]
 name = "erg_compiler"
 version = "0.6.6"
-source = "git+https://github.com/erg-lang/erg?branch=py-structural#5cddba369e9124f846348e0a690d3b84b252366a"
+source = "git+https://github.com/erg-lang/erg?branch=main#f604338d996fdee827c51386e23b26b6c0159389"
 dependencies = [
  "erg_common",
  "erg_parser",
@@ -294,7 +294,7 @@ dependencies = [
 [[package]]
 name = "erg_parser"
 version = "0.6.6"
-source = "git+https://github.com/erg-lang/erg?branch=py-structural#5cddba369e9124f846348e0a690d3b84b252366a"
+source = "git+https://github.com/erg-lang/erg?branch=main#f604338d996fdee827c51386e23b26b6c0159389"
 dependencies = [
  "erg_common",
  "unicode-xid 0.2.4",

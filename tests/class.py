@@ -34,6 +34,8 @@ class D:
         return D(self.c + other.c)
     def __sub__(self, other: C):
         return D(self.c - other.x)
+    def __neg__(self):
+        return D(-self.c)
     def __init__(self, c):
         self.c = c
 
@@ -41,3 +43,4 @@ c1 = D(1).c + 1
 d = D(1) + D(2)
 err = C(1, 2) + D(1) # ERR
 ok = D(1) - C(1, 2) # OK
+c = -d # OK
