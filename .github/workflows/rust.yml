@@ -2,9 +2,24 @@ name: Rust
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
+    paths-ignore:
+      - "docs/**"
+      - "images/**"
+      - "**.md"
+      - "**.yml"
+      - "LICENSE-**"
+      - ".gitmessage"
+      - ".pre-commit-config.yaml"
   pull_request:
-    branches: [ main ]
+    branches: [main]
+    paths-ignore:
+      - "docs/**"
+      - "images/**"
+      - "**.md"
+      - "**.yml"
+      - "LICENSE-**"
+      - ".pre-commit-config.yaml"
 
 env:
   CARGO_TERM_COLOR: always
@@ -16,8 +31,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - uses: Swatinem/rust-cache@v2
-    # installing is required for the tests
+    # installing pylyzer itself is required for the tests
     - name: Build
       run: |
         rustup update stable
