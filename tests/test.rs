@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
 use erg_common::config::{ErgConfig, Input};
+use erg_common::spawn::exec_new_thread;
 use erg_common::traits::Stream;
 use erg_compiler::artifact::{CompleteArtifact, IncompleteArtifact};
 use pylyzer::PythonAnalyzer;
@@ -15,7 +16,8 @@ pub fn exec_analyzer(file_path: &'static str) -> Result<CompleteArtifact, Incomp
     analyzer.analyze(py_code, "exec")
 }
 
-pub fn expect(file_path: &'static str, warns: usize, errors: usize) {
+fn _expect(file_path: &'static str, warns: usize, errors: usize) {
+    println!("Testing {file_path} ...");
     match exec_analyzer(file_path) {
         Ok(artifact) => {
             assert_eq!(artifact.warns.len(), warns);
@@ -26,6 +28,12 @@ pub fn expect(file_path: &'static str, warns: usize, errors: usize) {
             assert_eq!(artifact.errors.len(), errors);
         }
     }
+}
+
+pub fn expect(file_path: &'static str, warns: usize, errors: usize) {
+    exec_new_thread(move || {
+        _expect(file_path, warns, errors);
+    });
 }
 
 #[test]
@@ -50,7 +58,7 @@ fn exec_func() {
 
 #[test]
 fn exec_class() {
-    expect("tests/class.py", 0, 1);
+    expect("tests/class.py", 0, 4);
 }
 
 #[test]

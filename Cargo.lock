@@ -253,7 +253,7 @@ checksum = "7fcaabb2fef8c910e7f4c7ce9f67a1283a1715879a7c230ca9d6d1ae31f16d91"
 [[package]]
 name = "els"
 version = "0.1.18"
-source = "git+https://github.com/erg-lang/erg?branch=main#23cbbe30719af994dc299438f9b35acef4ddc19c"
+source = "git+https://github.com/erg-lang/erg?branch=py-structural#5cddba369e9124f846348e0a690d3b84b252366a"
 dependencies = [
  "erg_common",
  "erg_compiler",
@@ -274,7 +274,7 @@ dependencies = [
 [[package]]
 name = "erg_common"
 version = "0.6.6"
-source = "git+https://github.com/erg-lang/erg?branch=main#23cbbe30719af994dc299438f9b35acef4ddc19c"
+source = "git+https://github.com/erg-lang/erg?branch=py-structural#5cddba369e9124f846348e0a690d3b84b252366a"
 dependencies = [
  "backtrace-on-stack-overflow",
  "hermit-abi",
@@ -285,7 +285,7 @@ dependencies = [
 [[package]]
 name = "erg_compiler"
 version = "0.6.6"
-source = "git+https://github.com/erg-lang/erg?branch=main#23cbbe30719af994dc299438f9b35acef4ddc19c"
+source = "git+https://github.com/erg-lang/erg?branch=py-structural#5cddba369e9124f846348e0a690d3b84b252366a"
 dependencies = [
  "erg_common",
  "erg_parser",
@@ -294,7 +294,7 @@ dependencies = [
 [[package]]
 name = "erg_parser"
 version = "0.6.6"
-source = "git+https://github.com/erg-lang/erg?branch=main#23cbbe30719af994dc299438f9b35acef4ddc19c"
+source = "git+https://github.com/erg-lang/erg?branch=py-structural#5cddba369e9124f846348e0a690d3b84b252366a"
 dependencies = [
  "erg_common",
  "unicode-xid 0.2.4",
@@ -916,9 +916,9 @@ checksum = "73473c0e59e6d5812c5dfe2a064a6444949f089e20eec9a2e5506596494e4623"
 
 [[package]]
 name = "syn"
-version = "1.0.107"
+version = "1.0.108"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1f4064b5b16e03ae50984a5a8ed5d4f8803e6bc1fd170a3cda91a1be4b18e3f5"
+checksum = "d56e159d99e6c2b93995d171050271edb50ecc5288fbc7cc17de8fdce4e58c14"
 dependencies = [
  "proc-macro2",
  "quote",

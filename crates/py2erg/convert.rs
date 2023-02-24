@@ -843,7 +843,8 @@ impl ASTConverter {
     //     self.y = y
     //     self.z = z
     // ↓
-    // {x: Int, y: Int, z: Never}, .__call__(x: Int, y: Int, z: Obj): Self = .unreachable()
+    // requirement : {x: Int, y: Int, z: Never}
+    // returns     : .__call__(x: Int, y: Int, z: Obj): Self = .unreachable()
     fn extract_init(&mut self, base_type: &mut Option<Expr>, init_def: Def) -> Option<Def> {
         self.check_init_sig(&init_def.sig)?;
         let l_brace = Token::new(
@@ -988,8 +989,8 @@ impl ASTConverter {
                         .map(|id| &id.inspect()[..] == "__init__")
                         .unwrap_or(false)
                     {
-                        if let Some(init_def) = self.extract_init(&mut base_type, def) {
-                            attrs.push(ClassAttr::Def(init_def));
+                        if let Some(call_def) = self.extract_init(&mut base_type, def) {
+                            attrs.insert(0, ClassAttr::Def(call_def));
                             init_is_defined = true;
                         }
                     } else {
@@ -1041,7 +1042,7 @@ impl ASTConverter {
             }
         }
         if !init_is_defined {
-            attrs.push(ClassAttr::Def(self.gen_default_init(0)));
+            attrs.insert(0, ClassAttr::Def(self.gen_default_init(0)));
         }
         (base_type, ClassAttrs::new(attrs))
     }
