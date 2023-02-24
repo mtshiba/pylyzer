@@ -29,31 +29,31 @@ curl -L https://github.com/mtshiba/ergup/raw/main/ergup.py | python3
 
 ## What is the advantage over pylint, pyright, pytype, etc.?
 
-* Performance
+* Performance 🌟
 
 On average, pylyzer can inspect Python scripts more than __100 times faster__ than pytype and pyright [<sup id="f1">1</sup>](#1). This is largely due to the fact that pylyzer is implemented in Rust.
 
 ![performance](https://raw.githubusercontent.com/mtshiba/pylyzer/main/images/performance.png)
 
-* Detailed analysis
+* Detailed analysis 🩺
 
 pylyzer can do more than the type checking. For example, it can detect out-of-bounds accesses to lists and accesses to nonexistent keys in dicts.
 
 ![analysis](https://raw.githubusercontent.com/mtshiba/pylyzer/main/images/analysis.png)
 
-* Reports readability
+* Reports readability 📖
 
 While pytype/pyright's error reports are illegible, pylyzer shows where the error occurred and provides clear error messages.
 
-### pylyzer
+### pylyzer 😃
 
 ![report](https://raw.githubusercontent.com/mtshiba/pylyzer/main/images/report.png)
 
-### pyright
+### pyright 🙃
 
 ![pyright_report](https://raw.githubusercontent.com/mtshiba/pylyzer/main/images/pyright_report.png)
 
-* Rich LSP support
+* Rich LSP support 📝
 
 pylyzer as a language server supports various features, such as completion and renaming.
 
