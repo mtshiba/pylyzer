@@ -32,6 +32,7 @@ els = { git = "https://github.com/erg-lang/erg", branch = "main", features = ["p
 
 [features]
 debug = ["erg_compiler/debug", "erg_common/debug", "py2erg/debug"]
+large_thread = ["erg_compiler/large_thread", "erg_common/large_thread", "els/large_thread"]
 
 [dependencies]
 erg_compiler = { workspace = true }

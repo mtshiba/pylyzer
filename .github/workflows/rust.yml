@@ -22,9 +22,8 @@ jobs:
       run: |
         rustup update stable
         cargo install --debug --path .
-    # Removed because it caused a segmentation fault and would not stop executing. Testing should be done locally.
     - name: Run tests
-      run: cargo test --verbose
+      run: cargo test --verbose --features large_thread
     - uses: actions-rs/cargo@v1
       with:
         command: clippy

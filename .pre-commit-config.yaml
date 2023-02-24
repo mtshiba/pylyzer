@@ -9,7 +9,7 @@ repos:
         pass_filenames: false
       - id: cargo-test
         name: Cargo test
-        entry: cargo test
+        entry: cargo test --features large_thread
         language: system
         pass_filenames: false
   - repo: https://github.com/pre-commit/pre-commit-hooks
