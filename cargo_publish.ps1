@@ -1,4 +1,4 @@
-if ($PWD.Path -eq "$HOME\GitHub\pylyzer") {
+if ($PWD.Path -like "*\pylyzer") {
     if ($null -eq $env:PYPI_PASSWORD) {
         echo "set PYPI_PASSWORD environment variable"
         exit
