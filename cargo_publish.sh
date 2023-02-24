@@ -1,4 +1,4 @@
-if [ "$PWD" = "$HOME/github/pylyzer" ]; then
+if [[ "$PWD" == */pylyzer ]]; then
     if [ "$PYPI_PASSWORD" = "" ]; then
         echo "set PYPI_PASSWORD"
         exit 1
