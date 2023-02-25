@@ -253,8 +253,7 @@ checksum = "7fcaabb2fef8c910e7f4c7ce9f67a1283a1715879a7c230ca9d6d1ae31f16d91"
 [[package]]
 name = "els"
 version = "0.1.19-nightly.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fc21e1a7815740ad6debfd616bd9f5551dc4b10fa1b4e0e2cec42ddf57dbc7d8"
+source = "git+https://github.com/erg-lang/erg?branch=main#0f0d04202014c002fbbafa88ff9d42067d57f201"
 dependencies = [
  "erg_common",
  "erg_compiler",
@@ -275,8 +274,7 @@ dependencies = [
 [[package]]
 name = "erg_common"
 version = "0.6.7-nightly.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d8d2357638900c5d5f2ee751b4fd2254932fda6a1c50939ffbc8a7acd5903ce9"
+source = "git+https://github.com/erg-lang/erg?branch=main#0f0d04202014c002fbbafa88ff9d42067d57f201"
 dependencies = [
  "backtrace-on-stack-overflow",
  "hermit-abi",
@@ -287,8 +285,7 @@ dependencies = [
 [[package]]
 name = "erg_compiler"
 version = "0.6.7-nightly.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "682faa374e190771be607591426293f6fb56f22f8ed08c3d424a27615bb261cd"
+source = "git+https://github.com/erg-lang/erg?branch=main#0f0d04202014c002fbbafa88ff9d42067d57f201"
 dependencies = [
  "erg_common",
  "erg_parser",
@@ -297,8 +294,7 @@ dependencies = [
 [[package]]
 name = "erg_parser"
 version = "0.6.7-nightly.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e3e3ee6c10e35b83fe0c6c675ab1697aa72d175e4d10cbcf9a8057485192a604"
+source = "git+https://github.com/erg-lang/erg?branch=main#0f0d04202014c002fbbafa88ff9d42067d57f201"
 dependencies = [
  "erg_common",
  "unicode-xid 0.2.4",
@@ -920,9 +916,9 @@ checksum = "73473c0e59e6d5812c5dfe2a064a6444949f089e20eec9a2e5506596494e4623"
 
 [[package]]
 name = "syn"
-version = "1.0.108"
+version = "1.0.109"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d56e159d99e6c2b93995d171050271edb50ecc5288fbc7cc17de8fdce4e58c14"
+checksum = "72b64191b275b66ffe2469e8af2c1cfe3bafa67b529ead792a6d0160888b4237"
 dependencies = [
  "proc-macro2",
  "quote",

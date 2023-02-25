@@ -6,12 +6,13 @@ use erg_common::traits::{Locational, Stream};
 use erg_common::{log, set};
 use erg_compiler::artifact::IncompleteArtifact;
 use erg_compiler::erg_parser::ast::{
-    Accessor, Args, Array, BinOp, Block, ClassAttr, ClassAttrs, ClassDef, ConstArgs, Decorator,
-    Def, DefBody, DefId, DefaultParamSignature, Dict, Dummy, Expr, Identifier, KeyValue, Lambda,
-    LambdaSignature, Literal, Methods, Module, NonDefaultParamSignature, NormalArray, NormalDict,
-    NormalRecord, NormalSet, NormalTuple, ParamPattern, Params, PosArg, PreDeclTypeSpec, ReDef,
-    Record, RecordAttrs, Set, Signature, SimpleTypeSpec, SubrSignature, Tuple, TypeAscription,
-    TypeBoundSpecs, TypeSpec, TypeSpecWithOp, UnaryOp, VarName, VarPattern, VarSignature,
+    Accessor, Args, Array, ArrayTypeSpec, BinOp, Block, ClassAttr, ClassAttrs, ClassDef,
+    ConstAccessor, ConstArgs, ConstExpr, Decorator, Def, DefBody, DefId, DefaultParamSignature,
+    Dict, Dummy, Expr, Identifier, KeyValue, Lambda, LambdaSignature, Literal, Methods, Module,
+    NonDefaultParamSignature, NormalArray, NormalDict, NormalRecord, NormalSet, NormalTuple,
+    ParamPattern, Params, PosArg, PreDeclTypeSpec, ReDef, Record, RecordAttrs, Set, Signature,
+    SimpleTypeSpec, SubrSignature, Tuple, TypeAscription, TypeBoundSpecs, TypeSpec, TypeSpecWithOp,
+    UnaryOp, VarName, VarPattern, VarSignature,
 };
 use erg_compiler::erg_parser::token::{Token, TokenKind, COLON, DOT, EQUAL};
 use erg_compiler::error::CompileErrors;
@@ -502,17 +503,89 @@ impl ASTConverter {
         Lambda::new(sig, op, Block::new(body), DefId(0))
     }
 
+    fn convert_ident_type_spec(&mut self, name: String, loc: PyLocation) -> SimpleTypeSpec {
+        SimpleTypeSpec::new(self.convert_ident(name, loc), ConstArgs::empty())
+    }
+
+    fn gen_dummy_type_spec(loc: PyLocation) -> TypeSpec {
+        TypeSpec::Infer(Token::new(
+            TokenKind::UBar,
+            "_",
+            loc.row() as u32,
+            loc.column() as u32 - 1,
+        ))
+    }
+
+    // TODO:
+    fn convert_compound_type_spec(
+        &mut self,
+        name: String,
+        args: Located<ExpressionType>,
+    ) -> TypeSpec {
+        match &name[..] {
+            "Union" => {
+                let ExpressionType::Tuple { mut elements } = args.node else {
+                    return Self::gen_dummy_type_spec(args.location);
+                };
+                let lhs = self.convert_type_spec(elements.remove(0));
+                let rhs = self.convert_type_spec(elements.remove(0));
+                TypeSpec::or(lhs, rhs)
+            }
+            "Optional" => {
+                let loc = args.location;
+                let t = self.convert_type_spec(args);
+                let ident = Identifier::private_with_line("NoneType".into(), loc.row() as u32);
+                let none = TypeSpec::PreDeclTy(PreDeclTypeSpec::Simple(SimpleTypeSpec::new(
+                    ident,
+                    ConstArgs::empty(),
+                )));
+                TypeSpec::or(t, none)
+            }
+            "list" => {
+                let len = ConstExpr::Accessor(ConstAccessor::Local(
+                    self.convert_ident("_".into(), args.location),
+                ));
+                let elem_t = self.convert_type_spec(args);
+                TypeSpec::Array(ArrayTypeSpec::new(elem_t, len))
+            }
+            _ => Self::gen_dummy_type_spec(args.location),
+        }
+    }
+
     fn convert_type_spec(&mut self, expr: Located<ExpressionType>) -> TypeSpec {
+        #[allow(clippy::collapsible_match)]
         match expr.node {
             ExpressionType::Identifier { name } => TypeSpec::PreDeclTy(PreDeclTypeSpec::Simple(
-                SimpleTypeSpec::new(self.convert_ident(name, expr.location), ConstArgs::empty()),
+                self.convert_ident_type_spec(name, expr.location),
             )),
-            _other => TypeSpec::Infer(Token::new(
-                TokenKind::UBar,
-                "_",
-                expr.location.row() as u32,
-                expr.location.column() as u32 - 1,
-            )),
+            ExpressionType::Attribute { value, name } => {
+                let namespace = Box::new(self.convert_expr(*value));
+                let t = self.convert_ident_type_spec(name, expr.location);
+                let predecl = PreDeclTypeSpec::Attr { namespace, t };
+                TypeSpec::PreDeclTy(predecl)
+            }
+            ExpressionType::Subscript { a, b } => match a.node {
+                ExpressionType::Identifier { name } => self.convert_compound_type_spec(name, *b),
+                other => {
+                    log!(err "unknown: {other:?}");
+                    Self::gen_dummy_type_spec(a.location)
+                }
+            },
+            ExpressionType::Binop { a, op, b } => {
+                match op {
+                    // A | B
+                    Operator::BitOr => {
+                        let lhs = self.convert_type_spec(*a);
+                        let rhs = self.convert_type_spec(*b);
+                        TypeSpec::or(lhs, rhs)
+                    }
+                    _ => Self::gen_dummy_type_spec(expr.location),
+                }
+            }
+            other => {
+                log!(err "unknown: {other:?}");
+                Self::gen_dummy_type_spec(expr.location)
+            }
         }
     }
 

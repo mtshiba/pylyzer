@@ -70,3 +70,8 @@ fn exec_errors() {
 fn exec_warns() {
     expect("tests/warns.py", 2, 0);
 }
+
+#[test]
+fn exec_typespec() {
+    expect("tests/typespec.py", 0, 2);
+}
