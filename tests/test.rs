@@ -73,5 +73,5 @@ fn exec_warns() {
 
 #[test]
 fn exec_typespec() {
-    expect("tests/typespec.py", 0, 2);
+    expect("tests/typespec.py", 0, 3);
 }
