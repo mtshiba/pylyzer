@@ -199,9 +199,9 @@ checksum = "245097e9a4535ee1e3e3931fcfcd55a796a44c643e8596ff6566d68f09b87bbc"
 
 [[package]]
 name = "crossbeam-utils"
-version = "0.8.14"
+version = "0.8.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4fb766fa798726286dbbb842f174001dab8abc7b627a1dd86e0b7222a95d929f"
+checksum = "3c063cd8cc95f5c377ed0d4b49a4b21f632396ff690e8470c29b3359b346984b"
 dependencies = [
  "cfg-if",
 ]
@@ -252,8 +252,9 @@ checksum = "7fcaabb2fef8c910e7f4c7ce9f67a1283a1715879a7c230ca9d6d1ae31f16d91"
 
 [[package]]
 name = "els"
-version = "0.1.19-nightly.0"
-source = "git+https://github.com/erg-lang/erg?branch=main#0f0d04202014c002fbbafa88ff9d42067d57f201"
+version = "0.1.19-nightly.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d83a3304fe7d07ea94e9710721ed04c17a2e6849322459753325cc1a57858c09"
 dependencies = [
  "erg_common",
  "erg_compiler",
@@ -273,8 +274,9 @@ dependencies = [
 
 [[package]]
 name = "erg_common"
-version = "0.6.7-nightly.0"
-source = "git+https://github.com/erg-lang/erg?branch=main#0f0d04202014c002fbbafa88ff9d42067d57f201"
+version = "0.6.7-nightly.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "68cf28bcdd3f2e6e875373b8000e71e1d488528a155ab2a117ee1b83ff68aaa9"
 dependencies = [
  "backtrace-on-stack-overflow",
  "hermit-abi",
@@ -284,8 +286,9 @@ dependencies = [
 
 [[package]]
 name = "erg_compiler"
-version = "0.6.7-nightly.0"
-source = "git+https://github.com/erg-lang/erg?branch=main#0f0d04202014c002fbbafa88ff9d42067d57f201"
+version = "0.6.7-nightly.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c12ce97b15a5af6a2c5d3126058b8cc7c11353be9829a465afb49a5d9a923b06"
 dependencies = [
  "erg_common",
  "erg_parser",
@@ -293,8 +296,9 @@ dependencies = [
 
 [[package]]
 name = "erg_parser"
-version = "0.6.7-nightly.0"
-source = "git+https://github.com/erg-lang/erg?branch=main#0f0d04202014c002fbbafa88ff9d42067d57f201"
+version = "0.6.7-nightly.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "41d6eab8d4fd7d792c551c34a55cf99c94d9b941c564141c9f81761411259bd7"
 dependencies = [
  "erg_common",
  "unicode-xid 0.2.4",

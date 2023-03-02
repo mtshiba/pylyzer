@@ -1,4 +1,4 @@
-mod ast_util;
+pub mod ast_util;
 mod clone;
 mod convert;
 mod error;

@@ -1,5 +1,6 @@
 use erg_common::error::ErrorKind;
 use erg_common::log;
+use erg_common::style::remove_style;
 // use erg_common::style::{remove_style, StyledString, Color};
 use erg_compiler::context::ModuleContext;
 use erg_compiler::error::{CompileError, CompileErrors};
@@ -11,7 +12,7 @@ pub(crate) fn filter_errors(ctx: &ModuleContext, errors: CompileErrors) -> Compi
         .collect()
 }
 
-fn filter_error(_ctx: &ModuleContext, error: CompileError) -> Option<CompileError> {
+fn filter_error(_ctx: &ModuleContext, mut error: CompileError) -> Option<CompileError> {
     match error.core.kind {
         ErrorKind::FeatureError => {
             log!(err "this error is ignored:");
@@ -28,6 +29,12 @@ fn filter_error(_ctx: &ModuleContext, error: CompileError) -> Option<CompileErro
             if code[0].trim().starts_with("\"\"\"") {
                 None
             } else {
+                for sub in error.core.sub_messages.iter_mut() {
+                    if let Some(hint) = &mut sub.hint {
+                        *hint = remove_style(hint);
+                        *hint = hint.replace("use discard function", "bind to `_` (`_ = ...`)");
+                    }
+                }
                 Some(error)
             }
         }

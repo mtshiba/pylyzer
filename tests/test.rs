@@ -43,7 +43,7 @@ fn exec_test() {
 
 #[test]
 fn exec_import() {
-    expect("tests/import.py", 0, 2);
+    expect("tests/import.py", 1, 2);
 }
 
 #[test]

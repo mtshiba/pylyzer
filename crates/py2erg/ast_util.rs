@@ -52,40 +52,29 @@ pub fn length(expr: &ExpressionType) -> usize {
         ExpressionType::String { value } => string_length(value),
         ExpressionType::Attribute { value, name } => length(&value.node) + name.len() + 1,
         ExpressionType::Subscript { a, b } => length(&a.node) + length(&b.node) + 2,
-        ExpressionType::Tuple { elements } => elements
-            .iter()
-            .map(|elem| length(&elem.node))
-            .fold(0, |acc, x| acc + x + 2),
-        // - 2 + 2,
-        ExpressionType::List { elements } => elements
-            .iter()
-            .map(|elem| length(&elem.node))
-            .fold(0, |acc, x| acc + x + 2),
-        ExpressionType::Set { elements } => elements
-            .iter()
-            .map(|elem| length(&elem.node))
-            .fold(0, |acc, x| acc + x + 2),
+        ExpressionType::Tuple { elements }
+        | ExpressionType::List { elements }
+        | ExpressionType::Set { elements } => {
+            if let (Some(first), Some(last)) = (elements.first(), elements.last()) {
+                2 + last.location.column() - first.location.column()
+            } else {
+                2
+            }
+        }
         ExpressionType::Call {
             function,
             args,
             keywords,
         } => {
-            let args_len = if args.is_empty() {
-                0
+            let args_len = if let (Some(first), Some(last)) = (args.first(), args.last()) {
+                last.location.column() - first.location.column()
             } else {
-                args.iter()
-                    .map(|arg| length(&arg.node))
-                    .fold(0, |acc, x| acc + x + 2)
-                    - 2 // ,
+                0
             };
-            let kw_len = if keywords.is_empty() {
-                0
+            let kw_len = if let (Some(first), Some(last)) = (keywords.first(), keywords.last()) {
+                last.value.location.column() - first.value.location.column()
             } else {
-                keywords
-                    .iter()
-                    .map(keyword_length)
-                    .fold(0, |acc, x| acc + x + 2)
-                    - 2 // ,
+                0
             };
             length(&function.node) + args_len + kw_len + 2 // ()
         }
