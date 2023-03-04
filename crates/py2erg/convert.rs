@@ -98,8 +98,8 @@ fn escape_name(name: String) -> String {
         "ClassType" => "ClassType\0".into(),
         "TraitType" => "TraitType\0".into(),
         "Patch" => "Patch\0".into(),
-        "NotImplemented" => "NotImplemented\0".into(),
-        "Ellipsis" => "Ellipsis\0".into(),
+        // "NotImplemented" => "NotImplemented\0".into(),
+        // "Ellipsis" => "Ellipsis\0".into(),
         "Never" => "Never\0".into(),
         _ => name,
     }
@@ -499,7 +499,7 @@ impl ASTConverter {
         self.block_ids.pop();
         let body = block.into_iter().chain(body).collect();
         let sig = LambdaSignature::new(params, None, TypeBoundSpecs::empty());
-        let op = Token::from_str(TokenKind::ProcArrow, "=>");
+        let op = Token::from_str(TokenKind::FuncArrow, "->");
         Lambda::new(sig, op, Block::new(body), DefId(0))
     }
 
@@ -681,10 +681,23 @@ impl ASTConverter {
             ))),
             ExpressionType::Ellipsis => Expr::Literal(Literal::new(Token::new(
                 TokenKind::EllipsisLit,
-                "Ellipsis",
+                "...",
                 expr.location.row() as u32,
                 expr.location.column() as u32 - 1,
             ))),
+            ExpressionType::Identifier { name } => {
+                let ident = self.convert_ident(name, expr.location);
+                Expr::Accessor(Accessor::Ident(ident))
+            }
+            ExpressionType::Attribute { value, name } => {
+                let obj = self.convert_expr(*value);
+                let attr_name_loc = PyLocation::new(
+                    obj.ln_end().unwrap_or(1) as usize,
+                    obj.col_end().unwrap_or(1) as usize + 2,
+                );
+                let name = self.convert_attr_ident(name, attr_name_loc);
+                obj.attr_expr(name)
+            }
             ExpressionType::IfExpression { test, body, orelse } => {
                 let block = self.convert_expr(*body);
                 let params = Params::new(vec![], None, vec![], None);
@@ -787,26 +800,13 @@ impl ASTConverter {
                 let op = Token::from_str(kind, cont);
                 Expr::BinOp(BinOp::new(op, lhs, rhs))
             }
-            ExpressionType::Identifier { name } => {
-                let ident = self.convert_ident(name, expr.location);
-                Expr::Accessor(Accessor::Ident(ident))
-            }
-            ExpressionType::Attribute { value, name } => {
-                let obj = self.convert_expr(*value);
-                let attr_name_loc = PyLocation::new(
-                    obj.ln_end().unwrap_or(1) as usize,
-                    obj.col_end().unwrap_or(1) as usize + 2,
-                );
-                let name = self.convert_attr_ident(name, attr_name_loc);
-                obj.attr_expr(name)
-            }
             ExpressionType::Lambda { args, body } => {
                 self.namespace.push("<lambda>".to_string());
                 let params = self.convert_params(*args);
                 let body = vec![self.convert_expr(*body)];
                 self.namespace.pop();
                 let sig = LambdaSignature::new(params, None, TypeBoundSpecs::empty());
-                let op = Token::from_str(TokenKind::ProcArrow, "=>");
+                let op = Token::from_str(TokenKind::FuncArrow, "->");
                 Expr::Lambda(Lambda::new(sig, op, Block::new(body), DefId(0)))
             }
             ExpressionType::List { elements } => {
