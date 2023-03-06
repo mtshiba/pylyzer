@@ -134,7 +134,7 @@ impl PythonAnalyzer {
 
     pub fn run(&mut self) {
         let py_code = self.cfg.input.read();
-        let filename = self.cfg.input.filename();
+        let filename = self.cfg.input.unescaped_filename();
         println!("{BLUE}Start checking{RESET}: {filename}");
         match self.analyze(py_code, "exec") {
             Ok(artifact) => {
@@ -146,7 +146,10 @@ impl PythonAnalyzer {
                     );
                     artifact.warns.fmt_all_stderr();
                 }
-                println!("{GREEN}All checks OK{RESET}: {}", self.cfg.input.filename());
+                println!(
+                    "{GREEN}All checks OK{RESET}: {}",
+                    self.cfg.input.unescaped_filename()
+                );
                 if self.cfg.output_dir.is_some() {
                     dump_decl_er(
                         self.cfg.input.clone(),
@@ -167,7 +170,10 @@ impl PythonAnalyzer {
                     artifact.warns.fmt_all_stderr();
                 }
                 let code = if artifact.errors.is_empty() {
-                    println!("{GREEN}All checks OK{RESET}: {}", self.cfg.input.filename());
+                    println!(
+                        "{GREEN}All checks OK{RESET}: {}",
+                        self.cfg.input.unescaped_filename()
+                    );
                     0
                 } else {
                     println!(

@@ -1,6 +1,5 @@
 use std::fs::File;
 use std::io::{BufWriter, Write};
-use std::path::PathBuf;
 
 use erg_common::config::Input;
 use erg_common::log;
@@ -41,7 +40,7 @@ pub fn gen_decl_er(input: &Input, hir: HIR, status: CheckStatus) -> DeclFile {
     };
     let status = PylyzerStatus {
         succeed: status.is_succeed(),
-        file: input.full_path(),
+        file: input.unescaped_path().into(),
         timestamp,
     };
     let mut code = format!("{status}\n");
@@ -64,20 +63,15 @@ pub fn gen_decl_er(input: &Input, hir: HIR, status: CheckStatus) -> DeclFile {
         code.push('\n');
     }
     log!("code:\n{code}");
-    let filename = hir.name.replace(".py", ".d.er");
+    let filename = input.unescaped_filename().replace(".py", ".d.er");
     DeclFile { filename, code }
 }
 
 pub fn dump_decl_er(input: Input, hir: HIR, status: CheckStatus) {
     let file = gen_decl_er(&input, hir, status);
-    let mut path = if let Some(path) = input.path() {
-        PathBuf::from(path)
-    } else {
-        PathBuf::new()
-    };
-    path.pop();
-    path.push("__pycache__");
-    let pycache_dir = path.as_path();
+    let mut dir = input.dir();
+    dir.push("__pycache__");
+    let pycache_dir = dir.as_path();
     if !pycache_dir.exists() {
         std::fs::create_dir(pycache_dir).unwrap();
     }

@@ -55,7 +55,7 @@ While pytype/pyright's error reports are illegible, pylyzer shows where the erro
 
 * Rich LSP support 📝
 
-pylyzer as a language server supports various features, such as completion and renaming.
+pylyzer as a language server supports various features, such as completion and renaming (The language server is an adaptation of the Erg Language Server (ELS). For more information on the implemented features, please see [here](https://github.com/erg-lang/erg/tree/main/crates/els#readme)).
 
 ![lsp_support](https://raw.githubusercontent.com/mtshiba/pylyzer/main/images/lsp_support.png)
 
