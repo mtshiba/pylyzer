@@ -253,8 +253,7 @@ checksum = "7fcaabb2fef8c910e7f4c7ce9f67a1283a1715879a7c230ca9d6d1ae31f16d91"
 [[package]]
 name = "els"
 version = "0.1.19-nightly.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d83a3304fe7d07ea94e9710721ed04c17a2e6849322459753325cc1a57858c09"
+source = "git+https://github.com/erg-lang/erg?branch=main#c3511a1e0395824cb0d9eccbed1ebb5ad79f5777"
 dependencies = [
  "erg_common",
  "erg_compiler",
@@ -275,8 +274,7 @@ dependencies = [
 [[package]]
 name = "erg_common"
 version = "0.6.7-nightly.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "68cf28bcdd3f2e6e875373b8000e71e1d488528a155ab2a117ee1b83ff68aaa9"
+source = "git+https://github.com/erg-lang/erg?branch=main#c3511a1e0395824cb0d9eccbed1ebb5ad79f5777"
 dependencies = [
  "backtrace-on-stack-overflow",
  "hermit-abi",
@@ -287,8 +285,7 @@ dependencies = [
 [[package]]
 name = "erg_compiler"
 version = "0.6.7-nightly.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c12ce97b15a5af6a2c5d3126058b8cc7c11353be9829a465afb49a5d9a923b06"
+source = "git+https://github.com/erg-lang/erg?branch=main#c3511a1e0395824cb0d9eccbed1ebb5ad79f5777"
 dependencies = [
  "erg_common",
  "erg_parser",
@@ -297,8 +294,7 @@ dependencies = [
 [[package]]
 name = "erg_parser"
 version = "0.6.7-nightly.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "41d6eab8d4fd7d792c551c34a55cf99c94d9b941c564141c9f81761411259bd7"
+source = "git+https://github.com/erg-lang/erg?branch=main#c3511a1e0395824cb0d9eccbed1ebb5ad79f5777"
 dependencies = [
  "erg_common",
  "unicode-xid 0.2.4",
@@ -387,9 +383,9 @@ dependencies = [
 
 [[package]]
 name = "itoa"
-version = "1.0.5"
+version = "1.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fad582f4b9e86b6caa621cabeb0963332d92eea04729ab12892c2533951e6440"
+checksum = "453ad9f582a441959e5f0d088b02ce04cfe8d51a8eaf077f12ac6d3e94164ca6"
 
 [[package]]
 name = "lalrpop"
@@ -814,9 +810,9 @@ dependencies = [
 
 [[package]]
 name = "ryu"
-version = "1.0.12"
+version = "1.0.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7b4b9743ed687d4b4bcedf9ff5eaa7398495ae14e61cba0a295704edbc7decde"
+checksum = "f91339c0467de62360649f8d3e185ca8de4224ff281f66000de5eb2a77a79041"
 
 [[package]]
 name = "serde"
@@ -840,9 +836,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.93"
+version = "1.0.94"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cad406b69c91885b5107daf2c29572f6c8cdb3c66826821e286c533490c0bc76"
+checksum = "1c533a59c9d8a93a09c6ab31f0fd5e5f4dd1b8fc9434804029839884765d04ea"
 dependencies = [
  "itoa",
  "ryu",
@@ -851,9 +847,9 @@ dependencies = [
 
 [[package]]
 name = "serde_repr"
-version = "0.1.10"
+version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9a5ec9fa74a20ebbe5d9ac23dac1fc96ba0ecfe9f50f2843b52e537b10fbcb4e"
+checksum = "395627de918015623b32e7669714206363a7fc00382bf477e72c1f7533e8eafc"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1021,9 +1017,9 @@ checksum = "d54675592c1dbefd78cbd98db9bacd89886e1ca50692a0692baefffdeb92dd58"
 
 [[package]]
 name = "unicode-ident"
-version = "1.0.6"
+version = "1.0.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "84a22b9f218b40614adcb3f4ff08b703773ad44fa9423e4e0d346d5db86e4ebc"
+checksum = "e5464a87b239f13a63a501f2701565754bae92d243d4bb7eb12f6d57d2269bf4"
 
 [[package]]
 name = "unicode-normalization"

@@ -12,7 +12,7 @@ use erg_compiler::erg_parser::ast::{
     NonDefaultParamSignature, NormalArray, NormalDict, NormalRecord, NormalSet, NormalTuple,
     ParamPattern, Params, PosArg, PreDeclTypeSpec, ReDef, Record, RecordAttrs, Set, Signature,
     SimpleTypeSpec, SubrSignature, Tuple, TypeAscription, TypeBoundSpecs, TypeSpec, TypeSpecWithOp,
-    UnaryOp, VarName, VarPattern, VarSignature,
+    UnaryOp, VarName, VarPattern, VarSignature, VisModifierSpec,
 };
 use erg_compiler::erg_parser::token::{Token, TokenKind, COLON, DOT, EQUAL};
 use erg_compiler::error::CompileErrors;
@@ -343,7 +343,7 @@ impl ASTConverter {
             loc.row() as u32,
             loc.column() as u32 - 1,
         );
-        Identifier::new(Some(dot), name)
+        Identifier::new(VisModifierSpec::Public(dot), name)
     }
 
     // TODO: module member mangling
@@ -361,7 +361,7 @@ impl ASTConverter {
             loc.row() as u32,
             loc.column() as u32 - 1,
         );
-        Identifier::new(Some(dot), name)
+        Identifier::new(VisModifierSpec::Public(dot), name)
     }
 
     fn convert_param_pattern(&mut self, arg: String, loc: PyLocation) -> ParamPattern {
@@ -407,7 +407,9 @@ impl ASTConverter {
 
     fn param_pattern_to_var(pat: ParamPattern) -> VarPattern {
         match pat {
-            ParamPattern::VarName(name) => VarPattern::Ident(Identifier::new(Some(DOT), name)),
+            ParamPattern::VarName(name) => {
+                VarPattern::Ident(Identifier::new(VisModifierSpec::Public(DOT), name))
+            }
             ParamPattern::Discard(token) => VarPattern::Discard(token),
             other => todo!("{other}"),
         }
@@ -442,7 +444,7 @@ impl ASTConverter {
                 let tmp_name =
                     VarName::from_str_and_line((&tmp).into(), expr.location.row() as u32);
                 let tmp_expr = Expr::Accessor(Accessor::Ident(Identifier::new(
-                    Some(DOT),
+                    VisModifierSpec::Public(DOT),
                     tmp_name.clone(),
                 )));
                 let mut block = vec![];
@@ -1002,7 +1004,10 @@ impl ASTConverter {
             ));
             *base_type = Some(Expr::Record(record));
         }
-        let call_ident = Identifier::new(Some(DOT), VarName::from_static("__call__"));
+        let call_ident = Identifier::new(
+            VisModifierSpec::Public(DOT),
+            VarName::from_static("__call__"),
+        );
         let params = Params::new(params, None, vec![], None);
         let class_ident = Identifier::public_with_line(
             DOT,
@@ -1020,7 +1025,8 @@ impl ASTConverter {
             params,
             Some(class_spec),
         ));
-        let unreachable_acc = Identifier::new(Some(DOT), VarName::from_static("exit"));
+        let unreachable_acc =
+            Identifier::new(VisModifierSpec::Public(DOT), VarName::from_static("exit"));
         let body = Expr::Accessor(Accessor::Ident(unreachable_acc)).call_expr(Args::empty());
         let body = DefBody::new(EQUAL, Block::new(vec![body]), DefId(0));
         let def = Def::new(sig, body);
@@ -1028,7 +1034,10 @@ impl ASTConverter {
     }
 
     fn gen_default_init(&self, line: usize) -> Def {
-        let call_ident = Identifier::new(Some(DOT), VarName::from_static("__call__"));
+        let call_ident = Identifier::new(
+            VisModifierSpec::Public(DOT),
+            VarName::from_static("__call__"),
+        );
         let params = Params::new(vec![], None, vec![], None);
         let class_ident =
             Identifier::public_with_line(DOT, self.namespace.last().unwrap().into(), line as u32);
@@ -1043,7 +1052,8 @@ impl ASTConverter {
             params,
             Some(class_spec),
         ));
-        let unreachable_acc = Identifier::new(Some(DOT), VarName::from_static("exit"));
+        let unreachable_acc =
+            Identifier::new(VisModifierSpec::Public(DOT), VarName::from_static("exit"));
         let body = Expr::Accessor(Accessor::Ident(unreachable_acc)).call_expr(Args::empty());
         let body = DefBody::new(EQUAL, Block::new(vec![body]), DefId(0));
         Def::new(sig, body)
@@ -1131,7 +1141,7 @@ impl ASTConverter {
         )));
         let class_as_expr = Expr::Accessor(Accessor::Ident(ident));
         let (base_type, attrs) = self.extract_method(body);
-        let methods = Methods::new(class, class_as_expr, DOT, attrs);
+        let methods = Methods::new(class, class_as_expr, VisModifierSpec::Public(DOT), attrs);
         (base_type, vec![methods])
     }
 
@@ -1320,7 +1330,7 @@ impl ASTConverter {
                                 (&tmp).into(),
                                 stmt.location.row() as u32,
                             );
-                            let tmp_ident = Identifier::new(Some(DOT), tmp_name);
+                            let tmp_ident = Identifier::new(VisModifierSpec::Public(DOT), tmp_name);
                             let tmp_expr = Expr::Accessor(Accessor::Ident(tmp_ident.clone()));
                             let sig = Signature::Var(VarSignature::new(
                                 VarPattern::Ident(tmp_ident),

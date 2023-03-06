@@ -120,7 +120,7 @@ For more information try `pylyzer --help`"
                 std::process::exit(2);
             }
             _ => {
-                cfg.input = Input::File(
+                cfg.input = Input::file(
                     PathBuf::from_str(&arg[..])
                         .unwrap_or_else(|_| panic!("invalid file path: {arg}")),
                 );

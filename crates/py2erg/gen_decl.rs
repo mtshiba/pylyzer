@@ -33,7 +33,7 @@ fn escape_type(typ: String) -> String {
 }
 
 pub fn gen_decl_er(input: &Input, hir: HIR, status: CheckStatus) -> DeclFile {
-    let timestamp = if let Input::File(file) = input {
+    let timestamp = if let Some(file) = input.path() {
         let metadata = std::fs::metadata(file).unwrap();
         metadata.modified().unwrap()
     } else {
@@ -70,8 +70,8 @@ pub fn gen_decl_er(input: &Input, hir: HIR, status: CheckStatus) -> DeclFile {
 
 pub fn dump_decl_er(input: Input, hir: HIR, status: CheckStatus) {
     let file = gen_decl_er(&input, hir, status);
-    let mut path = if let Input::File(path) = input {
-        path
+    let mut path = if let Some(path) = input.path() {
+        PathBuf::from(path)
     } else {
         PathBuf::new()
     };
