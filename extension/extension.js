@@ -8,7 +8,7 @@ function activate(context) {
     try {
         const serverOptions = {
             command: "pylyzer",
-            args: ["--server"]
+            args: ["--server", "--", "--disable", "inlayHints"]
         };
         const clientOptions = {
             documentSelector: [
