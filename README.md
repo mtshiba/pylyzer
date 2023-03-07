@@ -4,7 +4,7 @@
 <a href="https://github.com/mtshiba/pylyzer/releases"><img alt="Build status" src="https://img.shields.io/github/v/release/mtshiba/pylyzer.svg"></a>
 <a href="https://github.com/mtshiba/pylyzer/actions/workflows/rust.yml"><img alt="Build status" src="https://github.com/mtshiba/pylyzer/actions/workflows/rust.yml/badge.svg"></a>
 
-`pylyzer` is a static code analyzer / language server for Python written in Rust.
+`pylyzer` is a static code analyzer / language server for Python, written in Rust.
 
 ## Installation
 
@@ -20,8 +20,7 @@ cargo install pylyzer
 pip install pylyzer
 ```
 
-If installed this way, type resolution for the standard libraries is not available.
-If you want to use it, you need to [install Erg](https://github.com/mtshiba/ergup).
+If installed this way, you also need to [install Erg](https://github.com/mtshiba/ergup).
 
 ```bash
 curl -L https://github.com/mtshiba/ergup/raw/main/ergup.py | python3

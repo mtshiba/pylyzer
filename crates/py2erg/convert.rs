@@ -1019,7 +1019,7 @@ impl ASTConverter {
             ConstArgs::empty(),
         )));
         let sig = Signature::Subr(SubrSignature::new(
-            HashSet::new(),
+            set! { Decorator(Expr::static_local("Override")) },
             call_ident,
             TypeBoundSpecs::empty(),
             params,
@@ -1046,7 +1046,7 @@ impl ASTConverter {
             ConstArgs::empty(),
         )));
         let sig = Signature::Subr(SubrSignature::new(
-            HashSet::new(),
+            set! { Decorator(Expr::static_local("Override")) },
             call_ident,
             TypeBoundSpecs::empty(),
             params,
@@ -1059,13 +1059,23 @@ impl ASTConverter {
         Def::new(sig, body)
     }
 
-    fn extract_method(&mut self, body: Vec<Located<StatementType>>) -> (Option<Expr>, ClassAttrs) {
+    fn extract_method(
+        &mut self,
+        body: Vec<Located<StatementType>>,
+        inherit: bool,
+    ) -> (Option<Expr>, ClassAttrs) {
         let mut base_type = None;
         let mut attrs = vec![];
         let mut init_is_defined = false;
         for stmt in body {
             match self.convert_statement(stmt, true) {
-                Expr::Def(def) => {
+                Expr::Def(mut def) => {
+                    if inherit {
+                        if let Signature::Subr(subr) = &mut def.sig {
+                            subr.decorators
+                                .insert(Decorator(Expr::static_local("Override")));
+                        }
+                    }
                     if def
                         .sig
                         .ident()
@@ -1124,7 +1134,7 @@ impl ASTConverter {
                 _other => {} // TODO:
             }
         }
-        if !init_is_defined {
+        if !init_is_defined && !inherit {
             attrs.insert(0, ClassAttr::Def(self.gen_default_init(0)));
         }
         (base_type, ClassAttrs::new(attrs))
@@ -1134,13 +1144,14 @@ impl ASTConverter {
         &mut self,
         ident: Identifier,
         body: Vec<Located<StatementType>>,
+        inherit: bool,
     ) -> (Option<Expr>, Vec<Methods>) {
         let class = TypeSpec::PreDeclTy(PreDeclTypeSpec::Simple(SimpleTypeSpec::new(
             ident.clone(),
             ConstArgs::empty(),
         )));
         let class_as_expr = Expr::Accessor(Accessor::Ident(ident));
-        let (base_type, attrs) = self.extract_method(body);
+        let (base_type, attrs) = self.extract_method(body, inherit);
         let methods = Methods::new(class, class_as_expr, VisModifierSpec::Public(DOT), attrs);
         (base_type, vec![methods])
     }
@@ -1205,6 +1216,13 @@ impl ASTConverter {
     /// ```erg
     /// Foo = Inheritable Class()
     /// ```
+    /// ```python
+    /// class Foo(Bar): pass
+    /// ```
+    /// ↓
+    /// ```erg
+    /// Foo = Inherit Bar
+    /// ```
     fn convert_classdef(
         &mut self,
         name: String,
@@ -1217,34 +1235,48 @@ impl ASTConverter {
             .into_iter()
             .map(|deco| self.convert_expr(deco))
             .collect::<Vec<_>>();
-        let _bases = bases
+        let mut bases = bases
             .into_iter()
             .map(|base| self.convert_expr(base))
             .collect::<Vec<_>>();
+        let inherit = !bases.is_empty();
         self.register_name_info(&name, NameKind::Class);
         let class_name_loc = PyLocation::new(loc.row(), loc.column() + 6);
         let ident = self.convert_ident(name, class_name_loc);
         let sig = Signature::Var(VarSignature::new(VarPattern::Ident(ident.clone()), None));
         self.namespace.push(ident.inspect().to_string());
-        let (base_type, methods) = self.extract_method_list(ident, body);
-        let pos_args = if let Some(base) = base_type {
-            vec![PosArg::new(base)]
+        let (base_type, methods) = self.extract_method_list(ident, body, inherit);
+        let classdef = if inherit {
+            // TODO: multiple inheritance
+            let pos_args = vec![PosArg::new(bases.remove(0))];
+            let args = Args::pos_only(pos_args, None);
+            let inherit_acc = Expr::Accessor(Accessor::Ident(
+                self.convert_ident("Inherit".to_string(), loc),
+            ));
+            let inherit_call = inherit_acc.call_expr(args);
+            let body = DefBody::new(EQUAL, Block::new(vec![inherit_call]), DefId(0));
+            let def = Def::new(sig, body);
+            ClassDef::new(def, methods)
         } else {
-            vec![]
+            let pos_args = if let Some(base) = base_type {
+                vec![PosArg::new(base)]
+            } else {
+                vec![]
+            };
+            let args = Args::pos_only(pos_args, None);
+            let class_acc = Expr::Accessor(Accessor::Ident(
+                self.convert_ident("Class".to_string(), loc),
+            ));
+            let class_call = class_acc.call_expr(args);
+            let inheritable_acc = Expr::Accessor(Accessor::Ident(
+                self.convert_ident("Inheritable".to_string(), loc),
+            ));
+            let inheritable_call =
+                inheritable_acc.call_expr(Args::pos_only(vec![PosArg::new(class_call)], None));
+            let body = DefBody::new(EQUAL, Block::new(vec![inheritable_call]), DefId(0));
+            let def = Def::new(sig, body);
+            ClassDef::new(def, methods)
         };
-        let args = Args::pos_only(pos_args, None);
-        let class_acc = Expr::Accessor(Accessor::Ident(
-            self.convert_ident("Class".to_string(), loc),
-        ));
-        let class_call = class_acc.call_expr(args);
-        let inheritable_acc = Expr::Accessor(Accessor::Ident(
-            self.convert_ident("Inheritable".to_string(), loc),
-        ));
-        let inheritable_call =
-            inheritable_acc.call_expr(Args::pos_only(vec![PosArg::new(class_call)], None));
-        let body = DefBody::new(EQUAL, Block::new(vec![inheritable_call]), DefId(0));
-        let def = Def::new(sig, body);
-        let classdef = ClassDef::new(def, methods);
         self.namespace.pop();
         Expr::ClassDef(classdef)
     }

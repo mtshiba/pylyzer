@@ -22,13 +22,13 @@ edition = "2021"
 repository = "https://github.com/mtshiba/pylyzer"
 
 [workspace.dependencies]
-# erg_common = { version = "0.6.7-nightly.2", features = ["py_compatible", "els"] }
-# erg_compiler = { version = "0.6.7-nightly.2", features = ["py_compatible", "els"] }
-# els = { version = "0.1.19-nightly.2", features = ["py_compatible"] }
+erg_common = { version = "0.6.7", features = ["py_compatible", "els"] }
+erg_compiler = { version = "0.6.7", features = ["py_compatible", "els"] }
+els = { version = "0.1.19", features = ["py_compatible"] }
 rustpython-parser = "0.1.2"
-erg_compiler = { git = "https://github.com/erg-lang/erg", branch = "main", features = ["py_compatible", "els"] }
-erg_common = { git = "https://github.com/erg-lang/erg", branch = "main", features = ["py_compatible", "els"] }
-els = { git = "https://github.com/erg-lang/erg", branch = "main", features = ["py_compatible"] }
+# erg_compiler = { git = "https://github.com/erg-lang/erg", branch = "main", features = ["py_compatible", "els"] }
+# erg_common = { git = "https://github.com/erg-lang/erg", branch = "main", features = ["py_compatible", "els"] }
+# els = { git = "https://github.com/erg-lang/erg", branch = "main", features = ["py_compatible"] }
 
 [features]
 debug = ["erg_compiler/debug", "erg_common/debug", "py2erg/debug"]

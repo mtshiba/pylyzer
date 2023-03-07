@@ -36,11 +36,19 @@ class D:
         return D(self.c - other.x)
     def __neg__(self):
         return D(-self.c)
+    def __gt__(self, other: D):
+        return self.c > other.c
     def __init__(self, c):
         self.c = c
+
+class E(D):
+    def __add__(self, other: E):
+        return E(self.c + other.c)
 
 c1 = D(1).c + 1
 d = D(1) + D(2)
 err = C(1, 2) + D(1) # ERR
 ok = D(1) - C(1, 2) # OK
+assert D(1) > D(0)
 c = -d # OK
+e = E(1)
