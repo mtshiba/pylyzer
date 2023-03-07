@@ -1159,6 +1159,7 @@ impl ASTConverter {
             .get_name(&name)
             .map(|info| {
                 info.defined_times > 0
+                    && info.defined_in == DefinedPlace::Known(self.cur_namespace())
                     && !info.referenced.difference(&set! {name.clone()}).is_empty()
             })
             .unwrap_or(false)
