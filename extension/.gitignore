@@ -1,3 +1,4 @@
 *.vsix
 node_modules
+dist
 example.py
