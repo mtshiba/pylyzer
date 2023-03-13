@@ -3,7 +3,7 @@
   "displayName": "pylyzer",
   "description": "A fast Python static code analyzer & language server for VSCode",
   "publisher": "pylyzer",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "engines": {
     "vscode": "^1.70.0"
   },
@@ -15,11 +15,18 @@
     "type": "git",
     "url": "https://github.com/mtshiba/pylyzer.git"
   },
-  "main": "./extension.js",
+  "main": "./dist/extension.js",
   "activationEvents": [
     "onLanguage:python"
   ],
   "contributes": {
+    "commands": [
+      {
+        "title": "Restart the pylyzer language server",
+        "category": "python",
+        "command": "pylyzer.restartLanguageServer"
+      }
+    ],
     "languages": [
       {
         "id": "python",
@@ -31,9 +38,65 @@
           ".py"
         ]
       }
-    ]
+    ],
+    "configuration": {
+      "type": "object",
+      "title": "pylyzer",
+      "properties": {
+        "pylyzer.inlayHints": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "Enable inlay hints (this feature is unstable)"
+        },
+        "pylyzer.smartCompletion": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Enable smart completion (see [ELS features](https://github.com/erg-lang/erg/blob/main/crates/els/doc/features.md))"
+        },
+        "pylyzer.checkOnType": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "Perform checking each time any character is entered. This improves the accuracy of completion, etc., but may slow down the execution"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:publish": "vsce publish",
+    "vscode:prepublish": "npm run package",
+    "vscode:package": "vsce package",
+    "compile": "webpack",
+    "watch": "webpack --watch",
+    "package": "webpack --mode production --devtool hidden-source-map",
+    "compile-tests": "tsc -p . --outDir out",
+    "watch-tests": "tsc -p . -w --outDir out",
+    "pretest": "npm run compile-tests && npm run compile && npm run lint",
+    "test": "node ./out/test/runTest.js",
+    "type-check": "tsc --noEmit",
+    "lint": "rome check .",
+    "format": "rome format .",
+    "lint:fix": "rome check --apply .",
+    "lint:fix-suggested": "rome check --apply-suggested .",
+    "format:fix": "rome format --write ."
   },
   "dependencies": {
     "vscode-languageclient": "^8.0.2"
+  },
+  "devDependencies": {
+    "@types/glob": "^8.0.0",
+    "@types/mocha": "^10.0.1",
+    "@types/node": "18.x",
+    "@types/vscode": "^1.70.0",
+    "@vscode/test-electron": "^2.2.1",
+    "glob": "^8.0.3",
+    "mocha": "^10.2.0",
+    "rome": "^10.0.1",
+    "ts-loader": "^9.4.2",
+    "typescript": "^4.9.4",
+    "webpack": "^5.75.0",
+    "webpack-cli": "^5.0.1"
+  },
+  "lint-staged": {
+    "*": "rome format --write"
   }
 }

@@ -1,0 +1,11 @@
+{
+	"linter": {
+		"rules": {
+			"recommended": true
+		},
+		"ignore": ["/dist/", "/out/", "/.vscode-test/"]
+	},
+	"formatter": {
+		"ignore": ["/dist/", "/out/", "/.vscode-test/"]
+	}
+}
