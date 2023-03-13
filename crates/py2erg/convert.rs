@@ -1629,7 +1629,12 @@ impl ASTConverter {
                     self.convert_ident("__import__".to_string(), stmt.location),
                 ));
                 // from . import foo ==> import "./foo"
-                let cont = format!("\"{}\"", module.unwrap_or_else(|| names[0].symbol.clone()));
+                let cont = format!(
+                    "\"{}\"",
+                    module
+                        .unwrap_or_else(|| names[0].symbol.clone())
+                        .replace('.', "/")
+                );
                 let mod_name = Expr::Literal(Literal::new(Token::new(
                     TokenKind::StrLit,
                     cont,
