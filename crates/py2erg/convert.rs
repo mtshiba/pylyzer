@@ -12,8 +12,10 @@ use erg_compiler::erg_parser::ast::{
     NonDefaultParamSignature, NormalArray, NormalDict, NormalRecord, NormalSet, NormalTuple,
     ParamPattern, Params, PosArg, PreDeclTypeSpec, ReDef, Record, RecordAttrs, Set, Signature,
     SimpleTypeSpec, SubrSignature, Tuple, TypeAscription, TypeBoundSpecs, TypeSpec, TypeSpecWithOp,
-    UnaryOp, VarName, VarPattern, VarSignature, VisModifierSpec,
+    UnaryOp, VarName, VarPattern, VarRecordAttr, VarRecordAttrs, VarRecordPattern, VarSignature,
+    VisModifierSpec,
 };
+use erg_compiler::erg_parser::desugar::Desugarer;
 use erg_compiler::erg_parser::token::{Token, TokenKind, COLON, DOT, EQUAL};
 use erg_compiler::error::CompileErrors;
 use rustpython_parser::ast::Location as PyLocation;
@@ -1627,10 +1629,7 @@ impl ASTConverter {
                     self.convert_ident("__import__".to_string(), stmt.location),
                 ));
                 // from . import foo ==> import "./foo"
-                let cont = format!(
-                    "\"{}\"",
-                    module.clone().unwrap_or_else(|| names[0].symbol.clone())
-                );
+                let cont = format!("\"{}\"", module.unwrap_or_else(|| names[0].symbol.clone()));
                 let mod_name = Expr::Literal(Literal::new(Token::new(
                     TokenKind::StrLit,
                     cont,
@@ -1639,18 +1638,10 @@ impl ASTConverter {
                 )));
                 let args = Args::new(vec![PosArg::new(mod_name)], None, vec![], None);
                 let call = import_acc.call_expr(args);
-                self.register_name_info(module.as_ref().unwrap(), NameKind::Variable);
-                let mod_ident = self.convert_ident(module.unwrap(), stmt.location);
-                let mod_expr = Expr::Accessor(Accessor::Ident(mod_ident.clone()));
-                let var = VarSignature::new(VarPattern::Ident(mod_ident), None);
-                let moddef = Expr::Def(Def::new(
-                    Signature::Var(var),
-                    DefBody::new(EQUAL, Block::new(vec![call]), DefId(0)),
-                ));
                 let mut imports = vec![];
                 for name in names {
-                    let ident = self.convert_ident(name.symbol.clone(), stmt.location);
-                    let var = if let Some(alias) = name.alias {
+                    let true_name = self.convert_ident(name.symbol.clone(), stmt.location);
+                    let alias = if let Some(alias) = name.alias {
                         self.register_name_info(&alias, NameKind::Variable);
                         VarSignature::new(
                             VarPattern::Ident(self.convert_ident(alias, stmt.location)),
@@ -1658,28 +1649,18 @@ impl ASTConverter {
                         )
                     } else {
                         self.register_name_info(&name.symbol, NameKind::Variable);
-                        VarSignature::new(
-                            VarPattern::Ident(
-                                self.convert_ident(name.symbol.clone(), stmt.location),
-                            ),
-                            None,
-                        )
+                        let ident = self.convert_ident(name.symbol.clone(), stmt.location);
+                        VarSignature::new(VarPattern::Ident(ident), None)
                     };
-                    let attr = mod_expr.clone().attr_expr(ident);
-                    let def = Def::new(
-                        Signature::Var(var),
-                        DefBody::new(EQUAL, Block::new(vec![attr]), DefId(0)),
-                    );
-                    imports.push(Expr::Def(def));
+                    imports.push(VarRecordAttr::new(true_name, alias));
                 }
-                let imports = Dummy::new(
-                    None,
-                    vec![moddef]
-                        .into_iter()
-                        .chain(imports.into_iter())
-                        .collect(),
-                );
-                Expr::Dummy(imports)
+                let attrs = VarRecordAttrs::new(imports);
+                let pat = VarRecordPattern::new(Token::DUMMY, attrs, Token::DUMMY);
+                let var = VarSignature::new(VarPattern::Record(pat), None);
+                Expr::Def(Def::new(
+                    Signature::Var(var),
+                    DefBody::new(EQUAL, Block::new(vec![call]), DefId(0)),
+                ))
             }
             StatementType::Try {
                 body,
@@ -1731,6 +1712,7 @@ impl ASTConverter {
             .into_iter()
             .map(|stmt| self.convert_statement(stmt, true))
             .collect();
-        IncompleteArtifact::new(Some(Module::new(program)), self.errs, self.warns)
+        let module = Desugarer::new().desugar(Module::new(program));
+        IncompleteArtifact::new(Some(module), self.errs, self.warns)
     }
 }

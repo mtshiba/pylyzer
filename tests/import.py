@@ -1,6 +1,8 @@
 import export
 import random
 from random import randint as rdi
+from datetime import datetime, timedelta
+import datetime as dt
 
 i = random.randint(0, 1)
 print(i + 1)
@@ -14,3 +16,8 @@ from glob import glob
 print(glob("*"))
 glob = None
 assert glob == None
+
+max_date = datetime.max
+max_delta = timedelta.max
+
+assert dt.datetime.max == max_date
