@@ -252,8 +252,9 @@ checksum = "7fcaabb2fef8c910e7f4c7ce9f67a1283a1715879a7c230ca9d6d1ae31f16d91"
 
 [[package]]
 name = "els"
-version = "0.1.19"
-source = "git+https://github.com/erg-lang/erg?branch=main#5b65611c22af9679c4636946ae99180527dff7ad"
+version = "0.1.20-nightly.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0ebd4f6abe5f42affe560a4d2d70240558406311aafa6f0d3dcc90d7c7edbdf1"
 dependencies = [
  "erg_common",
  "erg_compiler",
@@ -273,8 +274,9 @@ dependencies = [
 
 [[package]]
 name = "erg_common"
-version = "0.6.7"
-source = "git+https://github.com/erg-lang/erg?branch=main#5b65611c22af9679c4636946ae99180527dff7ad"
+version = "0.6.8-nightly.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3483797e9889dd1b54f858eb22540cfe6826e6bb188a129b60c93d68ff7ed2e3"
 dependencies = [
  "backtrace-on-stack-overflow",
  "hermit-abi",
@@ -284,8 +286,9 @@ dependencies = [
 
 [[package]]
 name = "erg_compiler"
-version = "0.6.7"
-source = "git+https://github.com/erg-lang/erg?branch=main#5b65611c22af9679c4636946ae99180527dff7ad"
+version = "0.6.8-nightly.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "58a0ecbb398d305167c4aaa21aa76a1481fa5e606ecbe17a6a1ea3596bc4c083"
 dependencies = [
  "erg_common",
  "erg_parser",
@@ -293,8 +296,9 @@ dependencies = [
 
 [[package]]
 name = "erg_parser"
-version = "0.6.7"
-source = "git+https://github.com/erg-lang/erg?branch=main#5b65611c22af9679c4636946ae99180527dff7ad"
+version = "0.6.8-nightly.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0477961cfc3d14fc7564f7fddd23ab497426f62eb7238814b0b98ad7a6567c4a"
 dependencies = [
  "erg_common",
  "unicode-xid 0.2.4",
@@ -598,7 +602,7 @@ dependencies = [
 
 [[package]]
 name = "py2erg"
-version = "0.0.10"
+version = "0.0.11"
 dependencies = [
  "erg_common",
  "erg_compiler",
@@ -607,7 +611,7 @@ dependencies = [
 
 [[package]]
 name = "pylyzer"
-version = "0.0.10"
+version = "0.0.11"
 dependencies = [
  "els",
  "erg_common",
