@@ -252,8 +252,9 @@ checksum = "7fcaabb2fef8c910e7f4c7ce9f67a1283a1715879a7c230ca9d6d1ae31f16d91"
 
 [[package]]
 name = "els"
-version = "0.1.20-nightly.0"
-source = "git+https://github.com/erg-lang/erg?branch=main#e0d5cd2748c03988d1e431c2a33a7720e7a83544"
+version = "0.1.20-nightly.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8b8142d4e705b2d806507ec6846b7e98cc05264575bb468d6340d3ea829b04e9"
 dependencies = [
  "erg_common",
  "erg_compiler",
@@ -273,8 +274,9 @@ dependencies = [
 
 [[package]]
 name = "erg_common"
-version = "0.6.8-nightly.0"
-source = "git+https://github.com/erg-lang/erg?branch=main#e0d5cd2748c03988d1e431c2a33a7720e7a83544"
+version = "0.6.8-nightly.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "97d908333ab5bf78564b97716c2da08d24352b7d3a0d3b1ea30ad9c0776ab75d"
 dependencies = [
  "backtrace-on-stack-overflow",
  "hermit-abi",
@@ -284,8 +286,9 @@ dependencies = [
 
 [[package]]
 name = "erg_compiler"
-version = "0.6.8-nightly.0"
-source = "git+https://github.com/erg-lang/erg?branch=main#e0d5cd2748c03988d1e431c2a33a7720e7a83544"
+version = "0.6.8-nightly.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cce5bba39e948a788ab06cda865d15258b5533c1d31150964f998d28eb82c49a"
 dependencies = [
  "erg_common",
  "erg_parser",
@@ -293,8 +296,9 @@ dependencies = [
 
 [[package]]
 name = "erg_parser"
-version = "0.6.8-nightly.0"
-source = "git+https://github.com/erg-lang/erg?branch=main#e0d5cd2748c03988d1e431c2a33a7720e7a83544"
+version = "0.6.8-nightly.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "22056c06206be2ecebe12fcd07609b4413db216acdbc4099fe5453becd7581df"
 dependencies = [
  "erg_common",
  "unicode-xid 0.2.4",
@@ -598,7 +602,7 @@ dependencies = [
 
 [[package]]
 name = "py2erg"
-version = "0.0.11"
+version = "0.0.12"
 dependencies = [
  "erg_common",
  "erg_compiler",
@@ -607,7 +611,7 @@ dependencies = [
 
 [[package]]
 name = "pylyzer"
-version = "0.0.11"
+version = "0.0.12"
 dependencies = [
  "els",
  "erg_common",
