@@ -3,7 +3,7 @@
   "displayName": "pylyzer",
   "description": "A fast Python static code analyzer & language server for VSCode",
   "publisher": "pylyzer",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "engines": {
     "vscode": "^1.70.0"
   },
@@ -43,6 +43,11 @@
       "type": "object",
       "title": "pylyzer",
       "properties": {
+        "pylyzer.diagnostics": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Enable diagnostics"
+        },
         "pylyzer.inlayHints": {
           "type": "boolean",
           "default": false,

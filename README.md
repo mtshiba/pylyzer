@@ -60,6 +60,8 @@ pylyzer as a language server supports various features, such as completion and r
 
 ![autoimport](https://raw.githubusercontent.com/mtshiba/pylyzer/main/images/autoimport.gif)
 
+## [VSCode extension](https://github.com/mtshiba/pylyzer/blob/main/extension)
+
 ## How it works
 
 pylyzer uses the type checker of [the Erg programming language](https://erg-lang.org) internally.

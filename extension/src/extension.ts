@@ -16,6 +16,7 @@ async function startLanguageClient(context: ExtensionContext) {
 				.get<string>("executablePath", "");
 			return executablePath === "" ? "pylyzer" : executablePath;
 		})();
+		const enableDiagnostics = workspace.getConfiguration("pylyzer").get<boolean>("diagnostics", true);
 		const enableInlayHints = workspace.getConfiguration("pylyzer").get<boolean>("inlayHints", false);
 		const enableSemanticTokens = workspace.getConfiguration("pylyzer").get<boolean>("semanticTokens", true);
 		const enableHover = workspace.getConfiguration("pylyzer").get<boolean>("hover", true);
@@ -23,8 +24,12 @@ async function startLanguageClient(context: ExtensionContext) {
 		/* optional features */
 		const checkOnType = workspace.getConfiguration("pylyzer").get<boolean>("checkOnType", false);
 		let args = ["--server"];
-		if (!(enableInlayHints && enableSemanticTokens && enableHover && smartCompletion) || checkOnType) {
+		if (!(enableDiagnostics && enableSemanticTokens && enableHover && smartCompletion) || (checkOnType || enableInlayHints)) {
 			args.push("--");
+		}
+		if (!enableDiagnostics) {
+			args.push("--disable");
+			args.push("diagnostic");
 		}
 		if (!enableInlayHints) {
 			args.push("--disable");
