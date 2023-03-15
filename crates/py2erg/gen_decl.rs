@@ -5,7 +5,8 @@ use erg_common::config::Input;
 use erg_common::log;
 use erg_compiler::context::register::PylyzerStatus;
 use erg_compiler::hir::{Expr, HIR};
-use erg_compiler::ty::HasType;
+use erg_compiler::ty::value::{GenTypeObj, TypeObj};
+use erg_compiler::ty::{HasType, Type};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CheckStatus {
@@ -28,7 +29,7 @@ pub struct DeclFile {
 }
 
 fn escape_type(typ: String) -> String {
-    typ.replace('%', "Type_")
+    typ.replace('%', "Type_").replace("<module>", "")
 }
 
 pub fn gen_decl_er(input: &Input, hir: HIR, status: CheckStatus) -> DeclFile {
@@ -45,26 +46,63 @@ pub fn gen_decl_er(input: &Input, hir: HIR, status: CheckStatus) -> DeclFile {
     };
     let mut code = format!("{status}\n");
     for chunk in hir.module.into_iter() {
-        match chunk {
-            Expr::Def(def) => {
-                let name = def.sig.ident().inspect().replace('\0', "");
-                let typ = def.sig.ident().ref_t().to_string();
-                let typ = escape_type(typ);
-                let decl = format!(".{name}: {typ}");
-                code += &decl;
-            }
-            Expr::ClassDef(def) => {
-                let name = def.sig.ident().inspect().replace('\0', "");
-                let decl = format!(".{name}: ClassType");
-                code += &decl;
-            }
-            _ => {}
-        }
-        code.push('\n');
+        gen_chunk_decl("", chunk, &mut code);
     }
     log!("code:\n{code}");
     let filename = input.unescaped_filename().replace(".py", ".d.er");
     DeclFile { filename, code }
+}
+
+fn gen_chunk_decl(namespace: &str, chunk: Expr, code: &mut String) {
+    match chunk {
+        Expr::Def(def) => {
+            let name = def.sig.ident().inspect().replace('\0', "");
+            let typ = def.sig.ident().ref_t().to_string();
+            let typ = escape_type(typ);
+            let decl = format!("{namespace}.{name}: {typ}");
+            *code += &decl;
+        }
+        Expr::ClassDef(def) => {
+            let class_name = def.sig.ident().inspect().replace('\0', "");
+            let namespace = format!("{namespace}.{class_name}");
+            let decl = format!(".{class_name}: ClassType");
+            *code += &decl;
+            code.push('\n');
+            if let GenTypeObj::Subclass(class) = &def.obj {
+                let sup = class.sup.as_ref().typ().to_string();
+                let sup = escape_type(sup);
+                let decl = format!(".{class_name} <: {sup}\n");
+                *code += &decl;
+            }
+            if let Some(TypeObj::Builtin {
+                t: Type::Record(rec),
+                ..
+            }) = def.obj.base_or_sup()
+            {
+                for (attr, t) in rec.iter() {
+                    let typ = escape_type(t.to_string());
+                    let decl = format!("{namespace}.{}: {typ}\n", attr.symbol);
+                    *code += &decl;
+                }
+            }
+            if let Some(TypeObj::Builtin {
+                t: Type::Record(rec),
+                ..
+            }) = def.obj.additional()
+            {
+                for (attr, t) in rec.iter() {
+                    let typ = escape_type(t.to_string());
+                    let decl = format!("{namespace}.{}: {typ}\n", attr.symbol);
+                    *code += &decl;
+                }
+            }
+            for attr in def.methods.into_iter() {
+                gen_chunk_decl(&namespace, attr, code);
+            }
+        }
+        _ => {}
+    }
+    code.push('\n');
 }
 
 pub fn dump_decl_er(input: Input, hir: HIR, status: CheckStatus) {

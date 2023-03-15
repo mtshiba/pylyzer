@@ -14,6 +14,15 @@ print(export.test)
 print(export.add(1, 2))
 assert export.add("a", "b") == 1 # ERR
 
+c = export.C(1)
+assert c.const == 1
+assert c.x == 2
+assert c.method(2) == 3
+
+d = export.D(1, 2)
+assert d.x == 1
+assert d.y == 2
+
 from glob import glob
 print(glob("*"))
 glob = None

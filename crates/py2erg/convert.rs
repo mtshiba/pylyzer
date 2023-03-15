@@ -8,12 +8,12 @@ use erg_compiler::artifact::IncompleteArtifact;
 use erg_compiler::erg_parser::ast::{
     Accessor, Args, Array, ArrayTypeSpec, BinOp, Block, ClassAttr, ClassAttrs, ClassDef,
     ConstAccessor, ConstArgs, ConstExpr, Decorator, Def, DefBody, DefId, DefaultParamSignature,
-    Dict, Dummy, Expr, Identifier, KeyValue, Lambda, LambdaSignature, Literal, Methods, Module,
-    NonDefaultParamSignature, NormalArray, NormalDict, NormalRecord, NormalSet, NormalTuple,
-    ParamPattern, Params, PosArg, PreDeclTypeSpec, ReDef, Record, RecordAttrs, Set, Signature,
-    SimpleTypeSpec, SubrSignature, Tuple, TypeAscription, TypeBoundSpecs, TypeSpec, TypeSpecWithOp,
-    UnaryOp, VarName, VarPattern, VarRecordAttr, VarRecordAttrs, VarRecordPattern, VarSignature,
-    VisModifierSpec,
+    Dict, Dummy, Expr, Identifier, KeyValue, KwArg, Lambda, LambdaSignature, Literal, Methods,
+    Module, NonDefaultParamSignature, NormalArray, NormalDict, NormalRecord, NormalSet,
+    NormalTuple, ParamPattern, Params, PosArg, PreDeclTypeSpec, ReDef, Record, RecordAttrs, Set,
+    Signature, SimpleTypeSpec, SubrSignature, Tuple, TypeAscription, TypeBoundSpecs, TypeSpec,
+    TypeSpecWithOp, UnaryOp, VarName, VarPattern, VarRecordAttr, VarRecordAttrs, VarRecordPattern,
+    VarSignature, VisModifierSpec,
 };
 use erg_compiler::erg_parser::desugar::Desugarer;
 use erg_compiler::erg_parser::token::{Token, TokenKind, COLON, DOT, EQUAL};
@@ -1231,7 +1231,10 @@ impl ASTConverter {
         let classdef = if inherit {
             // TODO: multiple inheritance
             let pos_args = vec![PosArg::new(bases.remove(0))];
-            let args = Args::pos_only(pos_args, None);
+            let mut args = Args::pos_only(pos_args, None);
+            if let Some(rec @ Expr::Record(_)) = base_type {
+                args.push_kw(KwArg::new(Token::symbol("Additional"), None, rec));
+            }
             let inherit_acc = Expr::Accessor(Accessor::Ident(
                 self.convert_ident("Inherit".to_string(), loc),
             ));
