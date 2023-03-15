@@ -57,6 +57,9 @@ fn gen_chunk_decl(namespace: &str, chunk: Expr, code: &mut String) {
     match chunk {
         Expr::Def(def) => {
             let name = def.sig.ident().inspect().replace('\0', "");
+            if name.starts_with('%') {
+                return;
+            }
             let typ = def.sig.ident().ref_t().to_string();
             let typ = escape_type(typ);
             let decl = format!("{namespace}.{name}: {typ}");
