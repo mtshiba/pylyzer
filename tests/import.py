@@ -4,6 +4,7 @@ from random import randint as rdi
 from datetime import datetime, timedelta
 import datetime as dt
 from http.client import HTTPResponse
+import http
 
 i = random.randint(0, 1)
 print(i + 1)
@@ -20,5 +21,6 @@ assert glob == None
 
 max_date = datetime.max
 max_delta = timedelta.max
-
 assert dt.datetime.max == max_date
+
+Resp = http.client.HTTPResponse

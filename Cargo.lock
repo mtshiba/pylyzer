@@ -253,7 +253,7 @@ checksum = "7fcaabb2fef8c910e7f4c7ce9f67a1283a1715879a7c230ca9d6d1ae31f16d91"
 [[package]]
 name = "els"
 version = "0.1.20-nightly.0"
-source = "git+https://github.com/erg-lang/erg?branch=main#75d838ee7bd1a0faced69ff52c8d19d8d2d5ac35"
+source = "git+https://github.com/erg-lang/erg?branch=main#e0d5cd2748c03988d1e431c2a33a7720e7a83544"
 dependencies = [
  "erg_common",
  "erg_compiler",
@@ -274,7 +274,7 @@ dependencies = [
 [[package]]
 name = "erg_common"
 version = "0.6.8-nightly.0"
-source = "git+https://github.com/erg-lang/erg?branch=main#75d838ee7bd1a0faced69ff52c8d19d8d2d5ac35"
+source = "git+https://github.com/erg-lang/erg?branch=main#e0d5cd2748c03988d1e431c2a33a7720e7a83544"
 dependencies = [
  "backtrace-on-stack-overflow",
  "hermit-abi",
@@ -285,7 +285,7 @@ dependencies = [
 [[package]]
 name = "erg_compiler"
 version = "0.6.8-nightly.0"
-source = "git+https://github.com/erg-lang/erg?branch=main#75d838ee7bd1a0faced69ff52c8d19d8d2d5ac35"
+source = "git+https://github.com/erg-lang/erg?branch=main#e0d5cd2748c03988d1e431c2a33a7720e7a83544"
 dependencies = [
  "erg_common",
  "erg_parser",
@@ -294,7 +294,7 @@ dependencies = [
 [[package]]
 name = "erg_parser"
 version = "0.6.8-nightly.0"
-source = "git+https://github.com/erg-lang/erg?branch=main#75d838ee7bd1a0faced69ff52c8d19d8d2d5ac35"
+source = "git+https://github.com/erg-lang/erg?branch=main#e0d5cd2748c03988d1e431c2a33a7720e7a83544"
 dependencies = [
  "erg_common",
  "unicode-xid 0.2.4",
@@ -816,18 +816,18 @@ checksum = "f91339c0467de62360649f8d3e185ca8de4224ff281f66000de5eb2a77a79041"
 
 [[package]]
 name = "serde"
-version = "1.0.155"
+version = "1.0.156"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "71f2b4817415c6d4210bfe1c7bfcf4801b2d904cb4d0e1a8fdb651013c9e86b8"
+checksum = "314b5b092c0ade17c00142951e50ced110ec27cea304b1037c6969246c2469a4"
 dependencies = [
  "serde_derive",
 ]
 
 [[package]]
 name = "serde_derive"
-version = "1.0.155"
+version = "1.0.156"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d071a94a3fac4aff69d023a7f411e33f40f3483f8c5190b1953822b6b76d7630"
+checksum = "d7e29c4601e36bcec74a223228dce795f4cd3616341a4af93520ca1a837c087d"
 dependencies = [
  "proc-macro2",
  "quote",

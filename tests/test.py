@@ -33,3 +33,7 @@ print(dic["c"]) # ERR
 
 arr = [1, 2, 3]
 print(arr[4]) # ERR
+
+i, j = 1, 2
+assert i == 1
+assert j == 2

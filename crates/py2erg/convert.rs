@@ -462,9 +462,9 @@ impl ASTConverter {
                         Self::param_pattern_to_var(param.pat),
                         param.t_spec.map(|t| t.t_spec),
                     ));
-                    let method = tmp_expr.clone().attr_expr(
-                        self.convert_ident("__Tuple_getitem__".to_string(), expr.location),
-                    );
+                    let method = tmp_expr
+                        .clone()
+                        .attr_expr(self.convert_ident("__getitem__".to_string(), expr.location));
                     let args =
                         Args::new(vec![PosArg::new(Expr::Literal(index))], None, vec![], None);
                     let tuple_acc = method.call_expr(args);
@@ -1391,11 +1391,9 @@ impl ASTConverter {
                                     Self::param_pattern_to_var(param.pat),
                                     param.t_spec.map(|t| t.t_spec),
                                 ));
-                                let method =
-                                    tmp_expr.clone().attr_expr(self.convert_ident(
-                                        "__Tuple_getitem__".to_string(),
-                                        stmt.location,
-                                    ));
+                                let method = tmp_expr.clone().attr_expr(
+                                    self.convert_ident("__getitem__".to_string(), stmt.location),
+                                );
                                 let args =
                                     Args::pos_only(vec![PosArg::new(Expr::Literal(index))], None);
                                 let tuple_acc = method.call_expr(args);
