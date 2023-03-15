@@ -3,7 +3,7 @@
   "displayName": "pylyzer",
   "description": "A fast Python static code analyzer & language server for VSCode",
   "publisher": "pylyzer",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "engines": {
     "vscode": "^1.70.0"
   },
