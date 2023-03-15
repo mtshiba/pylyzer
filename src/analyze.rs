@@ -142,7 +142,7 @@ impl PythonAnalyzer {
                     println!(
                         "{YELLOW}Found {} warnings{RESET}: {}",
                         artifact.warns.len(),
-                        self.cfg.input.filename()
+                        self.cfg.input.unescaped_filename()
                     );
                     artifact.warns.fmt_all_stderr();
                 }
@@ -165,7 +165,7 @@ impl PythonAnalyzer {
                     println!(
                         "{YELLOW}Found {} warnings{RESET}: {}",
                         artifact.warns.len(),
-                        self.cfg.input.filename()
+                        self.cfg.input.unescaped_filename()
                     );
                     artifact.warns.fmt_all_stderr();
                 }
@@ -179,7 +179,7 @@ impl PythonAnalyzer {
                     println!(
                         "{RED}Found {} errors{RESET}: {}",
                         artifact.errors.len(),
-                        self.cfg.input.filename()
+                        self.cfg.input.unescaped_filename()
                     );
                     artifact.errors.fmt_all_stderr();
                     1
