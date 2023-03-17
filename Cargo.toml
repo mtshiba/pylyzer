@@ -15,20 +15,23 @@ members = [
 ]
 
 [workspace.package]
-version = "0.0.12"
+version = "0.0.13"
 authors = ["Shunsuke Shibayama <sbym1346@gmail.com>"]
 license = "MIT OR Apache-2.0"
 edition = "2021"
 repository = "https://github.com/mtshiba/pylyzer"
 
 [workspace.dependencies]
-# erg_common = { version = "0.6.8-nightly.1", features = ["py_compatible", "els"] }
-# erg_compiler = { version = "0.6.8-nightly.1", features = ["py_compatible", "els"] }
-# els = { version = "0.1.20-nightly.1", features = ["py_compatible"] }
+erg_common = { version = "0.6.8-nightly.3", features = ["py_compatible", "els"] }
+erg_compiler = { version = "0.6.8-nightly.3", features = ["py_compatible", "els"] }
+els = { version = "0.1.20-nightly.3", features = ["py_compatible"] }
 rustpython-parser = "0.1.2"
-erg_compiler = { git = "https://github.com/erg-lang/erg", branch = "main", features = ["py_compatible", "els"] }
-erg_common = { git = "https://github.com/erg-lang/erg", branch = "main", features = ["py_compatible", "els"] }
-els = { git = "https://github.com/erg-lang/erg", branch = "main", features = ["py_compatible"] }
+# erg_compiler = { git = "https://github.com/erg-lang/erg", branch = "main", features = ["py_compatible", "els"] }
+# erg_common = { git = "https://github.com/erg-lang/erg", branch = "main", features = ["py_compatible", "els"] }
+# els = { git = "https://github.com/erg-lang/erg", branch = "main", features = ["py_compatible"] }
+# erg_compiler = { path = "../erg/crates/erg_compiler", features = ["py_compatible", "els"] }
+# erg_common = { path = "../erg/crates/erg_common", features = ["py_compatible", "els"] }
+# els = { path = "../erg/crates/els", features = ["py_compatible"] }
 
 [features]
 debug = ["erg_compiler/debug", "erg_common/debug", "py2erg/debug"]
@@ -40,7 +43,7 @@ erg_compiler = { workspace = true }
 erg_common = { workspace = true }
 els = { workspace = true }
 rustpython-parser = { workspace = true }
-py2erg = { version = "0.0.12", path = "./crates/py2erg" }
+py2erg = { version = "0.0.13", path = "./crates/py2erg" }
 
 [lib]
 path = "src/lib.rs"
