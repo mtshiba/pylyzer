@@ -75,3 +75,8 @@ fn exec_warns() {
 fn exec_typespec() {
     expect("tests/typespec.py", 0, 3);
 }
+
+#[test]
+fn exec_projection() {
+    expect("tests/projection.py", 0, 1);
+}
