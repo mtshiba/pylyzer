@@ -78,5 +78,5 @@ fn exec_typespec() {
 
 #[test]
 fn exec_projection() {
-    expect("tests/projection.py", 0, 1);
+    expect("tests/projection.py", 0, 4);
 }
