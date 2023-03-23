@@ -28,9 +28,9 @@ dependencies = [
 
 [[package]]
 name = "arrayref"
-version = "0.3.6"
+version = "0.3.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a4c527152e37cf757a3f78aae5a06fbeefdb07ccc535c980a3208ee3060dd544"
+checksum = "6b4930d2cb77ce62f89ee5d5289b4ac049559b1c45539271f5ed4fdc7db34545"
 
 [[package]]
 name = "arrayvec"
@@ -253,8 +253,7 @@ checksum = "7fcaabb2fef8c910e7f4c7ce9f67a1283a1715879a7c230ca9d6d1ae31f16d91"
 [[package]]
 name = "els"
 version = "0.1.20"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "acb580e00465c82a88f5cc474a3eaca2d2ce511c508e77db36a7ee9d3df7fb25"
+source = "git+https://github.com/erg-lang/erg?branch=main#4ff0b64fc37ca3ac7fc92ac3abdac203973078bf"
 dependencies = [
  "erg_common",
  "erg_compiler",
@@ -275,8 +274,7 @@ dependencies = [
 [[package]]
 name = "erg_common"
 version = "0.6.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "10e4ac50b2e1b7b18f0be1d66adb0c1afc276a38d20b430e97669379dadc0222"
+source = "git+https://github.com/erg-lang/erg?branch=main#4ff0b64fc37ca3ac7fc92ac3abdac203973078bf"
 dependencies = [
  "backtrace-on-stack-overflow",
  "hermit-abi",
@@ -287,8 +285,7 @@ dependencies = [
 [[package]]
 name = "erg_compiler"
 version = "0.6.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e26920a48a4f42bf834e5029a9962bf4474e65a1ac204fb18a9d96f147b40231"
+source = "git+https://github.com/erg-lang/erg?branch=main#4ff0b64fc37ca3ac7fc92ac3abdac203973078bf"
 dependencies = [
  "erg_common",
  "erg_parser",
@@ -297,8 +294,7 @@ dependencies = [
 [[package]]
 name = "erg_parser"
 version = "0.6.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "468925219011cb3b1b9e9c845146eaa00b815678a835443703bbbb9055fd08e3"
+source = "git+https://github.com/erg-lang/erg?branch=main#4ff0b64fc37ca3ac7fc92ac3abdac203973078bf"
 dependencies = [
  "erg_common",
  "unicode-xid 0.2.4",
@@ -593,9 +589,9 @@ checksum = "925383efa346730478fb4838dbe9137d2a47675ad789c546d150a6e1dd4ab31c"
 
 [[package]]
 name = "proc-macro2"
-version = "1.0.52"
+version = "1.0.53"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1d0e1ae9e836cc3beddd63db0df682593d7e2d3d891ae8c9083d2113e1744224"
+checksum = "ba466839c78239c09faf015484e5cc04860f88242cff4d03eb038f04b4699b73"
 dependencies = [
  "unicode-ident",
 ]
@@ -763,9 +759,9 @@ dependencies = [
 
 [[package]]
 name = "regex"
-version = "1.7.1"
+version = "1.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "48aaa5748ba571fb95cd2c85c09f629215d3a6ece942baa100950af03a34f733"
+checksum = "cce168fea28d3e05f158bda4576cf0c844d5045bc2cc3620fa0292ed5bb5814c"
 dependencies = [
  "aho-corasick",
  "memchr",
@@ -774,9 +770,9 @@ dependencies = [
 
 [[package]]
 name = "regex-syntax"
-version = "0.6.28"
+version = "0.6.29"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "456c603be3e8d448b072f410900c09faf164fbce2d480456f50eea6e25f9c848"
+checksum = "f162c6dd7b008981e4d40210aca20b4bd0f9b60ca9271061b07f78537722f2e1"
 
 [[package]]
 name = "rust-argon2"
@@ -920,9 +916,9 @@ checksum = "73473c0e59e6d5812c5dfe2a064a6444949f089e20eec9a2e5506596494e4623"
 
 [[package]]
 name = "syn"
-version = "2.0.3"
+version = "2.0.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e8234ae35e70582bfa0f1fedffa6daa248e41dd045310b19800c4a36382c8f60"
+checksum = "bcc02725fd69ab9f26eab07fad303e2497fad6fb9eba4f96c4d1687bdf704ad9"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1015,9 +1011,9 @@ dependencies = [
 
 [[package]]
 name = "unicode-bidi"
-version = "0.3.12"
+version = "0.3.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7d502c968c6a838ead8e69b2ee18ec708802f99db92a0d156705ec9ef801993b"
+checksum = "92888ba5573ff080736b3648696b70cafad7d250551175acbaa4e0385b3e1460"
 
 [[package]]
 name = "unicode-ident"

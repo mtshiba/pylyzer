@@ -31,9 +31,12 @@ fn _expect(file_path: &'static str, warns: usize, errors: usize) {
 }
 
 pub fn expect(file_path: &'static str, warns: usize, errors: usize) {
-    exec_new_thread(move || {
-        _expect(file_path, warns, errors);
-    });
+    exec_new_thread(
+        move || {
+            _expect(file_path, warns, errors);
+        },
+        file_path,
+    );
 }
 
 #[test]
