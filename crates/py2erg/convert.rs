@@ -78,6 +78,7 @@ fn escape_name(name: String) -> String {
         "str" => "Str".into(),
         "bool" => "Bool".into(),
         "list" => "GenericArray".into(),
+        "bytes" => "Bytes".into(),
         // "range" => "GenericRange".into(),
         "dict" => "GenericDict".into(),
         "set" => "GenericSet".into(),

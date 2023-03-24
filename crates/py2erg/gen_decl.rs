@@ -56,17 +56,34 @@ pub fn gen_decl_er(input: &Input, hir: HIR, status: CheckStatus) -> DeclFile {
 fn gen_chunk_decl(namespace: &str, chunk: Expr, code: &mut String) {
     match chunk {
         Expr::Def(def) => {
-            let name = def.sig.ident().inspect().replace('\0', "");
-            if name.starts_with('%') {
-                return;
-            }
+            let mut name = def
+                .sig
+                .ident()
+                .inspect()
+                .replace('\0', "")
+                .replace('%', "___");
             let typ = def.sig.ident().ref_t().to_string();
             let typ = escape_type(typ);
-            let decl = format!("{namespace}.{name}: {typ}");
+            // Erg can automatically import nested modules
+            // `import http.client` => `http = pyimport "http"`
+            let decl = if def.sig.ident().ref_t().is_py_module() {
+                name = name.split('.').next().unwrap().to_string();
+                format!(
+                    "{namespace}.{name} = pyimport {}",
+                    def.sig.ident().ref_t().typarams()[0]
+                )
+            } else {
+                format!("{namespace}.{name}: {typ}")
+            };
             *code += &decl;
         }
         Expr::ClassDef(def) => {
-            let class_name = def.sig.ident().inspect().replace('\0', "");
+            let class_name = def
+                .sig
+                .ident()
+                .inspect()
+                .replace('\0', "")
+                .replace('%', "___");
             let namespace = format!("{namespace}.{class_name}");
             let decl = format!(".{class_name}: ClassType");
             *code += &decl;
@@ -101,6 +118,11 @@ fn gen_chunk_decl(namespace: &str, chunk: Expr, code: &mut String) {
             }
             for attr in def.methods.into_iter() {
                 gen_chunk_decl(&namespace, attr, code);
+            }
+        }
+        Expr::Dummy(dummy) => {
+            for chunk in dummy.into_iter() {
+                gen_chunk_decl(namespace, chunk, code);
             }
         }
         _ => {}
