@@ -252,8 +252,9 @@ checksum = "7fcaabb2fef8c910e7f4c7ce9f67a1283a1715879a7c230ca9d6d1ae31f16d91"
 
 [[package]]
 name = "els"
-version = "0.1.20"
-source = "git+https://github.com/erg-lang/erg?branch=main#4ff0b64fc37ca3ac7fc92ac3abdac203973078bf"
+version = "0.1.21-nightly.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "effb16a463a0482c87815d6c783bc84dacc2ba3cd5a8d17fc5d16b90655bb863"
 dependencies = [
  "erg_common",
  "erg_compiler",
@@ -273,8 +274,9 @@ dependencies = [
 
 [[package]]
 name = "erg_common"
-version = "0.6.8"
-source = "git+https://github.com/erg-lang/erg?branch=main#4ff0b64fc37ca3ac7fc92ac3abdac203973078bf"
+version = "0.6.9-nightly.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1006deef4a766d7176835224853776db7716bf052e64d67601e2ade75e5dfb36"
 dependencies = [
  "backtrace-on-stack-overflow",
  "hermit-abi",
@@ -284,8 +286,9 @@ dependencies = [
 
 [[package]]
 name = "erg_compiler"
-version = "0.6.8"
-source = "git+https://github.com/erg-lang/erg?branch=main#4ff0b64fc37ca3ac7fc92ac3abdac203973078bf"
+version = "0.6.9-nightly.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0b959c9f6e1470108bd7bff4b06ffbd2538a73184704c1dc7df740c62e3f5554"
 dependencies = [
  "erg_common",
  "erg_parser",
@@ -293,8 +296,9 @@ dependencies = [
 
 [[package]]
 name = "erg_parser"
-version = "0.6.8"
-source = "git+https://github.com/erg-lang/erg?branch=main#4ff0b64fc37ca3ac7fc92ac3abdac203973078bf"
+version = "0.6.9-nightly.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e537715293794c1cde49e1cfbbebb895c5b6f9a1c6face524a3b86c9e26c86b0"
 dependencies = [
  "erg_common",
  "unicode-xid 0.2.4",
@@ -598,7 +602,7 @@ dependencies = [
 
 [[package]]
 name = "py2erg"
-version = "0.0.14"
+version = "0.0.15"
 dependencies = [
  "erg_common",
  "erg_compiler",
@@ -607,7 +611,7 @@ dependencies = [
 
 [[package]]
 name = "pylyzer"
-version = "0.0.14"
+version = "0.0.15"
 dependencies = [
  "els",
  "erg_common",
@@ -788,9 +792,9 @@ dependencies = [
 
 [[package]]
 name = "rustc-demangle"
-version = "0.1.21"
+version = "0.1.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7ef03e0a2b150c7a90d01faf6254c9c48a41e95fb2a8c2ac1c6f0d2b9aefc342"
+checksum = "d4a36c42d1873f9a77c53bde094f9664d9891bc604a45b4798fd2c389ed12e5b"
 
 [[package]]
 name = "rustpython-parser"

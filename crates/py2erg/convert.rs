@@ -74,6 +74,7 @@ fn escape_name(name: String) -> String {
     match &name[..] {
         "int" => "Int".into(),
         "float" => "Float".into(),
+        "complex" => "Complex".into(),
         "str" => "Str".into(),
         "bool" => "Bool".into(),
         "list" => "GenericArray".into(),
