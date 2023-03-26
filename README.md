@@ -97,6 +97,7 @@ pylyzer converts Python ASTs to Erg ASTs and passes them to Erg's type checker. 
   * [ ] others
 * [ ] type variable (`TypeVar`, `Generic`)
 * [ ] type assertion (`typing.cast`)
+* [ ] type guard (`TypeGuard`, `is`, `isinstance`, `issubclass`)
 
 ---
 
