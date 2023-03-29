@@ -1,6 +1,6 @@
 use rustpython_parser::ast::{
-    BooleanOperator, Comparison, ExpressionType, Keyword, Located, Number, Operator, Parameter,
-    Parameters, StringGroup, UnaryOperator, Varargs,
+    BooleanOperator, Comparison, Comprehension, ComprehensionKind, ExpressionType, Keyword,
+    Located, Number, Operator, Parameter, Parameters, StringGroup, UnaryOperator, Varargs,
 };
 
 fn clone_number(num: &Number) -> Number {
@@ -135,6 +135,26 @@ fn clone_kw(keyword: &Keyword) -> Keyword {
     }
 }
 
+fn clone_comprehension_kind(kind: &ComprehensionKind) -> ComprehensionKind {
+    match kind {
+        ComprehensionKind::Dict { key, value } => ComprehensionKind::Dict {
+            key: clone_loc_expr(key),
+            value: clone_loc_expr(value),
+        },
+        ComprehensionKind::List { element } => ComprehensionKind::List {
+            element: clone_loc_expr(element),
+        },
+        ComprehensionKind::Set { element } => ComprehensionKind::Set {
+            element: clone_loc_expr(element),
+        },
+        ComprehensionKind::GeneratorExpression { element } => {
+            ComprehensionKind::GeneratorExpression {
+                element: clone_loc_expr(element),
+            }
+        }
+    }
+}
+
 pub fn clone_loc_expr(expr: &Located<ExpressionType>) -> Located<ExpressionType> {
     Located {
         node: clone_expr(&expr.node),
@@ -144,6 +164,10 @@ pub fn clone_loc_expr(expr: &Located<ExpressionType>) -> Located<ExpressionType>
 
 pub fn clone_expr(expr: &ExpressionType) -> ExpressionType {
     match expr {
+        ExpressionType::None => ExpressionType::None,
+        ExpressionType::Ellipsis => ExpressionType::Ellipsis,
+        ExpressionType::True => ExpressionType::True,
+        ExpressionType::False => ExpressionType::False,
         ExpressionType::Identifier { name } => ExpressionType::Identifier { name: name.clone() },
         ExpressionType::Number { value } => ExpressionType::Number {
             value: clone_number(value),
@@ -158,6 +182,12 @@ pub fn clone_expr(expr: &ExpressionType) -> ExpressionType {
         ExpressionType::Subscript { a, b } => ExpressionType::Subscript {
             a: Box::new(clone_loc_expr(a)),
             b: Box::new(clone_loc_expr(b)),
+        },
+        ExpressionType::Slice { elements } => ExpressionType::Slice {
+            elements: elements.iter().map(clone_loc_expr).collect::<Vec<_>>(),
+        },
+        ExpressionType::Bytes { value } => ExpressionType::Bytes {
+            value: value.clone(),
         },
         ExpressionType::Call {
             function,
@@ -218,6 +248,25 @@ pub fn clone_expr(expr: &ExpressionType) -> ExpressionType {
         ExpressionType::Await { value } => ExpressionType::Await {
             value: Box::new(clone_loc_expr(value)),
         },
-        other => todo!("clone_expr: {:?}", other),
+        ExpressionType::NamedExpression { left, right } => ExpressionType::NamedExpression {
+            left: Box::new(clone_loc_expr(left)),
+            right: Box::new(clone_loc_expr(right)),
+        },
+        ExpressionType::Starred { value } => ExpressionType::Starred {
+            value: Box::new(clone_loc_expr(value)),
+        },
+        ExpressionType::Comprehension { kind, generators } => ExpressionType::Comprehension {
+            kind: Box::new(clone_comprehension_kind(kind)),
+            generators: generators
+                .iter()
+                .map(|gen| Comprehension {
+                    location: gen.location,
+                    target: clone_loc_expr(&gen.target),
+                    iter: clone_loc_expr(&gen.iter),
+                    ifs: gen.ifs.iter().map(clone_loc_expr).collect::<Vec<_>>(),
+                    is_async: gen.is_async,
+                })
+                .collect::<Vec<_>>(),
+        },
     }
 }
