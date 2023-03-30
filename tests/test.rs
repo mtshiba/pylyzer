@@ -83,3 +83,8 @@ fn exec_typespec() {
 fn exec_projection() {
     expect("tests/projection.py", 0, 4);
 }
+
+#[test]
+fn exec_narrowing() {
+    expect("tests/narrowing.py", 0, 1);
+}

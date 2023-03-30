@@ -68,7 +68,7 @@ impl BlockKind {
     }
 }
 
-/// Variables are automatically rewritten with `py_compatible`,
+/// Variables are automatically rewritten with `py_compat`,
 /// but types are rewritten here because they are complex components used inseparably in the Erg system.
 fn escape_name(name: String) -> String {
     match &name[..] {
@@ -544,6 +544,9 @@ impl ASTConverter {
             ExpressionType::Identifier { name } => TypeSpec::PreDeclTy(PreDeclTypeSpec::Simple(
                 self.convert_ident_type_spec(name, expr.location),
             )),
+            ExpressionType::None => TypeSpec::PreDeclTy(PreDeclTypeSpec::Simple(
+                self.convert_ident_type_spec("NoneType".into(), expr.location),
+            )),
             ExpressionType::Attribute { value, name } => {
                 let namespace = Box::new(self.convert_expr(*value));
                 let t = self.convert_ident_type_spec(name, expr.location);
@@ -772,7 +775,7 @@ impl ASTConverter {
                 let lhs = self.convert_expr(vals.remove(0));
                 let rhs = self.convert_expr(vals.remove(0));
                 let (kind, cont) = match ops.remove(0) {
-                    Comparison::Equal => (TokenKind::Equal, "=="),
+                    Comparison::Equal => (TokenKind::DblEq, "=="),
                     Comparison::NotEqual => (TokenKind::NotEq, "!="),
                     Comparison::Less => (TokenKind::Less, "<"),
                     Comparison::LessOrEqual => (TokenKind::LessEq, "<="),
