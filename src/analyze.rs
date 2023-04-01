@@ -2,7 +2,7 @@ use erg_common::config::ErgConfig;
 use erg_common::error::{ErrorCore, ErrorKind, MultiErrorDisplay};
 use erg_common::style::colors::{BLUE, GREEN, RED, YELLOW};
 use erg_common::style::RESET;
-use erg_common::traits::{Runnable, Stream};
+use erg_common::traits::{ExitStatus, Runnable, Stream};
 use erg_common::Str;
 use erg_compiler::artifact::{BuildRunnable, Buildable, CompleteArtifact, IncompleteArtifact};
 use erg_compiler::context::ModuleContext;
@@ -50,7 +50,7 @@ impl Runnable for PythonAnalyzer {
     fn eval(&mut self, src: String) -> Result<String, Self::Errs> {
         self.checker.eval(src)
     }
-    fn exec(&mut self) -> Result<i32, Self::Errs> {
+    fn exec(&mut self) -> Result<ExitStatus, Self::Errs> {
         self.checker.exec()
     }
 }

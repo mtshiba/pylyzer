@@ -15,7 +15,7 @@
     "type": "git",
     "url": "https://github.com/mtshiba/pylyzer.git"
   },
-  "icon": "../images/pylyzer-logo.png",
+  "icon": "images/pylyzer-logo.png",
   "main": "./dist/extension.js",
   "activationEvents": [
     "onLanguage:python"
