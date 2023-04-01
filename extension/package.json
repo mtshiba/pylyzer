@@ -3,7 +3,7 @@
   "displayName": "pylyzer",
   "description": "A fast Python static code analyzer & language server for VSCode",
   "publisher": "pylyzer",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "engines": {
     "vscode": "^1.70.0"
   },
@@ -15,6 +15,7 @@
     "type": "git",
     "url": "https://github.com/mtshiba/pylyzer.git"
   },
+  "icon": "../images/pylyzer-logo.png",
   "main": "./dist/extension.js",
   "activationEvents": [
     "onLanguage:python"
