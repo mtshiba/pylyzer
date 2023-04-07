@@ -22,7 +22,7 @@ cargo install pylyzer
 pip install pylyzer
 ```
 
-If installed this way, you also need to [install Erg](https://github.com/mtshiba/ergup).
+__If installed this way, you also need to [install Erg](https://github.com/mtshiba/ergup).__
 
 ```bash
 curl -L https://github.com/mtshiba/ergup/raw/main/ergup.py | python3
@@ -99,7 +99,8 @@ pylyzer converts Python ASTs to Erg ASTs and passes them to Erg's type checker. 
   * [ ] others
 * [ ] type variable (`TypeVar`, `Generic`)
 * [ ] type assertion (`typing.cast`)
-* [ ] type guard (`TypeGuard`, `is`, `isinstance`, `issubclass`)
+* [x] type narrowing (`is`, `isinstance`)
+* [ ] type guard (`TypeGuard`)
 
 ---
 
