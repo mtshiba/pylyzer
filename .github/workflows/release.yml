@@ -42,4 +42,4 @@ jobs:
           pip install maturin
       - name: upload
         run: |
-          maturin publish --release --target ${{ matrix.target }} -u mtshiba -p ${{ secrets.PYPI_PASSWORD }}
+          maturin publish -u mtshiba -p ${{ secrets.PYPI_PASSWORD }}
