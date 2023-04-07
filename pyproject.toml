@@ -4,7 +4,12 @@ build-backend = "maturin"
 
 [project]
 name = "pylyzer"
+description = "A fast static code analyzer & language server for Python"
 requires-python = ">=3.7"
 classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
     "Programming Language :: Rust",
+    "Topic :: Software Development :: Quality Assurance",
 ]
