@@ -39,7 +39,7 @@ jobs:
       - name: setup-tools
         run: |
           rustup update stable
-          pip install maturin
+          pip3 install maturin
       - name: upload
         run: |
           maturin publish -u mtshiba -p ${{ secrets.PYPI_PASSWORD }}
