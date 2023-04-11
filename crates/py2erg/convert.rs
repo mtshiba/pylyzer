@@ -5,6 +5,7 @@ use erg_common::set::Set as HashSet;
 use erg_common::traits::{Locational, Stream};
 use erg_common::{log, set};
 use erg_compiler::artifact::IncompleteArtifact;
+use erg_compiler::erg_parser::Parser;
 use erg_compiler::erg_parser::ast::{
     Accessor, Args, Array, ArrayTypeSpec, BinOp, Block, ClassAttr, ClassAttrs, ClassDef,
     ConstAccessor, ConstArgs, ConstExpr, Decorator, Def, DefBody, DefId, DefaultParamSignature,
@@ -13,7 +14,7 @@ use erg_compiler::erg_parser::ast::{
     NormalTuple, ParamPattern, Params, PosArg, PreDeclTypeSpec, ReDef, Record, RecordAttrs, Set,
     Signature, SimpleTypeSpec, SubrSignature, Tuple, TypeAscription, TypeBoundSpecs, TypeSpec,
     TypeSpecWithOp, UnaryOp, VarName, VarPattern, VarRecordAttr, VarRecordAttrs, VarRecordPattern,
-    VarSignature, VisModifierSpec,
+    VarSignature, VisModifierSpec, ConstPosArg,
 };
 use erg_compiler::erg_parser::desugar::Desugarer;
 use erg_compiler::erg_parser::token::{Token, TokenKind, COLON, DOT, EQUAL};
@@ -526,6 +527,25 @@ impl ASTConverter {
                     ConstArgs::empty(),
                 )));
                 TypeSpec::or(t, none)
+            }
+            "Literal" => {
+                let ExpressionType::Tuple { elements } = args.node else {
+                    return Self::gen_dummy_type_spec(args.location);
+                };
+                let mut elems = vec![];
+                for elem in elements {
+                    let expr = self.convert_expr(elem);
+                    match Parser::validate_const_expr(expr) {
+                        Ok(expr) => {
+                            elems.push(ConstPosArg::new(expr));
+                        }
+                        Err(err) => {
+                            log!(err "{err}");
+                        }
+                    }
+                }
+                let elems = ConstArgs::new(elems, None, vec![], None);
+                TypeSpec::Enum(elems)
             }
             "list" => {
                 let len = ConstExpr::Accessor(ConstAccessor::Local(
