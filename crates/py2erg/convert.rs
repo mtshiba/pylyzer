@@ -18,7 +18,7 @@ use erg_compiler::erg_parser::ast::{
 };
 use erg_compiler::erg_parser::desugar::Desugarer;
 use erg_compiler::erg_parser::token::{Token, TokenKind, COLON, DOT, EQUAL};
-use erg_compiler::error::CompileErrors;
+use erg_compiler::error::{CompileErrors, CompileError};
 use rustpython_parser::ast::Location as PyLocation;
 use rustpython_parser::ast::{
     BooleanOperator, Comparison, ExpressionType, Located, Number, Operator, Parameter, Parameters,
@@ -540,7 +540,8 @@ impl ASTConverter {
                             elems.push(ConstPosArg::new(expr));
                         }
                         Err(err) => {
-                            log!(err "{err}");
+                            let err = CompileError::new(err.into(), self.cfg.input.clone(), self.cur_namespace());
+                            self.errs.push(err);
                         }
                     }
                 }

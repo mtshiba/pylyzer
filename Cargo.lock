@@ -252,9 +252,9 @@ checksum = "7fcaabb2fef8c910e7f4c7ce9f67a1283a1715879a7c230ca9d6d1ae31f16d91"
 
 [[package]]
 name = "els"
-version = "0.1.22-nightly.2"
+version = "0.1.22-nightly.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4c340a78aed5d937013b334f447afdc4d5bbee65cc190faba59633f97639459d"
+checksum = "38659aa6d042238a5469abdb6441bd7ffe08d0dfd3c37aa653ae6f2badb47da5"
 dependencies = [
  "erg_common",
  "erg_compiler",
@@ -274,9 +274,9 @@ dependencies = [
 
 [[package]]
 name = "erg_common"
-version = "0.6.10-nightly.2"
+version = "0.6.10-nightly.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "12e67f6e81775665dde103062ebf291b41e6715a2029ae527702cf3d5479fb33"
+checksum = "f91719ca59d8d51d67cdc5555c1195a9fe096dd8077b3cb9b01802e24ea827f1"
 dependencies = [
  "backtrace-on-stack-overflow",
  "hermit-abi",
@@ -286,9 +286,9 @@ dependencies = [
 
 [[package]]
 name = "erg_compiler"
-version = "0.6.10-nightly.2"
+version = "0.6.10-nightly.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cc827a9e82b4b9072cd1b66be707ced26697c00a052386529f33a121f191672c"
+checksum = "da934e8016279160f9363137256d6c3d058bc9a2741c7f8bf1bd81ffd684393f"
 dependencies = [
  "erg_common",
  "erg_parser",
@@ -296,9 +296,9 @@ dependencies = [
 
 [[package]]
 name = "erg_parser"
-version = "0.6.10-nightly.2"
+version = "0.6.10-nightly.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7f1a96a75b577448f63c8521aa153afe23b0d7db8961187da97c645551035b1c"
+checksum = "90e190ce6ee780e30f015ecbc4a6ca3815958ef79344afcaf372c46702d7bf3f"
 dependencies = [
  "erg_common",
  "unicode-xid 0.2.4",
