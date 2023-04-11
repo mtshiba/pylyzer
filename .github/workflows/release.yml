@@ -42,4 +42,5 @@ jobs:
           pip3 install maturin
       - name: upload
         run: |
-          maturin publish -u mtshiba -p ${{ secrets.PYPI_PASSWORD }}
+          maturin publish -u mtshiba -p ${{ secrets.PYPI_PASSWORD }} --skip-existing
+          cargo clean
