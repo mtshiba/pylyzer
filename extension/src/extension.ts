@@ -11,7 +11,7 @@ let client: LanguageClient | undefined;
 async function startLanguageClient(context: ExtensionContext) {
 	try {
 		const executablePath = (() => {
-			let executablePath = workspace
+			const executablePath = workspace
 				.getConfiguration("pylyzer")
 				.get<string>("executablePath", "");
 			return executablePath === "" ? "pylyzer" : executablePath;
@@ -23,7 +23,7 @@ async function startLanguageClient(context: ExtensionContext) {
 		const smartCompletion = workspace.getConfiguration("pylyzer").get<boolean>("smartCompletion", true);
 		/* optional features */
 		const checkOnType = workspace.getConfiguration("pylyzer").get<boolean>("checkOnType", false);
-		let args = ["--server"];
+		const args = ["--server"];
 		if (!(enableDiagnostics && enableSemanticTokens && enableHover && smartCompletion) || (checkOnType || enableInlayHints)) {
 			args.push("--");
 		}
@@ -51,7 +51,7 @@ async function startLanguageClient(context: ExtensionContext) {
 			args.push("--enable");
 			args.push("checkOnType");
 		}
-		let serverOptions: ServerOptions = {
+		const serverOptions: ServerOptions = {
 			command: executablePath,
 			args,
 		};
@@ -69,6 +69,7 @@ async function startLanguageClient(context: ExtensionContext) {
 		window.showErrorMessage(
 			"Failed to start the pylyzer language server. Please make sure you have pylyzer installed.",
 		);
+		window.showErrorMessage(`Error: ${e}`);
 	}
 }
 
@@ -80,6 +81,7 @@ async function restartLanguageClient() {
 		await client.restart();
 	} catch (e) {
 		window.showErrorMessage("Failed to restart the pylyzer language server.");
+		window.showErrorMessage(`Error: ${e}`);
 	}
 }
 
