@@ -104,7 +104,7 @@ pylyzer converts Python ASTs to Erg ASTs and passes them to Erg's type checker. 
 * [ ] `Final`
 * [ ] `Annotated`
 * [ ] `TypeAlias`
-* [ ] type assertion (`typing.cast`)
+* [x] type assertion (`typing.cast`)
 * [x] type narrowing (`is`, `isinstance`)
 * [ ] type guard (`TypeGuard`)
 

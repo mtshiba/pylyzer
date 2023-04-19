@@ -88,3 +88,8 @@ fn exec_projection() {
 fn exec_narrowing() {
     expect("tests/narrowing.py", 0, 1);
 }
+
+#[test]
+fn exec_casting() {
+    expect("tests/casting.py", 1, 1);
+}
