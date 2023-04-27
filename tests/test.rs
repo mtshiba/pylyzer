@@ -93,3 +93,8 @@ fn exec_narrowing() {
 fn exec_casting() {
     expect("tests/casting.py", 1, 1);
 }
+
+#[test]
+fn exec_collection() {
+    expect("tests/collections.py", 0, 3);
+}
