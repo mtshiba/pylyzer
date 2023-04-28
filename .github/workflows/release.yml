@@ -16,6 +16,15 @@ jobs:
       - uses: taiki-e/create-gh-release-action@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+  cargo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: cargo-publish
+        run: |
+          cargo login ${{ secrets.CARGO_TOKEN }}
+          cargo publish
+          cargo clean
   pypi:
     strategy:
       matrix:
