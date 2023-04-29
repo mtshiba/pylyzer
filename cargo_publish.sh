@@ -5,6 +5,9 @@ if [[ "$PWD" == */pylyzer ]]; then
         cargo publish
         cd ../../
         cargo publish
+        if [ "$1" = "--cargo-only" ]; then
+            exit 0
+        fi
     fi
     if [ "$1" != "--cargo-only" ]; then
         if [ "$PYPI_PASSWORD" = "" ]; then
