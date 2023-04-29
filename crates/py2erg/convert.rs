@@ -14,7 +14,7 @@ use erg_compiler::erg_parser::ast::{
     NormalTuple, ParamPattern, Params, PosArg, PreDeclTypeSpec, ReDef, Record, RecordAttrs, Set,
     Signature, SimpleTypeSpec, SubrSignature, Tuple, TypeAscription, TypeBoundSpecs, TypeSpec,
     TypeSpecWithOp, UnaryOp, VarName, VarPattern, VarRecordAttr, VarRecordAttrs, VarRecordPattern,
-    VarSignature, VisModifierSpec, ConstPosArg,
+    VarSignature, VisModifierSpec, ConstPosArg, ConstDict, ConstKeyValue, TupleTypeSpec,
 };
 use erg_compiler::erg_parser::desugar::Desugarer;
 use erg_compiler::erg_parser::token::{Token, TokenKind, AS, DOT, EQUAL};
@@ -565,6 +565,41 @@ impl ASTConverter {
                 let len = ConstPosArg::new(len);
                 TypeSpec::poly(Identifier::private("Array!".into()), ConstArgs::new(vec![elem_t, len], None, vec![], None))
             }
+            "dict" => {
+                let ExpressionType::Tuple { mut elements } = args.node else {
+                    return Self::gen_dummy_type_spec(args.location);
+                };
+                let (l_brace, r_brace) = Self::gen_enclosure_tokens(TokenKind::LBrace, elements.iter(), args.location);
+                let key_t = self.convert_expr(elements.remove(0));
+                let key_t = match Parser::validate_const_expr(key_t) {
+                    Ok(key_t) => key_t,
+                    Err(err) => {
+                        let err = CompileError::new(err.into(), self.cfg.input.clone(), self.cur_namespace());
+                        self.errs.push(err);
+                        ConstExpr::Accessor(ConstAccessor::Local(Identifier::private("Obj".into())))
+                    }
+                };
+                let val_t = self.convert_expr(elements.remove(0));
+                let val_t = match Parser::validate_const_expr(val_t) {
+                    Ok(val_t) => val_t,
+                    Err(err) => {
+                        let err = CompileError::new(err.into(), self.cfg.input.clone(), self.cur_namespace());
+                        self.errs.push(err);
+                        ConstExpr::Accessor(ConstAccessor::Local(Identifier::private("Obj".into())))
+                    }
+                };
+                let dict = ConstPosArg::new(ConstExpr::Dict(ConstDict::new(l_brace, r_brace, vec![ConstKeyValue::new(key_t, val_t)])));
+                TypeSpec::poly(Identifier::private("Dict!".into()), ConstArgs::new(vec![dict], None, vec![], None))
+            }
+            "tuple" => {
+                let ExpressionType::Tuple { elements } = args.node else {
+                    return Self::gen_dummy_type_spec(args.location);
+                };
+                let parens = Self::gen_enclosure_tokens(TokenKind::LParen, elements.iter(), args.location);
+                let tys = elements.into_iter().map(|elem| self.convert_type_spec(elem)).collect();
+                let tuple = TupleTypeSpec::new(Some(parens), tys);
+                TypeSpec::Tuple(tuple)
+            }
             _ => Self::gen_dummy_type_spec(args.location),
         }
     }
@@ -653,6 +688,7 @@ impl ASTConverter {
         match expr.node {
             ExpressionType::Number { value } => {
                 let (kind, cont) = match value {
+                    Number::Integer { value } if value >= 0.into() => (TokenKind::NatLit, value.to_string()),
                     Number::Integer { value } => (TokenKind::IntLit, value.to_string()),
                     Number::Float { value } => (TokenKind::RatioLit, value.to_string()),
                     Number::Complex { .. } => {

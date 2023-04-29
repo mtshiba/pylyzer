@@ -10,7 +10,13 @@ union_arr.append(None) # ERR
 
 dic = {"a": 1}
 dic["b"] = 2
-
 _ = dic["a"]
 _ = dic["b"]
 _ = dic["c"] # ERR
+
+dic2: dict[str, int] = {"a": 1}
+_ = dic2["c"] # OK
+
+t: tuple[int, str] = (1, "a")
+_ = t[0] == 1 # OK
+_ = t[1] == 1 # ERR

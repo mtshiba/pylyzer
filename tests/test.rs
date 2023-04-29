@@ -95,6 +95,6 @@ fn exec_casting() {
 }
 
 #[test]
-fn exec_collection() {
-    expect("tests/collections.py", 0, 3);
+fn exec_collections() {
+    expect("tests/collections.py", 0, 4);
 }

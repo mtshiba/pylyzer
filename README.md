@@ -96,6 +96,8 @@ pylyzer converts Python ASTs to Erg ASTs and passes them to Erg's type checker. 
   * [x] `Union`
   * [x] `Optional`
   * [x] `list`
+  * [x] `dict`
+  * [x] `tuple`
   * [x] `Literal`
   * [ ] `TypedDict`
   * [ ] others
