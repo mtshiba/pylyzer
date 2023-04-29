@@ -19,7 +19,7 @@ use erg_compiler::erg_parser::ast::{
 use erg_compiler::erg_parser::desugar::Desugarer;
 use erg_compiler::erg_parser::token::{Token, TokenKind, AS, DOT, EQUAL};
 use erg_compiler::error::{CompileErrors, CompileError};
-use rustpython_parser::ast::Location as PyLocation;
+use rustpython_parser::ast::{Location as PyLocation, Keyword};
 use rustpython_parser::ast::{
     BooleanOperator, Comparison, ExpressionType, Located, Number, Operator, Parameter, Parameters,
     Program, StatementType, StringGroup, Suite, UnaryOperator,
@@ -369,19 +369,24 @@ impl ASTConverter {
         NonDefaultParamSignature::new(pat, t_spec)
     }
 
-    fn _convert_default_param(_param: Parameter) -> DefaultParamSignature {
-        todo!()
+    fn convert_default_param(&mut self, kw: Parameter, default: Located<ExpressionType>) -> DefaultParamSignature {
+        let sig = self.convert_nd_param(kw);
+        let default = self.convert_expr(default);
+        DefaultParamSignature::new(sig, default)
     }
 
-    // TODO: defaults
-    fn convert_params(&mut self, args: Parameters) -> Params {
-        let non_defaults = args
-            .args
+    fn convert_params(&mut self, params: Parameters) -> Params {
+        let non_defaults_len = params.args.len() - params.defaults.len();
+        let mut non_default_names = params.args;
+        let defaults_names = non_default_names.split_off(non_defaults_len);
+        let non_defaults = non_default_names
             .into_iter()
             .map(|p| self.convert_nd_param(p))
             .collect();
-        // let defaults = args. args.defaults.into_iter().map(convert_default_param).collect();
-        Params::new(non_defaults, None, vec![], None)
+        let defaults = defaults_names.into_iter().zip(params.defaults.into_iter())
+            .map(|(kw, default)| self.convert_default_param(kw, default))
+            .collect();
+        Params::new(non_defaults, None, defaults, None)
     }
 
     fn convert_for_param(&mut self, name: String, loc: PyLocation) -> NonDefaultParamSignature {
@@ -779,12 +784,21 @@ impl ASTConverter {
             ExpressionType::Call {
                 function,
                 args,
-                keywords: _,
+                keywords,
             } => {
                 let function = self.convert_expr(*function);
                 let pos_args = args
                     .into_iter()
                     .map(|ex| PosArg::new(self.convert_expr(ex)))
+                    .collect::<Vec<_>>();
+                let kw_args = keywords
+                    .into_iter()
+                    .map(|Keyword { name, value }| {
+                        let name = name.unwrap_or_default();
+                        let name = Token::symbol_with_loc(&name, pyloc_to_ergloc(value.location, name.len()));
+                        let ex = self.convert_expr(value);
+                        KwArg::new(name, None, ex)
+                    })
                     .collect::<Vec<_>>();
                 let last_col = pos_args
                     .last()
@@ -805,7 +819,7 @@ impl ASTConverter {
                     );
                     (lp, rp)
                 };
-                let args = Args::pos_only(pos_args, Some(paren));
+                let args = Args::new(pos_args, None, kw_args, Some(paren));
                 function.call_expr(args)
             }
             ExpressionType::Binop { a, op, b } => {
@@ -1213,7 +1227,7 @@ impl ASTConverter {
     fn convert_funcdef(
         &mut self,
         name: String,
-        args: Parameters,
+        params: Parameters,
         body: Vec<Located<StatementType>>,
         decorator_list: Vec<Located<ExpressionType>>,
         returns: Option<Located<ExpressionType>>,
@@ -1246,7 +1260,7 @@ impl ASTConverter {
             let func_name_loc = PyLocation::new(loc.row(), loc.column() + 4);
             let ident = self.convert_ident(name, func_name_loc);
             self.namespace.push(ident.inspect().to_string());
-            let params = self.convert_params(args);
+            let params = self.convert_params(params);
             let return_t = returns.map(|ret| self.convert_type_spec(ret));
             let sig = Signature::Subr(SubrSignature::new(
                 decos,

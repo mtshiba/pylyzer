@@ -37,3 +37,7 @@ print(arr[4]) # ERR
 i, j = 1, 2
 assert i == 1
 assert j == 2
+
+with open("test.py") as f:
+    for line in f.readlines():
+        print("line: " + line)

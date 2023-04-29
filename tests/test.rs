@@ -98,3 +98,8 @@ fn exec_casting() {
 fn exec_collections() {
     expect("tests/collections.py", 0, 4);
 }
+
+#[test]
+fn exec_call() {
+    expect("tests/call.py", 0, 3);
+}
