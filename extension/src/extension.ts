@@ -24,9 +24,7 @@ async function startLanguageClient(context: ExtensionContext) {
 		/* optional features */
 		const checkOnType = workspace.getConfiguration("pylyzer").get<boolean>("checkOnType", false);
 		const args = ["--server"];
-		if (!(enableDiagnostics && enableSemanticTokens && enableHover && smartCompletion) || (checkOnType || enableInlayHints)) {
-			args.push("--");
-		}
+		args.push("--");
 		if (!enableDiagnostics) {
 			args.push("--disable");
 			args.push("diagnostic");
