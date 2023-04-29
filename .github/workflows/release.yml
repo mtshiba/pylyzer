@@ -24,7 +24,8 @@ jobs:
         run: |
           rustup update stable
           cargo login ${{ secrets.CARGO_TOKEN }}
-          ./cargo-publish.sh
+          chmod +x cargo_publish.sh
+          ./cargo_publish.sh
   pypi:
     strategy:
       matrix:
