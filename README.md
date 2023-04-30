@@ -28,6 +28,8 @@ __If installed this way, you also need to [install Erg](https://github.com/mtshi
 curl -L https://github.com/mtshiba/ergup/raw/main/ergup.py | python3
 ```
 
+### [GitHub Releases](https://github.com/mtshiba/pylyzer/releases/latest)
+
 ## What is the advantage over pylint, pyright, pytype, etc.?
 
 * Performance 🌟
