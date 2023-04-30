@@ -12,7 +12,7 @@ use erg_compiler::erg_parser::ast::{
     Dict, Dummy, Expr, Identifier, KeyValue, KwArg, Lambda, LambdaSignature, Literal, Methods,
     Module, NonDefaultParamSignature, NormalArray, NormalDict, NormalRecord, NormalSet,
     NormalTuple, ParamPattern, Params, PosArg, PreDeclTypeSpec, ReDef, Record, RecordAttrs, Set,
-    Signature, SimpleTypeSpec, SubrSignature, Tuple, TypeAscription, TypeBoundSpecs, TypeSpec,
+    Signature, SubrSignature, Tuple, TypeAscription, TypeBoundSpecs, TypeSpec,
     TypeSpecWithOp, UnaryOp, VarName, VarPattern, VarRecordAttr, VarRecordAttrs, VarRecordPattern,
     VarSignature, VisModifierSpec, ConstPosArg, ConstDict, ConstKeyValue, TupleTypeSpec,
 };
@@ -495,8 +495,8 @@ impl ASTConverter {
         Lambda::new(sig, op, Block::new(body), DefId(0))
     }
 
-    fn convert_ident_type_spec(&mut self, name: String, loc: PyLocation) -> SimpleTypeSpec {
-        SimpleTypeSpec::new(self.convert_ident(name, loc), ConstArgs::empty())
+    fn convert_ident_type_spec(&mut self, name: String, loc: PyLocation) -> TypeSpec {
+        TypeSpec::mono(self.convert_ident(name, loc))
     }
 
     fn gen_dummy_type_spec(loc: PyLocation) -> TypeSpec {
@@ -527,10 +527,7 @@ impl ASTConverter {
                 let loc = args.location;
                 let t = self.convert_type_spec(args);
                 let ident = Identifier::private_with_line("NoneType".into(), loc.row() as u32);
-                let none = TypeSpec::PreDeclTy(PreDeclTypeSpec::Simple(SimpleTypeSpec::new(
-                    ident,
-                    ConstArgs::empty(),
-                )));
+                let none = TypeSpec::mono(ident);
                 TypeSpec::or(t, none)
             }
             "Literal" => {
@@ -612,15 +609,11 @@ impl ASTConverter {
     fn convert_type_spec(&mut self, expr: Located<ExpressionType>) -> TypeSpec {
         #[allow(clippy::collapsible_match)]
         match expr.node {
-            ExpressionType::Identifier { name } => TypeSpec::PreDeclTy(PreDeclTypeSpec::Simple(
-                self.convert_ident_type_spec(name, expr.location),
-            )),
-            ExpressionType::None => TypeSpec::PreDeclTy(PreDeclTypeSpec::Simple(
-                self.convert_ident_type_spec("NoneType".into(), expr.location),
-            )),
+            ExpressionType::Identifier { name } => self.convert_ident_type_spec(name, expr.location),
+            ExpressionType::None => self.convert_ident_type_spec("NoneType".into(), expr.location),
             ExpressionType::Attribute { value, name } => {
                 let namespace = Box::new(self.convert_expr(*value));
-                let t = self.convert_ident_type_spec(name, expr.location);
+                let t = self.convert_ident(name, expr.location);
                 let predecl = PreDeclTypeSpec::Attr { namespace, t };
                 TypeSpec::PreDeclTy(predecl)
             }
@@ -1029,9 +1022,7 @@ impl ASTConverter {
                             param_typ_name.into(),
                             attr.obj.ln_begin().unwrap_or(0),
                         );
-                        let param_typ_spec = TypeSpec::PreDeclTy(PreDeclTypeSpec::Simple(
-                            SimpleTypeSpec::new(param_typ_ident.clone(), ConstArgs::empty()),
-                        ));
+                        let param_typ_spec = TypeSpec::mono(param_typ_ident.clone());
                         let expr = Expr::Accessor(Accessor::Ident(param_typ_ident.clone()));
                         let param_typ_spec = TypeSpecWithOp::new(AS, param_typ_spec, expr);
                         let arg_typ_ident = Identifier::public_with_line(
@@ -1082,10 +1073,7 @@ impl ASTConverter {
             self.namespace.last().unwrap().into(),
             sig.ln_begin().unwrap_or(0),
         );
-        let class_spec = TypeSpec::PreDeclTy(PreDeclTypeSpec::Simple(SimpleTypeSpec::new(
-            class_ident,
-            ConstArgs::empty(),
-        )));
+        let class_spec = TypeSpec::mono(class_ident);
         let sig = Signature::Subr(SubrSignature::new(
             set! { Decorator(Expr::static_local("Override")) },
             call_ident,
@@ -1109,10 +1097,7 @@ impl ASTConverter {
         let params = Params::new(vec![], None, vec![], None);
         let class_ident =
             Identifier::public_with_line(DOT, self.namespace.last().unwrap().into(), line as u32);
-        let class_spec = TypeSpec::PreDeclTy(PreDeclTypeSpec::Simple(SimpleTypeSpec::new(
-            class_ident,
-            ConstArgs::empty(),
-        )));
+        let class_spec = TypeSpec::mono(class_ident);
         let sig = Signature::Subr(SubrSignature::new(
             set! { Decorator(Expr::static_local("Override")) },
             call_ident,
@@ -1214,10 +1199,7 @@ impl ASTConverter {
         body: Vec<Located<StatementType>>,
         inherit: bool,
     ) -> (Option<Expr>, Vec<Methods>) {
-        let class = TypeSpec::PreDeclTy(PreDeclTypeSpec::Simple(SimpleTypeSpec::new(
-            ident.clone(),
-            ConstArgs::empty(),
-        )));
+        let class = TypeSpec::mono(ident.clone());
         let class_as_expr = Expr::Accessor(Accessor::Ident(ident));
         let (base_type, attrs) = self.extract_method(body, inherit);
         let methods = Methods::new(class, class_as_expr, VisModifierSpec::Public(DOT), attrs);
@@ -1704,6 +1686,7 @@ impl ASTConverter {
                 }
                 Expr::Dummy(Dummy::new(None, imports))
             }
+            // from module import foo, bar
             StatementType::ImportFrom {
                 level: _,
                 module,
@@ -1712,13 +1695,11 @@ impl ASTConverter {
                 let import_acc = Expr::Accessor(Accessor::Ident(
                     self.convert_ident("__import__".to_string(), stmt.location),
                 ));
+                let module = module
+                    .unwrap_or_else(|| names[0].symbol.clone())
+                    .replace('.', "/");
                 // from . import foo ==> import "./foo"
-                let cont = format!(
-                    "\"{}\"",
-                    module
-                        .unwrap_or_else(|| names[0].symbol.clone())
-                        .replace('.', "/")
-                );
+                let cont = format!("\"{module}\"");
                 let mod_name = Expr::Literal(Literal::new(Token::new(
                     TokenKind::StrLit,
                     cont,
@@ -1728,17 +1709,32 @@ impl ASTConverter {
                 let args = Args::new(vec![PosArg::new(mod_name)], None, vec![], None);
                 let call = import_acc.call_expr(args);
                 let mut imports = vec![];
+                // `from module import `
+                let mut loc = PyLocation::new(stmt.location.row(), stmt.location.column() + 5 + module.len() + 8);
                 for name in names {
-                    let true_name = self.convert_ident(name.symbol.clone(), stmt.location);
+                    let true_name = self.convert_ident(name.symbol.clone(), loc);
                     let alias = if let Some(alias) = name.alias {
+                        // ` as `
+                        for _ in 0..name.symbol.len() + 4 {
+                            loc.go_right();
+                        }
                         self.register_name_info(&alias, NameKind::Variable);
+                        let alias_len = alias.len();
+                        let ident = self.convert_ident(alias, loc);
+                        // `, `
+                        for _ in 0..alias_len + 2 {
+                            loc.go_right();
+                        }
                         VarSignature::new(
-                            VarPattern::Ident(self.convert_ident(alias, stmt.location)),
+                            VarPattern::Ident(ident),
                             None,
                         )
                     } else {
                         self.register_name_info(&name.symbol, NameKind::Variable);
-                        let ident = self.convert_ident(name.symbol.clone(), stmt.location);
+                        let ident = self.convert_ident(name.symbol.clone(), loc);
+                        for _ in 0..name.symbol.len() + 2 {
+                            loc.go_right();
+                        }
                         VarSignature::new(VarPattern::Ident(ident), None)
                     };
                     imports.push(VarRecordAttr::new(true_name, alias));
