@@ -64,6 +64,11 @@ pylyzer as a language server supports various features, such as completion and r
 
 ## [VSCode extension](https://github.com/mtshiba/pylyzer/blob/main/extension)
 
+## What is the difference from [Ruff](https://github.com/charliermarsh/ruff)?
+
+[Ruff](https://github.com/charliermarsh/ruff), like pylyzer, is a static code analysis tool for Python written in Rust, but Ruff is a linter and pylyzer is a type checker & language server.
+pylyzer does not perform linting, and Ruff does not perform type checking.
+
 ## How it works
 
 pylyzer uses the type checker of [the Erg programming language](https://erg-lang.org) internally.

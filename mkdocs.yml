@@ -1,0 +1,50 @@
+site_name: pylyzer
+theme:
+  name: material
+  logo: assets/pylyzer-logo.svg
+  favicon: assets/pylyzer-logo.png
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - content.code.annotate
+    - toc.integrate
+    - toc.follow
+    - navigation.path
+    - navigation.top
+    - content.code.copy
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      toggle:
+        icon: material/weather-night
+        name: Switch to light mode
+repo_url: https://github.com/mtshiba/pylyzer
+repo_name: pylyzer
+site_author: Shunsuke Shibayama
+site_url: https://mtshiba.github.io/pylyzer/
+markdown_extensions:
+  - toc:
+      permalink: "#"
+  - pymdownx.snippets:
+  - pymdownx.magiclink:
+  - attr_list:
+  - md_in_html:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite:
+  - pymdownx.superfences:
+  - markdown.extensions.attr_list:
+  - pymdownx.keys:
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+plugins:
+  - search
