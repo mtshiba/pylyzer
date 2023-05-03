@@ -14,7 +14,7 @@ use erg_compiler::erg_parser::ast::{
     NormalTuple, ParamPattern, Params, PosArg, PreDeclTypeSpec, ReDef, Record, RecordAttrs, Set,
     Signature, SubrSignature, Tuple, TypeAscription, TypeBoundSpecs, TypeSpec,
     TypeSpecWithOp, UnaryOp, VarName, VarPattern, VarRecordAttr, VarRecordAttrs, VarRecordPattern,
-    VarSignature, VisModifierSpec, ConstPosArg, ConstDict, ConstKeyValue, TupleTypeSpec,
+    VarSignature, VisModifierSpec, ConstPosArg, ConstDict, ConstKeyValue, TupleTypeSpec, SubrTypeSpec, ParamTySpec, ConstAttribute,
 };
 use erg_compiler::erg_parser::desugar::Desugarer;
 use erg_compiler::erg_parser::token::{Token, TokenKind, AS, DOT, EQUAL};
@@ -28,6 +28,8 @@ use rustpython_parser::ast::{
 use crate::ast_util::length;
 use crate::clone::clone_loc_expr;
 use crate::error::*;
+
+pub const ARROW: Token = Token::dummy(TokenKind::FuncArrow, "->");
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum NameKind {
@@ -550,6 +552,50 @@ impl ASTConverter {
                 let elems = ConstArgs::new(elems, None, vec![], None);
                 TypeSpec::Enum(elems)
             }
+            // TODO: distinguish from collections.abc.Callable
+            "Callable" => {
+                let ExpressionType::Tuple { mut elements } = args.node else {
+                    return Self::gen_dummy_type_spec(args.location);
+                };
+                let params = elements.remove(0);
+                let mut non_defaults = vec![];
+                match params.node {
+                    ExpressionType::List { elements } => {
+                        for param in elements.into_iter() {
+                            let t_spec = self.convert_type_spec(param);
+                            non_defaults.push(ParamTySpec::anonymous(t_spec));
+                        }
+                    }
+                    other => {
+                        let err = CompileError::syntax_error(
+                            self.cfg.input.clone(),
+                            line!() as usize,
+                            pyloc_to_ergloc(params.location, length(&other)),
+                            self.cur_namespace(),
+                            "Expected a list of parameters".into(),
+                            None,
+                        );
+                        self.errs.push(err);
+                    }
+                }
+                let ret = self.convert_type_spec(elements.remove(0));
+                TypeSpec::Subr(SubrTypeSpec::new(TypeBoundSpecs::empty(), None, non_defaults, None, vec![], ARROW, ret))
+            }
+            "Iterable" => {
+                let elem_t = self.convert_expr(args);
+                let elem_t = match Parser::validate_const_expr(elem_t) {
+                    Ok(elem_t) => elem_t,
+                    Err(err) => {
+                        let err = CompileError::new(err.into(), self.cfg.input.clone(), self.cur_namespace());
+                        self.errs.push(err);
+                        ConstExpr::Accessor(ConstAccessor::Local(Identifier::private("Obj".into())))
+                    }
+                };
+                let elem_t = ConstPosArg::new(elem_t);
+                let global = ConstExpr::Accessor(ConstAccessor::Local(Identifier::private("global".into())));
+                let acc = ConstAccessor::Attr(ConstAttribute::new(global, Identifier::private("Iterable".into())));
+                TypeSpec::poly(acc, ConstArgs::pos_only(vec![elem_t], None))
+            }
             "list" => {
                 let len = ConstExpr::Accessor(ConstAccessor::Local(
                     self.convert_ident("_".into(), args.location),
@@ -565,7 +611,9 @@ impl ASTConverter {
                 };
                 let elem_t = ConstPosArg::new(elem_t);
                 let len = ConstPosArg::new(len);
-                TypeSpec::poly(Identifier::private("Array!".into()), ConstArgs::new(vec![elem_t, len], None, vec![], None))
+                let global = ConstExpr::Accessor(ConstAccessor::Local(Identifier::private("global".into())));
+                let acc = ConstAccessor::Attr(ConstAttribute::new(global, Identifier::private("Array!".into())));
+                TypeSpec::poly(acc, ConstArgs::new(vec![elem_t, len], None, vec![], None))
             }
             "dict" => {
                 let ExpressionType::Tuple { mut elements } = args.node else {
@@ -591,7 +639,9 @@ impl ASTConverter {
                     }
                 };
                 let dict = ConstPosArg::new(ConstExpr::Dict(ConstDict::new(l_brace, r_brace, vec![ConstKeyValue::new(key_t, val_t)])));
-                TypeSpec::poly(Identifier::private("Dict!".into()), ConstArgs::new(vec![dict], None, vec![], None))
+                let global = ConstExpr::Accessor(ConstAccessor::Local(Identifier::private("global".into())));
+                let acc = ConstAccessor::Attr(ConstAttribute::new(global, Identifier::private("Dict!".into())));
+                TypeSpec::poly(acc, ConstArgs::new(vec![dict], None, vec![], None))
             }
             "tuple" => {
                 let ExpressionType::Tuple { elements } = args.node else {

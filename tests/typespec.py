@@ -1,4 +1,5 @@
-from typing import Union, Optional, Literal
+from typing import Union, Optional, Literal, Callable
+from collections.abc import Iterable
 
 i: Union[int, str] = 1 # OK
 j: Union[int, str] = "aa" # OK
@@ -14,3 +15,12 @@ def f(x: Union[int, str]) -> None:
 
 f(1) # OK
 f(None) # ERR
+
+def g(x: int) -> int:
+    return x
+
+_: Callable[[Union[int, str]], None] = f # OK
+_: Callable[[Union[int, str]], None] = g # ERR
+
+_: Iterable[int] = [1] # OK
+_: Iterable[int] = ["a"] # ERR
