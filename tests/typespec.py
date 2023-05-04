@@ -23,4 +23,6 @@ _: Callable[[Union[int, str]], None] = f # OK
 _: Callable[[Union[int, str]], None] = g # ERR
 
 _: Iterable[int] = [1] # OK
+_: Iterable[int] = {1} # OK
+_: Iterable[int] = (1, 2) # OK
 _: Iterable[int] = ["a"] # ERR
