@@ -34,6 +34,13 @@ print(dic["c"]) # ERR
 arr = [1, 2, 3]
 print(arr[4]) # ERR
 
+# OK
+for i in range(3):
+    print(arr[i])
+# ERR
+for i in range(4):
+    print(arr[i])
+
 i, j = 1, 2
 assert i == 1
 assert j == 2

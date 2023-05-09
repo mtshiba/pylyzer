@@ -41,7 +41,7 @@ pub fn expect(file_path: &'static str, warns: usize, errors: usize) {
 
 #[test]
 fn exec_test() {
-    expect("tests/test.py", 0, 10);
+    expect("tests/test.py", 0, 11);
 }
 
 #[test]
