@@ -1,5 +1,5 @@
 from typing import Union, Optional, Literal, Callable
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 
 i: Union[int, str] = 1 # OK
 j: Union[int, str] = "aa" # OK
@@ -26,3 +26,6 @@ _: Iterable[int] = [1] # OK
 _: Iterable[int] = {1} # OK
 _: Iterable[int] = (1, 2) # OK
 _: Iterable[int] = ["a"] # ERR
+
+_: Mapping[str, int] = {"a": 1, "c": 2} # OK
+_: Mapping[str, int] = {1: "a", 2: "b"} # ERR

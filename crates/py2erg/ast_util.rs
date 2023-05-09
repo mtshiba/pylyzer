@@ -120,3 +120,13 @@ pub fn length(expr: &ExpressionType) -> usize {
         }
     }
 }
+
+pub fn accessor_name(expr: ExpressionType) -> Option<String> {
+    match expr {
+        ExpressionType::Identifier { name } => Some(name),
+        ExpressionType::Attribute { value, name } => {
+            accessor_name(value.node).map(|value| format!("{value}.{name}"))
+        }
+        _ => None,
+    }
+}
