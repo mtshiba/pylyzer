@@ -20,3 +20,7 @@ _ = dic2["c"] # OK
 t: tuple[int, str] = (1, "a")
 _ = t[0] == 1 # OK
 _ = t[1] == 1 # ERR
+
+def f(s: Str): return None
+for i in getattr(1, "aaa", ()):
+    f(i)

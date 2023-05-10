@@ -29,3 +29,10 @@ _: Iterable[int] = ["a"] # ERR
 
 _: Mapping[str, int] = {"a": 1, "c": 2} # OK
 _: Mapping[str, int] = {1: "a", 2: "b"} # ERR
+
+def f(x: Union[int, str, None]):
+    pass
+# OK
+f(1)
+f("a")
+f(None)

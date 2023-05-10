@@ -525,7 +525,12 @@ impl ASTConverter {
                 };
                 let lhs = self.convert_type_spec(elements.remove(0));
                 let rhs = self.convert_type_spec(elements.remove(0));
-                TypeSpec::or(lhs, rhs)
+                let mut union = TypeSpec::or(lhs, rhs);
+                for elem in elements {
+                    let t = self.convert_type_spec(elem);
+                    union = TypeSpec::or(union, t);
+                }
+                union
             }
             "Optional" => {
                 let loc = args.location;
