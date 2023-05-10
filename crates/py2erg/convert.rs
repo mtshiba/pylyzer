@@ -521,6 +521,15 @@ impl ASTConverter {
         match &name[..] {
             "Union" => {
                 let ExpressionType::Tuple { mut elements } = args.node else {
+                    let err = CompileError::syntax_error(
+                        self.cfg.input.clone(),
+                        line!() as usize,
+                        pyloc_to_ergloc(args.location, length(&args.node)),
+                        self.cur_namespace(),
+                        "`Union` takes at least 2 types".into(),
+                        None,
+                    );
+                    self.errs.push(err);
                     return Self::gen_dummy_type_spec(args.location);
                 };
                 let lhs = self.convert_type_spec(elements.remove(0));
@@ -606,6 +615,15 @@ impl ASTConverter {
             }
             "Mapping" | "MutableMapping" => {
                 let ExpressionType::Tuple { mut elements } = args.node else {
+                    let err = CompileError::syntax_error(
+                        self.cfg.input.clone(),
+                        line!() as usize,
+                        pyloc_to_ergloc(args.location, length(&args.node)),
+                        self.cur_namespace(),
+                        format!("`{name}` takes 2 types"),
+                        None,
+                    );
+                    self.errs.push(err);
                     return Self::gen_dummy_type_spec(args.location);
                 };
                 let key_t = self.convert_expr(elements.remove(0));
