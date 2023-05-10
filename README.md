@@ -118,6 +118,9 @@ pylyzer converts Python ASTs to Erg ASTs and passes them to Erg's type checker. 
   * [ ] others
 * `collections.abc`
   * [x] `Iterable`
+  * [x] `Iterator`
+  * [x] `Mapping`
+  * [x] `Sequence`
   * [ ] others
 * [x] type assertion (`typing.cast`)
 * [x] type narrowing (`is`, `isinstance`)
