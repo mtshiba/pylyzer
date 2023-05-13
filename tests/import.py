@@ -1,4 +1,5 @@
 import export
+import foo
 import random
 from random import randint as rdi
 from datetime import datetime, timedelta
@@ -22,6 +23,8 @@ assert c.method(2) == 3
 d = export.D(1, 2)
 assert d.x == 1
 assert d.y == 2
+
+assert foo.i == 0
 
 from glob import glob
 print(glob("*"))
