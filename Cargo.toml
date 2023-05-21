@@ -10,9 +10,7 @@ repository.workspace = true
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [workspace]
-members = [
-    "crates/py2erg",
-]
+members = ["crates/py2erg"]
 
 [workspace.package]
 version = "0.0.27"
@@ -35,7 +33,11 @@ rustpython-parser = "0.1.2"
 
 [features]
 debug = ["erg_compiler/debug", "erg_common/debug", "py2erg/debug"]
-large_thread = ["erg_compiler/large_thread", "erg_common/large_thread", "els/large_thread"]
+large_thread = [
+  "erg_compiler/large_thread",
+  "erg_common/large_thread",
+  "els/large_thread",
+]
 pretty = ["erg_compiler/pretty", "erg_common/pretty"]
 backtrace = ["erg_common/backtrace"]
 

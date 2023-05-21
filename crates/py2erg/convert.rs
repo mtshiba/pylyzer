@@ -5,27 +5,28 @@ use erg_common::set::Set as HashSet;
 use erg_common::traits::{Locational, Stream};
 use erg_common::{log, set};
 use erg_compiler::artifact::IncompleteArtifact;
-use erg_compiler::erg_parser::Parser;
 use erg_compiler::erg_parser::ast::{
-    Accessor, Args, Array, BinOp, Block, ClassAttr, ClassAttrs, ClassDef,
-    ConstAccessor, ConstArgs, ConstExpr, Decorator, Def, DefBody, DefId, DefaultParamSignature,
-    Dict, Dummy, Expr, Identifier, KeyValue, KwArg, Lambda, LambdaSignature, Literal, Methods,
-    Module, NonDefaultParamSignature, NormalArray, NormalDict, NormalRecord, NormalSet,
-    NormalTuple, ParamPattern, Params, PosArg, PreDeclTypeSpec, ReDef, Record, RecordAttrs, Set,
-    Signature, SubrSignature, Tuple, TypeAscription, TypeBoundSpecs, TypeSpec,
-    TypeSpecWithOp, UnaryOp, VarName, VarPattern, VarRecordAttr, VarRecordAttrs, VarRecordPattern,
-    VarSignature, VisModifierSpec, ConstPosArg, ConstDict, ConstKeyValue, TupleTypeSpec, SubrTypeSpec, ParamTySpec, ConstAttribute,
+    Accessor, Args, Array, BinOp, Block, ClassAttr, ClassAttrs, ClassDef, ConstAccessor, ConstArgs,
+    ConstAttribute, ConstDict, ConstExpr, ConstKeyValue, ConstPosArg, Decorator, Def, DefBody,
+    DefId, DefaultParamSignature, Dict, Dummy, Expr, Identifier, KeyValue, KwArg, Lambda,
+    LambdaSignature, Literal, Methods, Module, NonDefaultParamSignature, NormalArray, NormalDict,
+    NormalRecord, NormalSet, NormalTuple, ParamPattern, ParamTySpec, Params, PosArg,
+    PreDeclTypeSpec, ReDef, Record, RecordAttrs, Set, Signature, SubrSignature, SubrTypeSpec,
+    Tuple, TupleTypeSpec, TypeAscription, TypeBoundSpecs, TypeSpec, TypeSpecWithOp, UnaryOp,
+    VarName, VarPattern, VarRecordAttr, VarRecordAttrs, VarRecordPattern, VarSignature,
+    VisModifierSpec,
 };
 use erg_compiler::erg_parser::desugar::Desugarer;
 use erg_compiler::erg_parser::token::{Token, TokenKind, AS, DOT, EQUAL};
-use erg_compiler::error::{CompileErrors, CompileError};
-use rustpython_parser::ast::{Location as PyLocation, Keyword};
+use erg_compiler::erg_parser::Parser;
+use erg_compiler::error::{CompileError, CompileErrors};
 use rustpython_parser::ast::{
     BooleanOperator, Comparison, ExpressionType, Located, Number, Operator, Parameter, Parameters,
     Program, StatementType, StringGroup, Suite, UnaryOperator,
 };
+use rustpython_parser::ast::{Keyword, Location as PyLocation};
 
-use crate::ast_util::{length, accessor_name};
+use crate::ast_util::{accessor_name, length};
 use crate::clone::clone_loc_expr;
 use crate::error::*;
 
@@ -373,7 +374,11 @@ impl ASTConverter {
         NonDefaultParamSignature::new(pat, t_spec)
     }
 
-    fn convert_default_param(&mut self, kw: Parameter, default: Located<ExpressionType>) -> DefaultParamSignature {
+    fn convert_default_param(
+        &mut self,
+        kw: Parameter,
+        default: Located<ExpressionType>,
+    ) -> DefaultParamSignature {
         let sig = self.convert_nd_param(kw);
         let default = self.convert_expr(default);
         DefaultParamSignature::new(sig, default)
@@ -387,7 +392,9 @@ impl ASTConverter {
             .into_iter()
             .map(|p| self.convert_nd_param(p))
             .collect();
-        let defaults = defaults_names.into_iter().zip(params.defaults.into_iter())
+        let defaults = defaults_names
+            .into_iter()
+            .zip(params.defaults.into_iter())
             .map(|(kw, default)| self.convert_default_param(kw, default))
             .collect();
         Params::new(non_defaults, None, defaults, None)
@@ -560,7 +567,11 @@ impl ASTConverter {
                             elems.push(ConstPosArg::new(expr));
                         }
                         Err(err) => {
-                            let err = CompileError::new(err.into(), self.cfg.input.clone(), self.cur_namespace());
+                            let err = CompileError::new(
+                                err.into(),
+                                self.cfg.input.clone(),
+                                self.cur_namespace(),
+                            );
                             self.errs.push(err);
                         }
                     }
@@ -595,22 +606,38 @@ impl ASTConverter {
                     }
                 }
                 let ret = self.convert_type_spec(elements.remove(0));
-                TypeSpec::Subr(SubrTypeSpec::new(TypeBoundSpecs::empty(), None, non_defaults, None, vec![], ARROW, ret))
+                TypeSpec::Subr(SubrTypeSpec::new(
+                    TypeBoundSpecs::empty(),
+                    None,
+                    non_defaults,
+                    None,
+                    vec![],
+                    ARROW,
+                    ret,
+                ))
             }
-            "Iterable" | "Iterator" | "Collection" | "Container"
-            | "Sequence" | "MutableSequence" => {
+            "Iterable" | "Iterator" | "Collection" | "Container" | "Sequence"
+            | "MutableSequence" => {
                 let elem_t = self.convert_expr(args);
                 let elem_t = match Parser::validate_const_expr(elem_t) {
                     Ok(elem_t) => elem_t,
                     Err(err) => {
-                        let err = CompileError::new(err.into(), self.cfg.input.clone(), self.cur_namespace());
+                        let err = CompileError::new(
+                            err.into(),
+                            self.cfg.input.clone(),
+                            self.cur_namespace(),
+                        );
                         self.errs.push(err);
                         ConstExpr::Accessor(ConstAccessor::Local(Identifier::private("Obj".into())))
                     }
                 };
                 let elem_t = ConstPosArg::new(elem_t);
-                let global = ConstExpr::Accessor(ConstAccessor::Local(Identifier::private("global".into())));
-                let acc = ConstAccessor::Attr(ConstAttribute::new(global, Identifier::private(escape_name(name).into())));
+                let global =
+                    ConstExpr::Accessor(ConstAccessor::Local(Identifier::private("global".into())));
+                let acc = ConstAccessor::Attr(ConstAttribute::new(
+                    global,
+                    Identifier::private(escape_name(name).into()),
+                ));
                 TypeSpec::poly(acc, ConstArgs::pos_only(vec![elem_t], None))
             }
             "Mapping" | "MutableMapping" => {
@@ -630,7 +657,11 @@ impl ASTConverter {
                 let key_t = match Parser::validate_const_expr(key_t) {
                     Ok(key_t) => key_t,
                     Err(err) => {
-                        let err = CompileError::new(err.into(), self.cfg.input.clone(), self.cur_namespace());
+                        let err = CompileError::new(
+                            err.into(),
+                            self.cfg.input.clone(),
+                            self.cur_namespace(),
+                        );
                         self.errs.push(err);
                         ConstExpr::Accessor(ConstAccessor::Local(Identifier::private("Obj".into())))
                     }
@@ -640,14 +671,22 @@ impl ASTConverter {
                 let value_t = match Parser::validate_const_expr(value_t) {
                     Ok(value_t) => value_t,
                     Err(err) => {
-                        let err = CompileError::new(err.into(), self.cfg.input.clone(), self.cur_namespace());
+                        let err = CompileError::new(
+                            err.into(),
+                            self.cfg.input.clone(),
+                            self.cur_namespace(),
+                        );
                         self.errs.push(err);
                         ConstExpr::Accessor(ConstAccessor::Local(Identifier::private("Obj".into())))
                     }
                 };
                 let value_t = ConstPosArg::new(value_t);
-                let global = ConstExpr::Accessor(ConstAccessor::Local(Identifier::private("global".into())));
-                let acc = ConstAccessor::Attr(ConstAttribute::new(global, Identifier::private(escape_name(name).into())));
+                let global =
+                    ConstExpr::Accessor(ConstAccessor::Local(Identifier::private("global".into())));
+                let acc = ConstAccessor::Attr(ConstAttribute::new(
+                    global,
+                    Identifier::private(escape_name(name).into()),
+                ));
                 TypeSpec::poly(acc, ConstArgs::pos_only(vec![key_t, value_t], None))
             }
             "list" => {
@@ -658,27 +697,40 @@ impl ASTConverter {
                 let elem_t = match Parser::validate_const_expr(elem_t) {
                     Ok(elem_t) => elem_t,
                     Err(err) => {
-                        let err = CompileError::new(err.into(), self.cfg.input.clone(), self.cur_namespace());
+                        let err = CompileError::new(
+                            err.into(),
+                            self.cfg.input.clone(),
+                            self.cur_namespace(),
+                        );
                         self.errs.push(err);
                         ConstExpr::Accessor(ConstAccessor::Local(Identifier::private("Obj".into())))
                     }
                 };
                 let elem_t = ConstPosArg::new(elem_t);
                 let len = ConstPosArg::new(len);
-                let global = ConstExpr::Accessor(ConstAccessor::Local(Identifier::private("global".into())));
-                let acc = ConstAccessor::Attr(ConstAttribute::new(global, Identifier::private("Array!".into())));
+                let global =
+                    ConstExpr::Accessor(ConstAccessor::Local(Identifier::private("global".into())));
+                let acc = ConstAccessor::Attr(ConstAttribute::new(
+                    global,
+                    Identifier::private("Array!".into()),
+                ));
                 TypeSpec::poly(acc, ConstArgs::new(vec![elem_t, len], None, vec![], None))
             }
             "dict" => {
                 let ExpressionType::Tuple { mut elements } = args.node else {
                     return Self::gen_dummy_type_spec(args.location);
                 };
-                let (l_brace, r_brace) = Self::gen_enclosure_tokens(TokenKind::LBrace, elements.iter(), args.location);
+                let (l_brace, r_brace) =
+                    Self::gen_enclosure_tokens(TokenKind::LBrace, elements.iter(), args.location);
                 let key_t = self.convert_expr(elements.remove(0));
                 let key_t = match Parser::validate_const_expr(key_t) {
                     Ok(key_t) => key_t,
                     Err(err) => {
-                        let err = CompileError::new(err.into(), self.cfg.input.clone(), self.cur_namespace());
+                        let err = CompileError::new(
+                            err.into(),
+                            self.cfg.input.clone(),
+                            self.cur_namespace(),
+                        );
                         self.errs.push(err);
                         ConstExpr::Accessor(ConstAccessor::Local(Identifier::private("Obj".into())))
                     }
@@ -687,22 +739,38 @@ impl ASTConverter {
                 let val_t = match Parser::validate_const_expr(val_t) {
                     Ok(val_t) => val_t,
                     Err(err) => {
-                        let err = CompileError::new(err.into(), self.cfg.input.clone(), self.cur_namespace());
+                        let err = CompileError::new(
+                            err.into(),
+                            self.cfg.input.clone(),
+                            self.cur_namespace(),
+                        );
                         self.errs.push(err);
                         ConstExpr::Accessor(ConstAccessor::Local(Identifier::private("Obj".into())))
                     }
                 };
-                let dict = ConstPosArg::new(ConstExpr::Dict(ConstDict::new(l_brace, r_brace, vec![ConstKeyValue::new(key_t, val_t)])));
-                let global = ConstExpr::Accessor(ConstAccessor::Local(Identifier::private("global".into())));
-                let acc = ConstAccessor::Attr(ConstAttribute::new(global, Identifier::private("Dict!".into())));
+                let dict = ConstPosArg::new(ConstExpr::Dict(ConstDict::new(
+                    l_brace,
+                    r_brace,
+                    vec![ConstKeyValue::new(key_t, val_t)],
+                )));
+                let global =
+                    ConstExpr::Accessor(ConstAccessor::Local(Identifier::private("global".into())));
+                let acc = ConstAccessor::Attr(ConstAttribute::new(
+                    global,
+                    Identifier::private("Dict!".into()),
+                ));
                 TypeSpec::poly(acc, ConstArgs::new(vec![dict], None, vec![], None))
             }
             "tuple" => {
                 let ExpressionType::Tuple { elements } = args.node else {
                     return Self::gen_dummy_type_spec(args.location);
                 };
-                let parens = Self::gen_enclosure_tokens(TokenKind::LParen, elements.iter(), args.location);
-                let tys = elements.into_iter().map(|elem| self.convert_type_spec(elem)).collect();
+                let parens =
+                    Self::gen_enclosure_tokens(TokenKind::LParen, elements.iter(), args.location);
+                let tys = elements
+                    .into_iter()
+                    .map(|elem| self.convert_type_spec(elem))
+                    .collect();
                 let tuple = TupleTypeSpec::new(Some(parens), tys);
                 TypeSpec::Tuple(tuple)
             }
@@ -713,7 +781,9 @@ impl ASTConverter {
     fn convert_type_spec(&mut self, expr: Located<ExpressionType>) -> TypeSpec {
         #[allow(clippy::collapsible_match)]
         match expr.node {
-            ExpressionType::Identifier { name } => self.convert_ident_type_spec(name, expr.location),
+            ExpressionType::Identifier { name } => {
+                self.convert_ident_type_spec(name, expr.location)
+            }
             ExpressionType::None => self.convert_ident_type_spec("NoneType".into(), expr.location),
             ExpressionType::Attribute { value, name } => {
                 let namespace = Box::new(self.convert_expr(*value));
@@ -727,7 +797,7 @@ impl ASTConverter {
                     match accessor_name(value.node).as_ref().map(|s| &s[..]) {
                         Some("typing" | "collections.abc") => {
                             self.convert_compound_type_spec(name, *b)
-                        },
+                        }
                         _ => {
                             log!(err "unknown: .{name}");
                             Self::gen_dummy_type_spec(a.location)
@@ -801,7 +871,9 @@ impl ASTConverter {
         match expr.node {
             ExpressionType::Number { value } => {
                 let (kind, cont) = match value {
-                    Number::Integer { value } if value >= 0.into() => (TokenKind::NatLit, value.to_string()),
+                    Number::Integer { value } if value >= 0.into() => {
+                        (TokenKind::NatLit, value.to_string())
+                    }
                     Number::Integer { value } => (TokenKind::IntLit, value.to_string()),
                     Number::Float { value } => (TokenKind::RatioLit, value.to_string()),
                     Number::Complex { .. } => {
@@ -903,7 +975,10 @@ impl ASTConverter {
                     .into_iter()
                     .map(|Keyword { name, value }| {
                         let name = name.unwrap_or_default();
-                        let name = Token::symbol_with_loc(&name, pyloc_to_ergloc(value.location, name.len()));
+                        let name = Token::symbol_with_loc(
+                            &name,
+                            pyloc_to_ergloc(value.location, name.len()),
+                        );
                         let ex = self.convert_expr(value);
                         KwArg::new(name, None, ex)
                     })
@@ -1572,7 +1647,7 @@ impl ASTConverter {
                         }
                         // a[b] = x
                         // => a.__setitem__(b, x)
-                        ExpressionType::Subscript{ a, b } => {
+                        ExpressionType::Subscript { a, b } => {
                             let a = self.convert_expr(*a);
                             let b = self.convert_expr(*b);
                             let x = self.convert_expr(value);
@@ -1585,7 +1660,7 @@ impl ASTConverter {
                         other => {
                             log!(err "{other:?} as LHS");
                             Expr::Dummy(Dummy::new(None, vec![]))
-                        },
+                        }
                     }
                 } else {
                     let value = self.convert_expr(value);
@@ -1653,7 +1728,7 @@ impl ASTConverter {
                     other => {
                         log!(err "{other:?} as LHS");
                         Expr::Dummy(Dummy::new(None, vec![]))
-                    },
+                    }
                 }
             }
             StatementType::FunctionDef {
@@ -1825,7 +1900,10 @@ impl ASTConverter {
                 let call = import_acc.call_expr(args);
                 let mut imports = vec![];
                 // `from module import `
-                let mut loc = PyLocation::new(stmt.location.row(), stmt.location.column() + 5 + module.len() + 8);
+                let mut loc = PyLocation::new(
+                    stmt.location.row(),
+                    stmt.location.column() + 5 + module.len() + 8,
+                );
                 for name in names {
                     let true_name = self.convert_ident(name.symbol.clone(), loc);
                     let alias = if let Some(alias) = name.alias {
@@ -1840,10 +1918,7 @@ impl ASTConverter {
                         for _ in 0..alias_len + 2 {
                             loc.go_right();
                         }
-                        VarSignature::new(
-                            VarPattern::Ident(ident),
-                            None,
-                        )
+                        VarSignature::new(VarPattern::Ident(ident), None)
                     } else {
                         self.register_name_info(&name.symbol, NameKind::Variable);
                         let ident = self.convert_ident(name.symbol.clone(), loc);
