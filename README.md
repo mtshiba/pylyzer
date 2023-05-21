@@ -16,6 +16,8 @@
 cargo install pylyzer
 ```
 
+Make sure that `cargo/rustc` is up-to-date, as pylyzer may be written with the latest language features.
+
 ### pip
 
 ```bash
