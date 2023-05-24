@@ -1,1 +1,1 @@
-from bar import i
+from .bar import i

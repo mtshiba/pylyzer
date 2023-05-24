@@ -19,6 +19,7 @@ fn filter_error(_ctx: &ModuleContext, mut error: CompileError) -> Option<Compile
             log!(err "{error}");
             None
         }
+        ErrorKind::InheritanceError => None,
         ErrorKind::VisibilityError => None,
         // exclude doc strings
         ErrorKind::UnusedWarning => {

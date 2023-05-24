@@ -75,6 +75,7 @@ impl BlockKind {
 /// but types are rewritten here because they are complex components used inseparably in the Erg system.
 fn escape_name(name: String) -> String {
     match &name[..] {
+        "object" => "Obj".into(),
         "int" => "Int".into(),
         "float" => "Float".into(),
         "complex" => "Complex".into(),
