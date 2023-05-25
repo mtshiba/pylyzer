@@ -1,5 +1,7 @@
 import export
 import foo
+from foo import bar
+from foo import baz
 import random
 from random import randint as rdi
 from datetime import datetime, timedelta

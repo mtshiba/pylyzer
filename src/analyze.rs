@@ -5,13 +5,13 @@ use erg_common::style::RESET;
 use erg_common::traits::{ExitStatus, Runnable, Stream};
 use erg_common::Str;
 use erg_compiler::artifact::{BuildRunnable, Buildable, CompleteArtifact, IncompleteArtifact};
+use erg_compiler::context::register::CheckStatus;
 use erg_compiler::context::ModuleContext;
 use erg_compiler::erg_parser::ast::AST;
 use erg_compiler::error::{CompileError, CompileErrors};
 use erg_compiler::lower::ASTLowerer;
 use erg_compiler::module::SharedCompilerResource;
-use py2erg::dump_decl_er;
-use py2erg::{CheckStatus, ShadowingMode};
+use py2erg::{dump_decl_er, reserve_decl_er, ShadowingMode};
 use rustpython_parser::parser;
 
 use crate::handle_err;
@@ -133,6 +133,9 @@ impl PythonAnalyzer {
     }
 
     pub fn run(&mut self) {
+        if self.cfg.output_dir.is_some() {
+            reserve_decl_er(self.cfg.input.clone());
+        }
         let py_code = self.cfg.input.read();
         let filename = self.cfg.input.unescaped_filename();
         println!("{BLUE}Start checking{RESET}: {filename}");
