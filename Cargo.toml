@@ -25,7 +25,9 @@ repository = "https://github.com/mtshiba/pylyzer"
 erg_common = { version = "0.6.14-nightly.0", features = ["py_compat", "els"] }
 erg_compiler = { version = "0.6.14-nightly.0", features = ["py_compat", "els"] }
 els = { version = "0.1.26-nightly.0", features = ["py_compat"] }
-rustpython-parser = "0.1.2"
+# rustpython-parser = { git = "https://github.com/RustPython/Parser.git", rev = "4de0cb18277f45aecd1cfdcc5ac69ab6bd9e2854", features = ["rustpython-literal"] }
+rustpython-ast = { path = "../RustPython-Parser/ast", features = ["rustpython-literal"] }
+rustpython-parser = { path = "../RustPython-Parser/parser" }
 # erg_compiler = { git = "https://github.com/erg-lang/erg", branch = "main", features = ["py_compat", "els"] }
 # erg_common = { git = "https://github.com/erg-lang/erg", branch = "main", features = ["py_compat", "els"] }
 # els = { git = "https://github.com/erg-lang/erg", branch = "main", features = ["py_compat"] }

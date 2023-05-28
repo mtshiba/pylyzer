@@ -7,14 +7,14 @@ use erg_common::Str;
 use erg_compiler::artifact::{BuildRunnable, Buildable, CompleteArtifact, IncompleteArtifact};
 use erg_compiler::context::register::CheckStatus;
 use erg_compiler::context::ModuleContext;
-use erg_compiler::erg_parser::ast::{AST, Module};
+use erg_compiler::erg_parser::ast::{Module, AST};
 use erg_compiler::erg_parser::error::ParseErrors;
 use erg_compiler::erg_parser::parse::Parsable;
 use erg_compiler::error::{CompileError, CompileErrors};
 use erg_compiler::lower::ASTLowerer;
 use erg_compiler::module::SharedCompilerResource;
 use py2erg::{dump_decl_er, reserve_decl_er, ShadowingMode};
-use rustpython_parser::parser;
+use rustpython_parser::{Parse, ast as py_ast};
 
 use crate::handle_err;
 
@@ -22,9 +22,8 @@ pub struct SimplePythonParser {}
 
 impl Parsable for SimplePythonParser {
     fn parse(code: String) -> Result<Module, ParseErrors> {
-        let py_program = parser::parse_program(&code).map_err(|_err| {
-            ParseErrors::empty()
-        })?;
+        let py_program = py_ast::Suite::parse(&code).map_err(|_err| ParseErrors::empty())?;
+        // TODO: SourceLocator
         let shadowing = if cfg!(feature = "debug") {
             ShadowingMode::Visible
         } else {
