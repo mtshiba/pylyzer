@@ -7,7 +7,9 @@ use erg_common::Str;
 use erg_compiler::artifact::{BuildRunnable, Buildable, CompleteArtifact, IncompleteArtifact};
 use erg_compiler::context::register::CheckStatus;
 use erg_compiler::context::ModuleContext;
-use erg_compiler::erg_parser::ast::AST;
+use erg_compiler::erg_parser::ast::{AST, Module};
+use erg_compiler::erg_parser::error::ParseErrors;
+use erg_compiler::erg_parser::parse::Parsable;
 use erg_compiler::error::{CompileError, CompileErrors};
 use erg_compiler::lower::ASTLowerer;
 use erg_compiler::module::SharedCompilerResource;
@@ -15,6 +17,28 @@ use py2erg::{dump_decl_er, reserve_decl_er, ShadowingMode};
 use rustpython_parser::parser;
 
 use crate::handle_err;
+
+pub struct SimplePythonParser {}
+
+impl Parsable for SimplePythonParser {
+    fn parse(code: String) -> Result<Module, ParseErrors> {
+        let py_program = parser::parse_program(&code).map_err(|_err| {
+            ParseErrors::empty()
+        })?;
+        let shadowing = if cfg!(feature = "debug") {
+            ShadowingMode::Visible
+        } else {
+            ShadowingMode::Invisible
+        };
+        let converter = py2erg::ASTConverter::new(ErgConfig::default(), shadowing);
+        let IncompleteArtifact{ object: Some(erg_module), errors, .. } = converter.convert_program(py_program) else { unreachable!() };
+        if errors.is_empty() {
+            Ok(erg_module)
+        } else {
+            Err(ParseErrors::empty())
+        }
+    }
+}
 
 #[derive(Debug, Default)]
 pub struct PythonAnalyzer {
