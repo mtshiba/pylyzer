@@ -1828,7 +1828,11 @@ impl ASTConverter {
                     let import_acc = Expr::Accessor(Accessor::Ident(
                         self.convert_ident("__import__".to_string(), stmt.location),
                     ));
-                    let cont = format!("\"{}\"", name.symbol.split('.').next().unwrap());
+                    let cont = if name.alias.is_some() {
+                        format!("\"{}\"", name.symbol.replace('.', "/"))
+                    }else {
+                        format!("\"{}\"", name.symbol.split('.').next().unwrap())
+                    };
                     let mod_name = Expr::Literal(Literal::new(Token::new(
                         TokenKind::StrLit,
                         cont,
