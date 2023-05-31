@@ -1830,7 +1830,7 @@ impl ASTConverter {
                     ));
                     let cont = if name.alias.is_some() {
                         format!("\"{}\"", name.symbol.replace('.', "/"))
-                    }else {
+                    } else {
                         format!("\"{}\"", name.symbol.split('.').next().unwrap())
                     };
                     let mod_name = Expr::Literal(Literal::new(Token::new(

@@ -7,7 +7,7 @@ use erg_common::Str;
 use erg_compiler::artifact::{BuildRunnable, Buildable, CompleteArtifact, IncompleteArtifact};
 use erg_compiler::context::register::CheckStatus;
 use erg_compiler::context::ModuleContext;
-use erg_compiler::erg_parser::ast::{AST, Module};
+use erg_compiler::erg_parser::ast::{Module, AST};
 use erg_compiler::erg_parser::error::ParseErrors;
 use erg_compiler::erg_parser::parse::Parsable;
 use erg_compiler::error::{CompileError, CompileErrors};
@@ -22,9 +22,7 @@ pub struct SimplePythonParser {}
 
 impl Parsable for SimplePythonParser {
     fn parse(code: String) -> Result<Module, ParseErrors> {
-        let py_program = parser::parse_program(&code).map_err(|_err| {
-            ParseErrors::empty()
-        })?;
+        let py_program = parser::parse_program(&code).map_err(|_err| ParseErrors::empty())?;
         let shadowing = if cfg!(feature = "debug") {
             ShadowingMode::Visible
         } else {
