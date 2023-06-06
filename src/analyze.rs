@@ -14,7 +14,7 @@ use erg_compiler::error::{CompileError, CompileErrors};
 use erg_compiler::lower::ASTLowerer;
 use erg_compiler::module::SharedCompilerResource;
 use py2erg::{dump_decl_er, reserve_decl_er, ShadowingMode};
-use rustpython_parser::{Parse, ast as py_ast};
+use rustpython_parser::{ast as py_ast, Parse};
 
 use crate::handle_err;
 

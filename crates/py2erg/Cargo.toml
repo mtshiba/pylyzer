@@ -14,7 +14,6 @@ debug = ["erg_compiler/debug", "erg_common/debug"]
 
 [dependencies]
 rustpython-parser = { workspace = true }
-rustpython-ast = { workspace = true }
 erg_common = { workspace = true }
 erg_compiler = { workspace = true }
 
