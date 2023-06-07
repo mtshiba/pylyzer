@@ -548,6 +548,7 @@ version = "0.0.29"
 dependencies = [
  "erg_common",
  "erg_compiler",
+ "rustpython-ast",
  "rustpython-parser",
 ]
 
@@ -559,6 +560,7 @@ dependencies = [
  "erg_common",
  "erg_compiler",
  "py2erg",
+ "rustpython-ast",
  "rustpython-parser",
 ]
 

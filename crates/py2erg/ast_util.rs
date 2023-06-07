@@ -1,4 +1,4 @@
-use rustpython_parser::ast::Expr;
+use rustpython_parser::ast::located::Expr;
 
 pub fn accessor_name(expr: Expr) -> Option<String> {
     match expr {

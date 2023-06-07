@@ -14,7 +14,8 @@ use erg_compiler::error::{CompileError, CompileErrors};
 use erg_compiler::lower::ASTLowerer;
 use erg_compiler::module::SharedCompilerResource;
 use py2erg::{dump_decl_er, reserve_decl_er, ShadowingMode};
-use rustpython_parser::{ast as py_ast, Parse};
+use rustpython_parser::Parse;
+use rustpython_ast::located::ModModule;
 
 use crate::handle_err;
 
@@ -22,7 +23,7 @@ pub struct SimplePythonParser {}
 
 impl Parsable for SimplePythonParser {
     fn parse(code: String) -> Result<Module, ParseErrors> {
-        let py_program = py_ast::Suite::parse(&code).map_err(|_err| ParseErrors::empty())?;
+        let py_program = ModModule::parse(&code, "<stdin>").map_err(|_err| ParseErrors::empty())?;
         // TODO: SourceLocator
         let shadowing = if cfg!(feature = "debug") {
             ShadowingMode::Visible
@@ -110,13 +111,13 @@ impl PythonAnalyzer {
         mode: &str,
     ) -> Result<CompleteArtifact, IncompleteArtifact> {
         let filename = self.cfg.input.filename();
-        let py_program = parser::parse_program(&py_code).map_err(|err| {
+        let py_program = ModModule::parse(&py_code, &filename).map_err(|err| {
             let core = ErrorCore::new(
                 vec![],
                 err.to_string(),
                 0,
                 ErrorKind::SyntaxError,
-                erg_common::error::Location::Line(err.location.row() as u32),
+                erg_common::error::Location::Line(todo!()),
             );
             let err = CompileError::new(core, self.cfg.input.clone(), "".into());
             IncompleteArtifact::new(None, CompileErrors::from(err), CompileErrors::empty())
