@@ -14,8 +14,9 @@ use erg_compiler::error::{CompileError, CompileErrors};
 use erg_compiler::lower::ASTLowerer;
 use erg_compiler::module::SharedCompilerResource;
 use py2erg::{dump_decl_er, reserve_decl_er, ShadowingMode};
-use rustpython_parser::Parse;
-use rustpython_ast::located::ModModule;
+use rustpython_ast::source_code::{LinearLocator};
+use rustpython_parser::{Parse, ParseErrorType};
+use rustpython_ast::{Fold, ModModule};
 
 use crate::handle_err;
 
@@ -24,7 +25,8 @@ pub struct SimplePythonParser {}
 impl Parsable for SimplePythonParser {
     fn parse(code: String) -> Result<Module, ParseErrors> {
         let py_program = ModModule::parse(&code, "<stdin>").map_err(|_err| ParseErrors::empty())?;
-        // TODO: SourceLocator
+        let mut locator = LinearLocator::new(&code);
+        let py_program = locator.fold(py_program).map_err(|_err| ParseErrors::empty())?;
         let shadowing = if cfg!(feature = "debug") {
             ShadowingMode::Visible
         } else {
@@ -112,16 +114,22 @@ impl PythonAnalyzer {
     ) -> Result<CompleteArtifact, IncompleteArtifact> {
         let filename = self.cfg.input.filename();
         let py_program = ModModule::parse(&py_code, &filename).map_err(|err| {
+            let mut locator = LinearLocator::new(&py_code);
+            let err = locator.locate_error::<_, ParseErrorType>(err);
+            let msg = err.to_string();
+            let loc = err.location.unwrap();
             let core = ErrorCore::new(
                 vec![],
-                err.to_string(),
+                msg,
                 0,
                 ErrorKind::SyntaxError,
-                erg_common::error::Location::Line(todo!()),
+                erg_common::error::Location::range(loc.row.get(), loc.column.to_zero_indexed(), loc.row.get(), loc.column.to_zero_indexed()),
             );
             let err = CompileError::new(core, self.cfg.input.clone(), "".into());
             IncompleteArtifact::new(None, CompileErrors::from(err), CompileErrors::empty())
         })?;
+        let mut locator = LinearLocator::new(&py_code);
+        let py_program = locator.fold(py_program).unwrap();
         let shadowing = if cfg!(feature = "debug") {
             ShadowingMode::Visible
         } else {
