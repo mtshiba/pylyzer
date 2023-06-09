@@ -86,6 +86,8 @@ pylyzer converts Python ASTs to Erg ASTs and passes them to Erg's type checker. 
 
 * pylyzer (= Erg's type system) has its own type declarations for the Python standard APIs. Typing of all APIs is not complete and may result in an error that such an API does not exist.
 
+* Since pylyzer's type checking is conservative, you may encounter many (possibly false positive) errors. We are working on fixing this, but if you are concerned about editor errors, please turn off the diagnostics feature.
+
 ## TODOs
 
 * [x] type checking
