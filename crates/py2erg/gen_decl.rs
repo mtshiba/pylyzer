@@ -1,7 +1,7 @@
 use std::fs::File;
 use std::io::{BufWriter, Write};
 
-use erg_common::config::Input;
+use erg_common::io::Input;
 use erg_common::log;
 use erg_compiler::context::register::{CheckStatus, PylyzerStatus};
 use erg_compiler::hir::{Expr, HIR};

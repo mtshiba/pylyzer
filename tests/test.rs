@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
-use erg_common::config::{ErgConfig, Input};
+use erg_common::config::ErgConfig;
+use erg_common::io::Input;
 use erg_common::spawn::exec_new_thread;
 use erg_common::traits::Stream;
 use erg_compiler::artifact::{CompleteArtifact, IncompleteArtifact};

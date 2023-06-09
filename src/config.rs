@@ -2,7 +2,8 @@ use std::env;
 use std::path::PathBuf;
 use std::str::FromStr;
 
-use erg_common::config::{ErgConfig, ErgMode, Input};
+use erg_common::config::{ErgConfig, ErgMode};
+use erg_common::io::Input;
 use erg_common::switch_lang;
 
 fn command_message() -> &'static str {
@@ -94,7 +95,7 @@ pub(crate) fn parse_args() -> ErgConfig {
                 cfg.quiet_repl = true;
             }
             "--dump-decl" => {
-                cfg.output_dir = Some("");
+                cfg.dist_dir = Some("");
             }
             "--verbose" => {
                 cfg.verbose = args

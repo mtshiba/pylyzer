@@ -8,36 +8,45 @@ use erg_compiler::artifact::{BuildRunnable, Buildable, CompleteArtifact, Incompl
 use erg_compiler::context::register::CheckStatus;
 use erg_compiler::context::ModuleContext;
 use erg_compiler::erg_parser::ast::{Module, AST};
-use erg_compiler::erg_parser::error::ParseErrors;
+use erg_compiler::erg_parser::error::{
+    CompleteArtifact as ParseArtifact, IncompleteArtifact as IncompleteParseArtifact, ParseErrors,
+};
 use erg_compiler::erg_parser::parse::Parsable;
 use erg_compiler::error::{CompileError, CompileErrors};
 use erg_compiler::lower::ASTLowerer;
 use erg_compiler::module::SharedCompilerResource;
 use py2erg::{dump_decl_er, reserve_decl_er, ShadowingMode};
-use rustpython_ast::source_code::{LinearLocator};
-use rustpython_parser::{Parse, ParseErrorType};
+use rustpython_ast::source_code::RandomLocator;
 use rustpython_ast::{Fold, ModModule};
+use rustpython_parser::{Parse, ParseErrorType};
 
 use crate::handle_err;
 
 pub struct SimplePythonParser {}
 
 impl Parsable for SimplePythonParser {
-    fn parse(code: String) -> Result<Module, ParseErrors> {
+    fn parse(code: String) -> Result<ParseArtifact, IncompleteParseArtifact<Module, ParseErrors>> {
         let py_program = ModModule::parse(&code, "<stdin>").map_err(|_err| ParseErrors::empty())?;
-        let mut locator = LinearLocator::new(&code);
-        let py_program = locator.fold(py_program).map_err(|_err| ParseErrors::empty())?;
+        let mut locator = RandomLocator::new(&code);
+        // let mut locator = LinearLocator::new(&code);
+        let py_program = locator
+            .fold(py_program)
+            .map_err(|_err| ParseErrors::empty())?;
         let shadowing = if cfg!(feature = "debug") {
             ShadowingMode::Visible
         } else {
             ShadowingMode::Invisible
         };
         let converter = py2erg::ASTConverter::new(ErgConfig::default(), shadowing);
-        let IncompleteArtifact{ object: Some(erg_module), errors, .. } = converter.convert_program(py_program) else { unreachable!() };
+        let IncompleteArtifact{ object: Some(erg_module), errors, warns } = converter.convert_program(py_program) else { unreachable!() };
         if errors.is_empty() {
-            Ok(erg_module)
+            Ok(ParseArtifact::new(erg_module, warns.into()))
         } else {
-            Err(ParseErrors::empty())
+            Err(IncompleteParseArtifact::new(
+                Some(erg_module),
+                warns.into(),
+                errors.into(),
+            ))
         }
     }
 }
@@ -114,7 +123,8 @@ impl PythonAnalyzer {
     ) -> Result<CompleteArtifact, IncompleteArtifact> {
         let filename = self.cfg.input.filename();
         let py_program = ModModule::parse(&py_code, &filename).map_err(|err| {
-            let mut locator = LinearLocator::new(&py_code);
+            let mut locator = RandomLocator::new(&py_code);
+            // let mut locator = LinearLocator::new(&py_code);
             let err = locator.locate_error::<_, ParseErrorType>(err);
             let msg = err.to_string();
             let loc = err.location.unwrap();
@@ -123,12 +133,18 @@ impl PythonAnalyzer {
                 msg,
                 0,
                 ErrorKind::SyntaxError,
-                erg_common::error::Location::range(loc.row.get(), loc.column.to_zero_indexed(), loc.row.get(), loc.column.to_zero_indexed()),
+                erg_common::error::Location::range(
+                    loc.row.get(),
+                    loc.column.to_zero_indexed(),
+                    loc.row.get(),
+                    loc.column.to_zero_indexed(),
+                ),
             );
             let err = CompileError::new(core, self.cfg.input.clone(), "".into());
             IncompleteArtifact::new(None, CompileErrors::from(err), CompileErrors::empty())
         })?;
-        let mut locator = LinearLocator::new(&py_code);
+        let mut locator = RandomLocator::new(&py_code);
+        // let mut locator = LinearLocator::new(&py_code);
         let py_program = locator.fold(py_program).unwrap();
         let shadowing = if cfg!(feature = "debug") {
             ShadowingMode::Visible
@@ -165,7 +181,7 @@ impl PythonAnalyzer {
     }
 
     pub fn run(&mut self) {
-        if self.cfg.output_dir.is_some() {
+        if self.cfg.dist_dir.is_some() {
             reserve_decl_er(self.cfg.input.clone());
         }
         let py_code = self.cfg.input.read();
@@ -179,13 +195,13 @@ impl PythonAnalyzer {
                         artifact.warns.len(),
                         self.cfg.input.unescaped_filename()
                     );
-                    artifact.warns.fmt_all_stderr();
+                    artifact.warns.write_all_stderr();
                 }
                 println!(
                     "{GREEN}All checks OK{RESET}: {}",
                     self.cfg.input.unescaped_filename()
                 );
-                if self.cfg.output_dir.is_some() {
+                if self.cfg.dist_dir.is_some() {
                     dump_decl_er(
                         self.cfg.input.clone(),
                         artifact.object,
@@ -202,7 +218,7 @@ impl PythonAnalyzer {
                         artifact.warns.len(),
                         self.cfg.input.unescaped_filename()
                     );
-                    artifact.warns.fmt_all_stderr();
+                    artifact.warns.write_all_stderr();
                 }
                 let code = if artifact.errors.is_empty() {
                     println!(
@@ -216,11 +232,11 @@ impl PythonAnalyzer {
                         artifact.errors.len(),
                         self.cfg.input.unescaped_filename()
                     );
-                    artifact.errors.fmt_all_stderr();
+                    artifact.errors.write_all_stderr();
                     1
                 };
                 // Even if type checking fails, some APIs are still valid, so generate a file
-                if self.cfg.output_dir.is_some() {
+                if self.cfg.dist_dir.is_some() {
                     dump_decl_er(
                         self.cfg.input.clone(),
                         artifact.object.unwrap(),
