@@ -19,7 +19,7 @@ use erg_compiler::erg_parser::ast::{
     VisModifierSpec,
 };
 use erg_compiler::erg_parser::desugar::Desugarer;
-use erg_compiler::erg_parser::token::{Token, TokenKind, AS, COLON, DOT, EQUAL};
+use erg_compiler::erg_parser::token::{Token, TokenKind, COLON, DOT, EQUAL};
 use erg_compiler::erg_parser::Parser;
 use erg_compiler::error::{CompileError, CompileErrors};
 use rustpython_parser::ast::located::{
@@ -121,10 +121,17 @@ fn op_to_token(op: Operator) -> Token {
 pub fn pyloc_to_ergloc(range: PySourceRange) -> erg_common::error::Location {
     erg_common::error::Location::range(
         range.start.row.get(),
-        range.start.column.get(),
+        range.start.column.to_zero_indexed(),
         range.end.unwrap().row.get(),
         range.end.unwrap().column.get(),
     )
+}
+
+fn attr_name_loc(value: &Expr) -> PyLocation {
+    PyLocation {
+        row: OneIndexed::from_zero_indexed(value.ln_end().unwrap_or(0)).saturating_sub(1),
+        column: OneIndexed::from_zero_indexed(value.col_end().unwrap_or(0)).saturating_add(1),
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -374,7 +381,15 @@ impl ASTConverter {
                     self.convert_expr(*anot),
                 )
             })
-            .map(|(t_spec, expr)| TypeSpecWithOp::new(AS, t_spec, expr));
+            .map(|(t_spec, expr)| {
+                let as_op = Token::new(
+                    TokenKind::As,
+                    "as",
+                    t_spec.ln_begin().unwrap_or(0),
+                    t_spec.col_begin().unwrap_or(0),
+                );
+                TypeSpecWithOp::new(as_op, t_spec, expr)
+            });
         NonDefaultParamSignature::new(pat, t_spec)
     }
 
@@ -804,9 +819,8 @@ impl ASTConverter {
                 self.convert_ident_type_spec("NoneType".into(), cons.location())
             }
             py_ast::Expr::Attribute(attr) => {
-                let loc = attr.location();
                 let namespace = Box::new(self.convert_expr(*attr.value));
-                let t = self.convert_ident(attr.attr.to_string(), loc);
+                let t = self.convert_ident(attr.attr.to_string(), attr_name_loc(&namespace));
                 let predecl = PreDeclTypeSpec::Attr { namespace, t };
                 TypeSpec::PreDeclTy(predecl)
             }
@@ -925,7 +939,7 @@ impl ASTConverter {
                     TokenKind::StrLit,
                     value,
                     loc.row.get(),
-                    loc.column.to_zero_indexed() - 1,
+                    loc.column.to_zero_indexed(),
                 );
                 Expr::Literal(Literal::new(token))
             }
@@ -966,13 +980,9 @@ impl ASTConverter {
                 Expr::Accessor(Accessor::Ident(ident))
             }
             py_ast::Expr::Attribute(attr) => {
-                let obj = self.convert_expr(*attr.value);
-                let attr_name_loc = PyLocation {
-                    row: OneIndexed::new(obj.ln_end().unwrap_or(1)).unwrap(),
-                    column: OneIndexed::new(obj.col_end().unwrap_or(1) + 2).unwrap(),
-                };
-                let name = self.convert_attr_ident(attr.attr.to_string(), attr_name_loc);
-                obj.attr_expr(name)
+                let value = self.convert_expr(*attr.value);
+                let name = self.convert_attr_ident(attr.attr.to_string(), attr_name_loc(&value));
+                value.attr_expr(name)
             }
             py_ast::Expr::IfExp(if_) => {
                 let loc = if_.location();
@@ -1018,15 +1028,15 @@ impl ASTConverter {
                 let last_col = pos_args
                     .last()
                     .and_then(|last| last.col_end())
-                    .unwrap_or(function.col_end().unwrap_or(0));
+                    .unwrap_or(function.col_end().unwrap_or(0) + 1);
                 let paren = {
                     let lp = Token::new(
                         TokenKind::LParen,
                         "(",
                         loc.row.get(),
-                        function.col_end().unwrap_or(0) + 1,
+                        function.col_end().unwrap_or(0),
                     );
-                    let rp = Token::new(TokenKind::RParen, ")", loc.row.get(), last_col + 1);
+                    let rp = Token::new(TokenKind::RParen, ")", loc.row.get(), last_col);
                     (lp, rp)
                 };
                 let args = Args::new(pos_args, None, kw_args, Some(paren));
@@ -1246,7 +1256,13 @@ impl ASTConverter {
                         );
                         let param_typ_spec = TypeSpec::mono(param_typ_ident.clone());
                         let expr = Expr::Accessor(Accessor::Ident(param_typ_ident.clone()));
-                        let param_typ_spec = TypeSpecWithOp::new(AS, param_typ_spec, expr);
+                        let as_op = Token::new(
+                            TokenKind::As,
+                            "as",
+                            param_typ_spec.ln_begin().unwrap_or(0),
+                            param_typ_spec.col_begin().unwrap_or(0),
+                        );
+                        let param_typ_spec = TypeSpecWithOp::new(as_op, param_typ_spec, expr);
                         let arg_typ_ident = Identifier::public_with_line(
                             DOT,
                             arg_typ_name.into(),
@@ -1472,11 +1488,14 @@ impl ASTConverter {
             self.namespace.push(ident.inspect().to_string());
             let params = self.convert_params(params);
             let return_t = returns.map(|ret| {
-                TypeSpecWithOp::new(
-                    COLON,
-                    self.convert_type_spec(ret.clone()),
-                    self.convert_expr(ret),
-                )
+                let t_spec = self.convert_type_spec(ret.clone());
+                let colon = Token::new(
+                    TokenKind::Colon,
+                    ":",
+                    t_spec.ln_begin().unwrap_or(0),
+                    t_spec.col_begin().unwrap_or(0),
+                );
+                TypeSpecWithOp::new(colon, t_spec, self.convert_expr(ret))
             });
             let sig = Signature::Subr(SubrSignature::new(
                 decos,
@@ -1606,10 +1625,10 @@ impl ASTConverter {
                         }
                     }
                     py_ast::Expr::Attribute(attr) => {
-                        let loc = attr.location();
-                        let attr = self
-                            .convert_expr(*attr.value)
-                            .attr(self.convert_attr_ident(attr.attr.to_string(), loc));
+                        let value = self.convert_expr(*attr.value);
+                        let ident =
+                            self.convert_attr_ident(attr.attr.to_string(), attr_name_loc(&value));
+                        let attr = value.attr(ident);
                         if let Some(value) = ann_assign.value {
                             let expr = self.convert_expr(*value);
                             let redef = ReDef::new(attr, expr);
@@ -1637,10 +1656,10 @@ impl ASTConverter {
                             Expr::Def(def)
                         }
                         py_ast::Expr::Attribute(attr) => {
-                            let attr_name_loc = attr.end_location().unwrap_or(attr.location());
-                            let attr = self.convert_expr(*attr.value).attr(
-                                self.convert_attr_ident(attr.attr.to_string(), attr_name_loc),
-                            );
+                            let value = self.convert_expr(*attr.value);
+                            let ident = self
+                                .convert_attr_ident(attr.attr.to_string(), attr_name_loc(&value));
+                            let attr = value.attr(ident);
                             let expr = self.convert_expr(*assign.value);
                             let adef = ReDef::new(attr, expr);
                             Expr::ReDef(adef)
@@ -1763,14 +1782,14 @@ impl ASTConverter {
                         }
                     }
                     py_ast::Expr::Attribute(attr) => {
-                        let val = self.convert_expr(*aug_assign.value);
-                        let attr_loc = attr.location();
-                        let attr = self
-                            .convert_expr(*attr.value)
-                            .attr(self.convert_attr_ident(attr.attr.to_string(), attr_loc));
-                        let bin = BinOp::new(op, Expr::Accessor(attr.clone()), val);
-                        let adef = ReDef::new(attr, Expr::BinOp(bin));
-                        Expr::ReDef(adef)
+                        let assign_value = self.convert_expr(*aug_assign.value);
+                        let attr_value = self.convert_expr(*attr.value);
+                        let ident = self
+                            .convert_attr_ident(attr.attr.to_string(), attr_name_loc(&attr_value));
+                        let attr = attr_value.attr(ident);
+                        let bin = BinOp::new(op, Expr::Accessor(attr.clone()), assign_value);
+                        let redef = ReDef::new(attr, Expr::BinOp(bin));
+                        Expr::ReDef(redef)
                     }
                     other => {
                         log!(err "{other:?} as LHS");
