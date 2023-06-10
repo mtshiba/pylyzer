@@ -22,10 +22,11 @@ edition = "2021"
 repository = "https://github.com/mtshiba/pylyzer"
 
 [workspace.dependencies]
-erg_common = { version = "0.6.14-nightly.4", features = ["py_compat", "els"] }
-erg_compiler = { version = "0.6.14-nightly.4", features = ["py_compat", "els"] }
-els = { version = "0.1.26-nightly.4", features = ["py_compat"] }
-rustpython-parser = "0.1.2"
+erg_common = { version = "0.6.15-nightly.0", features = ["py_compat", "els"] }
+erg_compiler = { version = "0.6.15-nightly.0", features = ["py_compat", "els"] }
+els = { version = "0.1.27-nightly.0", features = ["py_compat"] }
+rustpython-parser = { git = "https://github.com/RustPython/Parser", version = "0.2.0", features = ["all-nodes-with-ranges", "location"] }
+rustpython-ast = { git = "https://github.com/RustPython/Parser", version = "0.2.0", features = ["all-nodes-with-ranges", "location"] }
 # erg_compiler = { git = "https://github.com/erg-lang/erg", branch = "main", features = ["py_compat", "els"] }
 # erg_common = { git = "https://github.com/erg-lang/erg", branch = "main", features = ["py_compat", "els"] }
 # els = { git = "https://github.com/erg-lang/erg", branch = "main", features = ["py_compat"] }
@@ -45,6 +46,7 @@ erg_compiler = { workspace = true }
 erg_common = { workspace = true }
 els = { workspace = true }
 rustpython-parser = { workspace = true }
+rustpython-ast = { workspace = true }
 py2erg = { version = "0.0.31", path = "./crates/py2erg" }
 
 [lib]
