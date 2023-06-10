@@ -2,7 +2,7 @@ use std::path::Path;
 
 use erg_common::config::ErgConfig;
 use erg_common::dict::Dict as HashMap;
-use erg_common::fresh::fresh_varname;
+use erg_common::fresh::FRESH_GEN;
 use erg_common::set::Set as HashSet;
 use erg_common::traits::{Locational, Stream};
 use erg_common::{log, set};
@@ -472,8 +472,8 @@ impl ASTConverter {
             ),
             py_ast::Expr::Tuple(expr) => {
                 let loc = expr.location();
-                let tmp = fresh_varname();
-                let tmp_name = VarName::from_str_and_line((&tmp).into(), expr.location().row.get());
+                let tmp = FRESH_GEN.fresh_varname();
+                let tmp_name = VarName::from_str_and_line(tmp, expr.location().row.get());
                 let tmp_expr = Expr::Accessor(Accessor::Ident(Identifier::new(
                     VisModifierSpec::Public(DOT),
                     tmp_name.clone(),
@@ -1665,11 +1665,9 @@ impl ASTConverter {
                             Expr::ReDef(adef)
                         }
                         py_ast::Expr::Tuple(tuple) => {
-                            let tmp = fresh_varname();
-                            let tmp_name = VarName::from_str_and_line(
-                                (&tmp).into(),
-                                tuple.location().row.get(),
-                            );
+                            let tmp = FRESH_GEN.fresh_varname();
+                            let tmp_name =
+                                VarName::from_str_and_line(tmp, tuple.location().row.get());
                             let tmp_ident = Identifier::new(VisModifierSpec::Public(DOT), tmp_name);
                             let tmp_expr = Expr::Accessor(Accessor::Ident(tmp_ident.clone()));
                             let sig = Signature::Var(VarSignature::new(
