@@ -12,8 +12,15 @@
 
 ### cargo (rust package manager)
 
+> ```bash
+> cargo install pylyzer
+> ```
+
+**NOTE**: Installation by `cargo install pylyzer` is currently unavailable due to using a version of [the parser](https://github.com/RustPython/Parser/) not published on crates.io. Please clone the repository and build it directly.
+
 ```bash
-cargo install pylyzer
+git clone https://github.com/mtshiba/pylyzer.git
+cargo install --path .
 ```
 
 Make sure that `cargo/rustc` is up-to-date, as pylyzer may be written with the latest language features.

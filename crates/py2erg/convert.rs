@@ -23,8 +23,8 @@ use erg_compiler::erg_parser::token::{Token, TokenKind, COLON, DOT, EQUAL};
 use erg_compiler::erg_parser::Parser;
 use erg_compiler::error::{CompileError, CompileErrors};
 use rustpython_parser::ast::located::{
-    self as py_ast, Alias, Arg, Arguments, Boolop, Cmpop, ExprConstant, Keyword, Located,
-    ModModule, Operator, Stmt, String, Suite, Unaryop,
+    self as py_ast, Alias, Arg, Arguments, BoolOp, CmpOp, ExprConstant, Keyword, Located,
+    ModModule, Operator, Stmt, String, Suite, UnaryOp as UnOp,
 };
 use rustpython_parser::source_code::{
     OneIndexed, SourceLocation as PyLocation, SourceRange as PySourceRange,
@@ -1051,10 +1051,10 @@ impl ASTConverter {
             py_ast::Expr::UnaryOp(un) => {
                 let rhs = self.convert_expr(*un.operand);
                 let (kind, cont) = match un.op {
-                    Unaryop::UAdd => (TokenKind::PrePlus, "+"),
-                    // Unaryop::Not => (TokenKind::PreBitNot, "not"),
-                    Unaryop::USub => (TokenKind::PreMinus, "-"),
-                    Unaryop::Invert => (TokenKind::PreBitNot, "~"),
+                    UnOp::UAdd => (TokenKind::PrePlus, "+"),
+                    // UnOp::Not => (TokenKind::PreBitNot, "not"),
+                    UnOp::USub => (TokenKind::PreMinus, "-"),
+                    UnOp::Invert => (TokenKind::PreBitNot, "~"),
                     _ => return Expr::Dummy(Dummy::new(None, vec![rhs])),
                 };
                 let op = Token::from_str(kind, cont);
@@ -1065,27 +1065,27 @@ impl ASTConverter {
                 let lhs = self.convert_expr(boole.values.remove(0));
                 let rhs = self.convert_expr(boole.values.remove(0));
                 let (kind, cont) = match boole.op {
-                    Boolop::And => (TokenKind::AndOp, "and"),
-                    Boolop::Or => (TokenKind::OrOp, "or"),
+                    BoolOp::And => (TokenKind::AndOp, "and"),
+                    BoolOp::Or => (TokenKind::OrOp, "or"),
                 };
                 let op = Token::from_str(kind, cont);
                 Expr::BinOp(BinOp::new(op, lhs, rhs))
             }
-            // TODO: multiple Cmpops
+            // TODO: multiple CmpOps
             py_ast::Expr::Compare(mut cmp) => {
                 let lhs = self.convert_expr(*cmp.left);
                 let rhs = self.convert_expr(cmp.comparators.remove(0));
                 let (kind, cont) = match cmp.ops.remove(0) {
-                    Cmpop::Eq => (TokenKind::DblEq, "=="),
-                    Cmpop::NotEq => (TokenKind::NotEq, "!="),
-                    Cmpop::Lt => (TokenKind::Less, "<"),
-                    Cmpop::LtE => (TokenKind::LessEq, "<="),
-                    Cmpop::Gt => (TokenKind::Gre, ">"),
-                    Cmpop::GtE => (TokenKind::GreEq, ">="),
-                    Cmpop::Is => (TokenKind::IsOp, "is!"),
-                    Cmpop::IsNot => (TokenKind::IsNotOp, "isnot!"),
-                    Cmpop::In => (TokenKind::InOp, "in"),
-                    Cmpop::NotIn => (TokenKind::NotInOp, "notin"),
+                    CmpOp::Eq => (TokenKind::DblEq, "=="),
+                    CmpOp::NotEq => (TokenKind::NotEq, "!="),
+                    CmpOp::Lt => (TokenKind::Less, "<"),
+                    CmpOp::LtE => (TokenKind::LessEq, "<="),
+                    CmpOp::Gt => (TokenKind::Gre, ">"),
+                    CmpOp::GtE => (TokenKind::GreEq, ">="),
+                    CmpOp::Is => (TokenKind::IsOp, "is!"),
+                    CmpOp::IsNot => (TokenKind::IsNotOp, "isnot!"),
+                    CmpOp::In => (TokenKind::InOp, "in"),
+                    CmpOp::NotIn => (TokenKind::NotInOp, "notin"),
                 };
                 let op = Token::from_str(kind, cont);
                 Expr::BinOp(BinOp::new(op, lhs, rhs))

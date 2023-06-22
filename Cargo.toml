@@ -22,9 +22,9 @@ edition = "2021"
 repository = "https://github.com/mtshiba/pylyzer"
 
 [workspace.dependencies]
-erg_common = { version = "0.6.15-nightly.1", features = ["py_compat", "els"] }
-erg_compiler = { version = "0.6.15-nightly.1", features = ["py_compat", "els"] }
-els = { version = "0.1.27-nightly.1", features = ["py_compat"] }
+erg_common = { version = "0.6.15", features = ["py_compat", "els"] }
+erg_compiler = { version = "0.6.15", features = ["py_compat", "els"] }
+els = { version = "0.1.27", features = ["py_compat"] }
 rustpython-parser = { git = "https://github.com/RustPython/Parser", version = "0.2.0", features = ["all-nodes-with-ranges", "location"] }
 rustpython-ast = { git = "https://github.com/RustPython/Parser", version = "0.2.0", features = ["all-nodes-with-ranges", "location"] }
 # erg_compiler = { git = "https://github.com/erg-lang/erg", branch = "main", features = ["py_compat", "els"] }
