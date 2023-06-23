@@ -1,3 +1,5 @@
+from typing import Self
+
 class Empty: pass
 emp = Empty()
 
@@ -15,6 +17,8 @@ class C:
         return C(self.x + other.x, self.y + other.y)
     def method(self):
         return self.x
+    def id(self) -> Self:
+        return self
 
 c = C(1, 2)
 assert c.x == 1
@@ -27,6 +31,7 @@ assert d.x == "a" # ERR
 a = c.method() # OK
 _: int = a + 1
 b = C("a").method() # ERR
+assert c.id() == c
 
 class D:
     c: int
