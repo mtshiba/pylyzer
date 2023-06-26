@@ -7,8 +7,10 @@ use erg_common::Str;
 use erg_compiler::artifact::{BuildRunnable, Buildable, CompleteArtifact, IncompleteArtifact};
 use erg_compiler::context::register::CheckStatus;
 use erg_compiler::context::ModuleContext;
-use erg_compiler::erg_parser::ast::{Module, AST};
-use erg_compiler::erg_parser::error::ParseErrors;
+use erg_compiler::erg_parser::ast::AST;
+use erg_compiler::erg_parser::error::{
+    CompleteArtifact as PCompleteArtifact, IncompleteArtifact as PIncompleteArtifact, ParseErrors,
+};
 use erg_compiler::erg_parser::parse::Parsable;
 use erg_compiler::error::{CompileError, CompileErrors};
 use erg_compiler::lower::ASTLowerer;
@@ -21,7 +23,7 @@ use crate::handle_err;
 pub struct SimplePythonParser {}
 
 impl Parsable for SimplePythonParser {
-    fn parse(code: String) -> Result<Module, ParseErrors> {
+    fn parse(code: String) -> Result<PCompleteArtifact, PIncompleteArtifact> {
         let py_program = parser::parse_program(&code).map_err(|_err| ParseErrors::empty())?;
         let shadowing = if cfg!(feature = "debug") {
             ShadowingMode::Visible
@@ -29,11 +31,18 @@ impl Parsable for SimplePythonParser {
             ShadowingMode::Invisible
         };
         let converter = py2erg::ASTConverter::new(ErgConfig::default(), shadowing);
-        let IncompleteArtifact{ object: Some(erg_module), errors, .. } = converter.convert_program(py_program) else { unreachable!() };
-        if errors.is_empty() {
-            Ok(erg_module)
+        let art = converter.convert_program(py_program);
+        if art.errors.is_empty() {
+            Ok(PCompleteArtifact::new(
+                art.object.unwrap(),
+                art.warns.into(),
+            ))
         } else {
-            Err(ParseErrors::empty())
+            Err(PIncompleteArtifact::new(
+                art.object,
+                art.errors.into(),
+                art.warns.into(),
+            ))
         }
     }
 }
@@ -155,7 +164,7 @@ impl PythonAnalyzer {
     }
 
     pub fn run(&mut self) {
-        if self.cfg.output_dir.is_some() {
+        if self.cfg.dist_dir.is_some() {
             reserve_decl_er(self.cfg.input.clone());
         }
         let py_code = self.cfg.input.read();
@@ -169,13 +178,13 @@ impl PythonAnalyzer {
                         artifact.warns.len(),
                         self.cfg.input.unescaped_filename()
                     );
-                    artifact.warns.fmt_all_stderr();
+                    artifact.warns.write_all_stderr();
                 }
                 println!(
                     "{GREEN}All checks OK{RESET}: {}",
                     self.cfg.input.unescaped_filename()
                 );
-                if self.cfg.output_dir.is_some() {
+                if self.cfg.dist_dir.is_some() {
                     dump_decl_er(
                         self.cfg.input.clone(),
                         artifact.object,
@@ -192,7 +201,7 @@ impl PythonAnalyzer {
                         artifact.warns.len(),
                         self.cfg.input.unescaped_filename()
                     );
-                    artifact.warns.fmt_all_stderr();
+                    artifact.warns.write_all_stderr();
                 }
                 let code = if artifact.errors.is_empty() {
                     println!(
@@ -206,11 +215,11 @@ impl PythonAnalyzer {
                         artifact.errors.len(),
                         self.cfg.input.unescaped_filename()
                     );
-                    artifact.errors.fmt_all_stderr();
+                    artifact.errors.write_all_stderr();
                     1
                 };
                 // Even if type checking fails, some APIs are still valid, so generate a file
-                if self.cfg.output_dir.is_some() {
+                if self.cfg.dist_dir.is_some() {
                     dump_decl_er(
                         self.cfg.input.clone(),
                         artifact.object.unwrap(),

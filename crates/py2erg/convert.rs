@@ -2,7 +2,7 @@ use std::path::Path;
 
 use erg_common::config::ErgConfig;
 use erg_common::dict::Dict as HashMap;
-use erg_common::fresh::fresh_varname;
+use erg_common::fresh::FRESH_GEN;
 use erg_common::set::Set as HashSet;
 use erg_common::traits::{Locational, Stream};
 use erg_common::{log, set};
@@ -19,7 +19,7 @@ use erg_compiler::erg_parser::ast::{
     VisModifierSpec,
 };
 use erg_compiler::erg_parser::desugar::Desugarer;
-use erg_compiler::erg_parser::token::{Token, TokenKind, AS, DOT, EQUAL};
+use erg_compiler::erg_parser::token::{Token, TokenKind, AS, COLON, DOT, EQUAL};
 use erg_compiler::erg_parser::Parser;
 use erg_compiler::error::{CompileError, CompileErrors};
 use rustpython_parser::ast::{
@@ -444,9 +444,8 @@ impl ASTConverter {
                 (self.convert_for_param(name, expr.location), vec![])
             }
             ExpressionType::Tuple { elements } => {
-                let tmp = fresh_varname();
-                let tmp_name =
-                    VarName::from_str_and_line((&tmp).into(), expr.location.row() as u32);
+                let tmp = FRESH_GEN.fresh_varname();
+                let tmp_name = VarName::from_str_and_line(tmp, expr.location.row() as u32);
                 let tmp_expr = Expr::Accessor(Accessor::Ident(Identifier::new(
                     VisModifierSpec::Public(DOT),
                     tmp_name.clone(),
@@ -1263,7 +1262,9 @@ impl ASTConverter {
             self.namespace.last().unwrap().into(),
             sig.ln_begin().unwrap_or(0),
         );
+        let class_expr = Expr::Accessor(Accessor::Ident(class_ident.clone()));
         let class_spec = TypeSpec::mono(class_ident);
+        let class_spec = TypeSpecWithOp::new(COLON, class_spec, class_expr);
         let sig = Signature::Subr(SubrSignature::new(
             set! { Decorator(Expr::static_local("Override")) },
             call_ident,
@@ -1287,7 +1288,9 @@ impl ASTConverter {
         let params = Params::new(vec![], None, vec![], None);
         let class_ident =
             Identifier::public_with_line(DOT, self.namespace.last().unwrap().into(), line as u32);
+        let class_expr = Expr::Accessor(Accessor::Ident(class_ident.clone()));
         let class_spec = TypeSpec::mono(class_ident);
+        let class_spec = TypeSpecWithOp::new(COLON, class_spec, class_expr);
         let sig = Signature::Subr(SubrSignature::new(
             set! { Decorator(Expr::static_local("Override")) },
             call_ident,
@@ -1433,7 +1436,11 @@ impl ASTConverter {
             let ident = self.convert_ident(name, func_name_loc);
             self.namespace.push(ident.inspect().to_string());
             let params = self.convert_params(params);
-            let return_t = returns.map(|ret| self.convert_type_spec(ret));
+            let return_t = returns.map(|ret| {
+                let t_spec = self.convert_type_spec(clone_loc_expr(&ret));
+                let expr = self.convert_expr(ret);
+                TypeSpecWithOp::new(COLON, t_spec, expr)
+            });
             let sig = Signature::Subr(SubrSignature::new(
                 decos,
                 ident,
@@ -1599,11 +1606,9 @@ impl ASTConverter {
                             Expr::ReDef(adef)
                         }
                         ExpressionType::Tuple { elements } => {
-                            let tmp = fresh_varname();
-                            let tmp_name = VarName::from_str_and_line(
-                                (&tmp).into(),
-                                stmt.location.row() as u32,
-                            );
+                            let tmp = FRESH_GEN.fresh_varname();
+                            let tmp_name =
+                                VarName::from_str_and_line(tmp, stmt.location.row() as u32);
                             let tmp_ident = Identifier::new(VisModifierSpec::Public(DOT), tmp_name);
                             let tmp_expr = Expr::Accessor(Accessor::Ident(tmp_ident.clone()));
                             let sig = Signature::Var(VarSignature::new(
