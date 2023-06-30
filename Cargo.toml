@@ -15,16 +15,16 @@ members = [
 ]
 
 [workspace.package]
-version = "0.0.32"
+version = "0.0.33"
 authors = ["Shunsuke Shibayama <sbym1346@gmail.com>"]
 license = "MIT OR Apache-2.0"
 edition = "2021"
 repository = "https://github.com/mtshiba/pylyzer"
 
 [workspace.dependencies]
-erg_common = { version = "0.6.16-nightly.1", features = ["py_compat", "els"] }
-erg_compiler = { version = "0.6.16-nightly.1", features = ["py_compat", "els"] }
-els = { version = "0.1.28-nightly.1", features = ["py_compat"] }
+erg_common = { version = "0.6.16-nightly.3", features = ["py_compat", "els"] }
+erg_compiler = { version = "0.6.16-nightly.3", features = ["py_compat", "els"] }
+els = { version = "0.1.28-nightly.3", features = ["py_compat"] }
 rustpython-parser = "0.1.2"
 # erg_compiler = { git = "https://github.com/erg-lang/erg", branch = "main", features = ["py_compat", "els"] }
 # erg_common = { git = "https://github.com/erg-lang/erg", branch = "main", features = ["py_compat", "els"] }
@@ -45,7 +45,7 @@ erg_compiler = { workspace = true }
 erg_common = { workspace = true }
 els = { workspace = true }
 rustpython-parser = { workspace = true }
-py2erg = { version = "0.0.32", path = "./crates/py2erg" }
+py2erg = { version = "0.0.33", path = "./crates/py2erg" }
 
 [lib]
 path = "src/lib.rs"
