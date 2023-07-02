@@ -73,7 +73,13 @@ pylyzer as a language server supports various features, such as completion and r
 
 ![autoimport](https://raw.githubusercontent.com/mtshiba/pylyzer/main/images/autoimport.gif)
 
-## [VSCode extension](https://github.com/mtshiba/pylyzer/blob/main/extension)
+## VSCode extension
+
+You can install the VSCode extension from the [Marketplace](https://marketplace.visualstudio.com/items?itemName=pylyzer.pylyzer) or from the command line:
+
+```sh
+code --install-extension pylyzer.pylyzer
+```
 
 ## What is the difference from [Ruff](https://github.com/charliermarsh/ruff)?
 
