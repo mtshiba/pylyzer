@@ -41,6 +41,17 @@ for i in range(3):
 for i in range(4):
     print(arr[i])
 
+def f(d1, d2: dict[str, int]):
+    _ = d1["b"] # OK
+    _ = d2["a"] # OK
+    _ = d2[1] # ERR
+    dic = {"a": 1}
+    _ = dic["b"] # ERR
+    arr = [1, 2, 3]
+    _ = arr[4] # ERR
+    for i in range(4):
+        print(arr[i]) # ERR
+
 i, j = 1, 2
 assert i == 1
 assert j == 2
