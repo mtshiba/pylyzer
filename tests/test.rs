@@ -118,3 +118,8 @@ fn exec_collections() -> Result<(), String> {
 fn exec_call() -> Result<(), String> {
     expect("tests/call.py", 0, 3)
 }
+
+#[test]
+fn exec_shadowing() -> Result<(), String> {
+    expect("tests/shadowing.py", 0, 3)
+}

@@ -153,7 +153,7 @@ checksum = "7fcaabb2fef8c910e7f4c7ce9f67a1283a1715879a7c230ca9d6d1ae31f16d91"
 [[package]]
 name = "els"
 version = "0.1.28-nightly.7"
-source = "git+https://github.com/erg-lang/erg?branch=main#281262b7bf7c41cbb0b738e660cea37926016780"
+source = "git+https://github.com/erg-lang/erg?branch=main#953b5806b599ae5061c1d29bb78b88cd758c9d3c"
 dependencies = [
  "erg_common",
  "erg_compiler",
@@ -177,7 +177,7 @@ dependencies = [
 [[package]]
 name = "erg_common"
 version = "0.6.16-nightly.7"
-source = "git+https://github.com/erg-lang/erg?branch=main#281262b7bf7c41cbb0b738e660cea37926016780"
+source = "git+https://github.com/erg-lang/erg?branch=main#953b5806b599ae5061c1d29bb78b88cd758c9d3c"
 dependencies = [
  "backtrace-on-stack-overflow",
  "parking_lot",
@@ -187,7 +187,7 @@ dependencies = [
 [[package]]
 name = "erg_compiler"
 version = "0.6.16-nightly.7"
-source = "git+https://github.com/erg-lang/erg?branch=main#281262b7bf7c41cbb0b738e660cea37926016780"
+source = "git+https://github.com/erg-lang/erg?branch=main#953b5806b599ae5061c1d29bb78b88cd758c9d3c"
 dependencies = [
  "erg_common",
  "erg_parser",
@@ -196,7 +196,7 @@ dependencies = [
 [[package]]
 name = "erg_parser"
 version = "0.6.16-nightly.7"
-source = "git+https://github.com/erg-lang/erg?branch=main#281262b7bf7c41cbb0b738e660cea37926016780"
+source = "git+https://github.com/erg-lang/erg?branch=main#953b5806b599ae5061c1d29bb78b88cd758c9d3c"
 dependencies = [
  "erg_common",
  "unicode-xid",
