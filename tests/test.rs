@@ -123,3 +123,8 @@ fn exec_call() -> Result<(), String> {
 fn exec_shadowing() -> Result<(), String> {
     expect("tests/shadowing.py", 0, 3)
 }
+
+#[test]
+fn exec_widening() -> Result<(), String> {
+    expect("tests/widening.py", 0, 1)
+}
