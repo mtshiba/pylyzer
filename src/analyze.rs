@@ -168,7 +168,7 @@ impl PythonAnalyzer {
             reserve_decl_er(self.cfg.input.clone());
         }
         let py_code = self.cfg.input.read();
-        let filename = self.cfg.input.unescaped_filename();
+        let filename = self.cfg.input.filename();
         println!("{BLUE}Start checking{RESET}: {filename}");
         match self.analyze(py_code, "exec") {
             Ok(artifact) => {
@@ -176,14 +176,11 @@ impl PythonAnalyzer {
                     println!(
                         "{YELLOW}Found {} warnings{RESET}: {}",
                         artifact.warns.len(),
-                        self.cfg.input.unescaped_filename()
+                        self.cfg.input.filename()
                     );
                     artifact.warns.write_all_stderr();
                 }
-                println!(
-                    "{GREEN}All checks OK{RESET}: {}",
-                    self.cfg.input.unescaped_filename()
-                );
+                println!("{GREEN}All checks OK{RESET}: {}", self.cfg.input.filename());
                 if self.cfg.dist_dir.is_some() {
                     dump_decl_er(
                         self.cfg.input.clone(),
@@ -199,21 +196,18 @@ impl PythonAnalyzer {
                     println!(
                         "{YELLOW}Found {} warnings{RESET}: {}",
                         artifact.warns.len(),
-                        self.cfg.input.unescaped_filename()
+                        self.cfg.input.filename()
                     );
                     artifact.warns.write_all_stderr();
                 }
                 let code = if artifact.errors.is_empty() {
-                    println!(
-                        "{GREEN}All checks OK{RESET}: {}",
-                        self.cfg.input.unescaped_filename()
-                    );
+                    println!("{GREEN}All checks OK{RESET}: {}", self.cfg.input.filename());
                     0
                 } else {
                     println!(
                         "{RED}Found {} errors{RESET}: {}",
                         artifact.errors.len(),
-                        self.cfg.input.unescaped_filename()
+                        self.cfg.input.filename()
                     );
                     artifact.errors.write_all_stderr();
                     1
