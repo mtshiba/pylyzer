@@ -26,23 +26,21 @@ pub struct DeclFileGenerator {
 
 impl DeclFileGenerator {
     pub fn new(input: &Input, status: CheckStatus) -> Self {
-        let (timestamp, hash) = if let Some(py_file_path) = input.path() {
+        let (timestamp, hash) = {
+            let py_file_path = input.path();
             let metadata = std::fs::metadata(py_file_path).unwrap();
             let dummy_hash = metadata.len();
             (metadata.modified().unwrap(), dummy_hash)
-        } else {
-            let now = std::time::SystemTime::now();
-            (now, now.elapsed().unwrap().as_secs())
         };
         let status = PylyzerStatus {
             status,
-            file: input.unescaped_path().into(),
+            file: input.path().into(),
             timestamp,
             hash,
         };
         let code = format!("{status}\n");
         Self {
-            filename: input.unescaped_filename().replace(".py", ".d.er"),
+            filename: input.filename().replace(".py", ".d.er"),
             namespace: "".to_string(),
             code,
         }
@@ -148,7 +146,7 @@ pub fn reserve_decl_er(input: Input) {
     if !pycache_dir.exists() {
         std::fs::create_dir(pycache_dir).unwrap();
     }
-    let filename = input.unescaped_filename();
+    let filename = input.filename();
     let mut path = pycache_dir.join(filename);
     path.set_extension("d.er");
     if !path.exists() {
