@@ -34,6 +34,21 @@ use crate::error::*;
 
 pub const ARROW: Token = Token::dummy(TokenKind::FuncArrow, "->");
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum CanShadow {
+    Yes,
+    No,
+}
+
+impl CanShadow {
+    pub const fn is_yes(&self) -> bool {
+        matches!(self, Self::Yes)
+    }
+    pub const fn is_no(&self) -> bool {
+        matches!(self, Self::No)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum NameKind {
     Variable,
@@ -225,7 +240,7 @@ pub struct ASTConverter {
     block_id_counter: usize,
     block_ids: Vec<usize>,
     /// Erg does not allow variables to be defined multiple times, so rename them using this
-    names: HashMap<String, NameInfo>,
+    names: Vec<HashMap<String, NameInfo>>,
     warns: CompileErrors,
     errs: CompileErrors,
 }
@@ -238,18 +253,46 @@ impl ASTConverter {
             namespace: vec![String::from("<module>")],
             block_id_counter: 0,
             block_ids: vec![0],
-            names: HashMap::new(),
+            names: vec![HashMap::new()],
             warns: CompileErrors::empty(),
             errs: CompileErrors::empty(),
         }
     }
 
     fn get_name(&self, name: &str) -> Option<&NameInfo> {
-        self.names.get(name)
+        for ns in self.names.iter().rev() {
+            if let Some(ni) = ns.get(name) {
+                return Some(ni);
+            }
+        }
+        None
     }
 
     fn get_mut_name(&mut self, name: &str) -> Option<&mut NameInfo> {
-        self.names.get_mut(name)
+        for ns in self.names.iter_mut().rev() {
+            if let Some(ni) = ns.get_mut(name) {
+                return Some(ni);
+            }
+        }
+        None
+    }
+
+    fn define_name(&mut self, name: String, info: NameInfo) {
+        self.names.last_mut().unwrap().insert(name, info);
+    }
+
+    fn declare_name(&mut self, name: String, info: NameInfo) {
+        self.names.first_mut().unwrap().insert(name, info);
+    }
+
+    fn grow(&mut self, namespace: String) {
+        self.namespace.push(namespace);
+        self.names.push(HashMap::new());
+    }
+
+    fn pop(&mut self) {
+        self.namespace.pop();
+        self.names.pop();
     }
 
     fn cur_block_id(&self) -> usize {
@@ -260,14 +303,21 @@ impl ASTConverter {
         self.namespace.join(".")
     }
 
-    fn register_name_info(&mut self, name: &str, kind: NameKind) {
+    fn register_name_info(&mut self, name: &str, kind: NameKind) -> CanShadow {
         let cur_namespace = self.cur_namespace();
-        if let Some(name_info) = self.names.get_mut(name) {
-            if name_info.defined_in == cur_namespace {
+        let cur_block_id = self.cur_block_id();
+        if let Some(name_info) = self.get_mut_name(name) {
+            if name_info.defined_in == cur_namespace && name_info.defined_block_id == cur_block_id {
                 name_info.defined_times += 1;
-            } else if name_info.defined_in.is_unknown() {
+            }
+            if name_info.defined_in.is_unknown() {
                 name_info.defined_in = DefinedPlace::Known(cur_namespace);
-                name_info.defined_times += 1;
+                name_info.defined_times += 1; // 0 -> 1
+            }
+            if name_info.defined_block_id == cur_block_id {
+                CanShadow::Yes
+            } else {
+                CanShadow::No
             }
         } else {
             // In Erg, classes can only be defined in uppercase
@@ -279,7 +329,8 @@ impl ASTConverter {
             };
             let defined_in = DefinedPlace::Known(self.cur_namespace());
             let info = NameInfo::new(rename, defined_in, self.cur_block_id(), 1);
-            self.names.insert(String::from(name), info);
+            self.define_name(String::from(name), info);
+            CanShadow::Yes
         }
     }
 
@@ -320,7 +371,7 @@ impl ASTConverter {
             };
             let mut info = NameInfo::new(None, defined_in, cur_block_id, 0);
             info.add_referrer(cur_namespace);
-            self.names.insert(name.clone(), info);
+            self.declare_name(name.clone(), info);
             name
         };
         let token = Token::new(
@@ -357,6 +408,7 @@ impl ASTConverter {
         Identifier::new(VisModifierSpec::Public(dot), name)
     }
 
+    // Duplicate param names will result in an error at the parser. So we don't need to check it here.
     fn convert_param_pattern(&mut self, arg: String, loc: PyLocation) -> ParamPattern {
         self.register_name_info(&arg, NameKind::Variable);
         let ident = self.convert_ident(arg, loc);
@@ -1054,10 +1106,10 @@ impl ASTConverter {
                 Expr::BinOp(BinOp::new(op, lhs, rhs))
             }
             ExpressionType::Lambda { args, body } => {
-                self.namespace.push("<lambda>".to_string());
+                self.grow("<lambda>".to_string());
                 let params = self.convert_params(*args);
                 let body = vec![self.convert_expr(*body)];
-                self.namespace.pop();
+                self.pop();
                 let sig = LambdaSignature::new(params, None, TypeBoundSpecs::empty());
                 let op = Token::from_str(TokenKind::FuncArrow, "->");
                 Expr::Lambda(Lambda::new(sig, op, Block::new(body), DefId(0)))
@@ -1325,8 +1377,7 @@ impl ASTConverter {
                     if def
                         .sig
                         .ident()
-                        .map(|id| &id.inspect()[..] == "__init__")
-                        .unwrap_or(false)
+                        .is_some_and(|id| &id.inspect()[..] == "__init__")
                     {
                         if let Some(call_def) = self.extract_init(&mut base_type, def) {
                             attrs.insert(0, ClassAttr::Def(call_def));
@@ -1409,15 +1460,11 @@ impl ASTConverter {
         loc: PyLocation,
     ) -> Expr {
         // if reassigning of a function referenced by other functions is occurred, it is an error
-        if self
-            .get_name(&name)
-            .map(|info| {
-                info.defined_times > 0
-                    && info.defined_in == DefinedPlace::Known(self.cur_namespace())
-                    && !info.referenced.difference(&set! {name.clone()}).is_empty()
-            })
-            .unwrap_or(false)
-        {
+        if self.get_name(&name).is_some_and(|info| {
+            info.defined_times > 0
+                && info.defined_in == DefinedPlace::Known(self.cur_namespace())
+                && !info.referenced.difference(&set! {name.clone()}).is_empty()
+        }) {
             let err = reassign_func_error(
                 self.cfg.input.clone(),
                 pyloc_to_ergloc(loc, name.len()),
@@ -1434,7 +1481,7 @@ impl ASTConverter {
             self.register_name_info(&name, NameKind::Function);
             let func_name_loc = PyLocation::new(loc.row(), loc.column() + 4);
             let ident = self.convert_ident(name, func_name_loc);
-            self.namespace.push(ident.inspect().to_string());
+            self.grow(ident.inspect().to_string());
             let params = self.convert_params(params);
             let return_t = returns.map(|ret| {
                 let t_spec = self.convert_type_spec(clone_loc_expr(&ret));
@@ -1451,7 +1498,7 @@ impl ASTConverter {
             let block = self.convert_block(body, BlockKind::Function);
             let body = DefBody::new(EQUAL, block, DefId(0));
             let def = Def::new(sig, body);
-            self.namespace.pop();
+            self.pop();
             Expr::Def(def)
         }
     }
@@ -1491,7 +1538,7 @@ impl ASTConverter {
         let class_name_loc = PyLocation::new(loc.row(), loc.column() + 6);
         let ident = self.convert_ident(name, class_name_loc);
         let sig = Signature::Var(VarSignature::new(VarPattern::Ident(ident.clone()), None));
-        self.namespace.push(ident.inspect().to_string());
+        self.grow(ident.inspect().to_string());
         let (base_type, methods) = self.extract_method_list(ident, body, inherit);
         let classdef = if inherit {
             // TODO: multiple inheritance
@@ -1526,7 +1573,7 @@ impl ASTConverter {
             let def = Def::new(sig, body);
             ClassDef::new(def, methods)
         };
-        self.namespace.pop();
+        self.pop();
         Expr::ClassDef(classdef)
     }
 

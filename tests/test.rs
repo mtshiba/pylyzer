@@ -104,3 +104,8 @@ fn exec_collections() {
 fn exec_call() {
     expect("tests/call.py", 0, 3);
 }
+
+#[test]
+fn exec_shadowing() {
+    expect("tests/shadowing.py", 0, 3);
+}

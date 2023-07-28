@@ -10,3 +10,8 @@ def g(x: int):
     if True:
         x = "a" # ERR
     return x
+
+def h(x: str):
+    if True:
+        x = "a" # OK
+    return x
