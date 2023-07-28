@@ -252,9 +252,9 @@ checksum = "a26ae43d7bcc3b814de94796a5e736d4029efb0ee900c12e2d54c993ad1a1e07"
 
 [[package]]
 name = "els"
-version = "0.1.30-nightly.1"
+version = "0.1.30-nightly.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1b98b49887071526f16f6f97a93abe6bab4f7eeef712ca19b8c69421a42d892e"
+checksum = "1591d43ed3e39ffe8ce44c480a5ece41be2839addb915bb18ab611bd6bd66a58"
 dependencies = [
  "erg_common",
  "erg_compiler",
