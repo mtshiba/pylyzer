@@ -156,8 +156,7 @@ checksum = "a26ae43d7bcc3b814de94796a5e736d4029efb0ee900c12e2d54c993ad1a1e07"
 [[package]]
 name = "els"
 version = "0.1.32-nightly.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3307c99c6899e4e15cd70ae441155dcf29518c89851ee0607bd7dfa31a7007af"
+source = "git+https://github.com/erg-lang/erg?branch=main#d8835fd169ff42467c2cfea4013a03aeeba88057"
 dependencies = [
  "erg_common",
  "erg_compiler",
@@ -181,8 +180,7 @@ dependencies = [
 [[package]]
 name = "erg_common"
 version = "0.6.20-nightly.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d1c1dc0d6ec5a9d4bf8c937ba5512e56e20bfd3b7313f0fcea5678abbefb4cb3"
+source = "git+https://github.com/erg-lang/erg?branch=main#d8835fd169ff42467c2cfea4013a03aeeba88057"
 dependencies = [
  "backtrace-on-stack-overflow",
  "parking_lot",
@@ -192,8 +190,7 @@ dependencies = [
 [[package]]
 name = "erg_compiler"
 version = "0.6.20-nightly.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2cbb4b6cc66405d59b575203f70b54faed5d9390eecc1b339f46ce6c1820c702"
+source = "git+https://github.com/erg-lang/erg?branch=main#d8835fd169ff42467c2cfea4013a03aeeba88057"
 dependencies = [
  "erg_common",
  "erg_parser",
@@ -202,8 +199,7 @@ dependencies = [
 [[package]]
 name = "erg_parser"
 version = "0.6.20-nightly.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "84a6408c0cd62d1fdfb12fe223749c9cb952f77104cd27e4425e25f863858970"
+source = "git+https://github.com/erg-lang/erg?branch=main#d8835fd169ff42467c2cfea4013a03aeeba88057"
 dependencies = [
  "erg_common",
  "unicode-xid",

@@ -24,3 +24,6 @@ _ = t[1] == 1 # ERR
 def f(s: Str): return None
 for i in getattr(1, "aaa", ()):
     f(i)
+
+assert 1 in [1, 2]
+assert 1 in {1, 2}
