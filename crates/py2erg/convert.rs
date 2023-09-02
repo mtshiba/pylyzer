@@ -1184,7 +1184,7 @@ impl ASTConverter {
                 let kvs = dict
                     .keys
                     .into_iter()
-                    .zip(dict.values.into_iter())
+                    .zip(dict.values)
                     .map(|(k, v)| {
                         KeyValue::new(
                             k.map(|k| self.convert_expr(k))
