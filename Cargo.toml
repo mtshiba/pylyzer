@@ -15,21 +15,23 @@ members = [
 ]
 
 [workspace.package]
-version = "0.0.33"
+version = "0.0.42"
 authors = ["Shunsuke Shibayama <sbym1346@gmail.com>"]
 license = "MIT OR Apache-2.0"
 edition = "2021"
 repository = "https://github.com/mtshiba/pylyzer"
 
 [workspace.dependencies]
-# erg_common = { version = "0.6.15", features = ["py_compat", "els"] }
-# erg_compiler = { version = "0.6.15", features = ["py_compat", "els"] }
-# els = { version = "0.1.27", features = ["py_compat"] }
-rustpython-parser = { git = "https://github.com/RustPython/Parser", version = "0.2.0", features = ["all-nodes-with-ranges", "location"] }
-rustpython-ast = { git = "https://github.com/RustPython/Parser", version = "0.2.0", features = ["all-nodes-with-ranges", "location"] }
-erg_compiler = { git = "https://github.com/erg-lang/erg", branch = "main", features = ["py_compat", "els"] }
-erg_common = { git = "https://github.com/erg-lang/erg", branch = "main", features = ["py_compat", "els"] }
-els = { git = "https://github.com/erg-lang/erg", branch = "main", features = ["py_compat"] }
+erg_common = { version = "0.6.20-nightly.0", features = ["py_compat", "els"] }
+erg_compiler = { version = "0.6.20-nightly.0", features = ["py_compat", "els"] }
+els = { version = "0.1.32-nightly.0", features = ["py_compat"] }
+rustpython-parser = { version = "0.3.0", features = ["all-nodes-with-ranges", "location"] }
+rustpython-ast = { version = "0.3.0", features = ["all-nodes-with-ranges", "location"] }
+# rustpython-parser = { git = "https://github.com/RustPython/Parser", version = "0.3.0", features = ["all-nodes-with-ranges", "location"] }
+# rustpython-ast = { git = "https://github.com/RustPython/Parser", version = "0.3.0", features = ["all-nodes-with-ranges", "location"] }
+# erg_compiler = { git = "https://github.com/erg-lang/erg", branch = "main", features = ["py_compat", "els"] }
+# erg_common = { git = "https://github.com/erg-lang/erg", branch = "main", features = ["py_compat", "els"] }
+# els = { git = "https://github.com/erg-lang/erg", branch = "main", features = ["py_compat"] }
 # erg_compiler = { path = "../erg/crates/erg_compiler", features = ["py_compat", "els"] }
 # erg_common = { path = "../erg/crates/erg_common", features = ["py_compat", "els"] }
 # els = { path = "../erg/crates/els", features = ["py_compat"] }
@@ -47,7 +49,7 @@ erg_common = { workspace = true }
 els = { workspace = true }
 rustpython-parser = { workspace = true }
 rustpython-ast = { workspace = true }
-py2erg = { version = "0.0.33", path = "./crates/py2erg" }
+py2erg = { version = "0.0.42", path = "./crates/py2erg" }
 
 [lib]
 path = "src/lib.rs"

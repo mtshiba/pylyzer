@@ -155,8 +155,9 @@ checksum = "a26ae43d7bcc3b814de94796a5e736d4029efb0ee900c12e2d54c993ad1a1e07"
 
 [[package]]
 name = "els"
-version = "0.1.31"
-source = "git+https://github.com/erg-lang/erg?branch=main#0c433235088cea94d5e2e57761735f064db2b64e"
+version = "0.1.32-nightly.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3307c99c6899e4e15cd70ae441155dcf29518c89851ee0607bd7dfa31a7007af"
 dependencies = [
  "erg_common",
  "erg_compiler",
@@ -179,8 +180,9 @@ dependencies = [
 
 [[package]]
 name = "erg_common"
-version = "0.6.19"
-source = "git+https://github.com/erg-lang/erg?branch=main#0c433235088cea94d5e2e57761735f064db2b64e"
+version = "0.6.20-nightly.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d1c1dc0d6ec5a9d4bf8c937ba5512e56e20bfd3b7313f0fcea5678abbefb4cb3"
 dependencies = [
  "backtrace-on-stack-overflow",
  "parking_lot",
@@ -189,8 +191,9 @@ dependencies = [
 
 [[package]]
 name = "erg_compiler"
-version = "0.6.19"
-source = "git+https://github.com/erg-lang/erg?branch=main#0c433235088cea94d5e2e57761735f064db2b64e"
+version = "0.6.20-nightly.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2cbb4b6cc66405d59b575203f70b54faed5d9390eecc1b339f46ce6c1820c702"
 dependencies = [
  "erg_common",
  "erg_parser",
@@ -198,8 +201,9 @@ dependencies = [
 
 [[package]]
 name = "erg_parser"
-version = "0.6.19"
-source = "git+https://github.com/erg-lang/erg?branch=main#0c433235088cea94d5e2e57761735f064db2b64e"
+version = "0.6.20-nightly.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "84a6408c0cd62d1fdfb12fe223749c9cb952f77104cd27e4425e25f863858970"
 dependencies = [
  "erg_common",
  "unicode-xid",
@@ -399,9 +403,9 @@ dependencies = [
 
 [[package]]
 name = "memchr"
-version = "2.5.0"
+version = "2.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2dffe52ecf27772e601905b7522cb4ef790d2cc203488bbd0e2fe85fcb74566d"
+checksum = "5486aed0026218e61b8a01d5fbd5a0a134649abb71a0e53b7bc088529dced86e"
 
 [[package]]
 name = "memoffset"
@@ -575,7 +579,7 @@ dependencies = [
 
 [[package]]
 name = "py2erg"
-version = "0.0.33"
+version = "0.0.42"
 dependencies = [
  "erg_common",
  "erg_compiler",
@@ -585,7 +589,7 @@ dependencies = [
 
 [[package]]
 name = "pylyzer"
-version = "0.0.33"
+version = "0.0.42"
 dependencies = [
  "els",
  "erg_common",
@@ -670,21 +674,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ruff_source_location"
-version = "0.0.0"
-source = "git+https://github.com/RustPython/Parser#b07966695a28945c12f84c955312d9fdbecdd48e"
-dependencies = [
- "memchr",
- "once_cell",
- "ruff_text_size",
-]
-
-[[package]]
-name = "ruff_text_size"
-version = "0.0.0"
-source = "git+https://github.com/RustPython/Parser#b07966695a28945c12f84c955312d9fdbecdd48e"
-
-[[package]]
 name = "rustc-demangle"
 version = "0.1.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -707,8 +696,9 @@ dependencies = [
 
 [[package]]
 name = "rustpython-ast"
-version = "0.2.0"
-source = "git+https://github.com/RustPython/Parser#b07966695a28945c12f84c955312d9fdbecdd48e"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fcf9438da3660e6b88bd659fdc0cd13bcff4b85c584026a48b800c75bf0f8d00"
 dependencies = [
  "is-macro",
  "malachite-bigint",
@@ -718,8 +708,9 @@ dependencies = [
 
 [[package]]
 name = "rustpython-parser"
-version = "0.2.0"
-source = "git+https://github.com/RustPython/Parser#b07966695a28945c12f84c955312d9fdbecdd48e"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9db993974ff12f33c5be8a801741463691502f85ead5c503277937c4077bd92a"
 dependencies = [
  "anyhow",
  "is-macro",
@@ -741,13 +732,23 @@ dependencies = [
 
 [[package]]
 name = "rustpython-parser-core"
-version = "0.2.0"
-source = "git+https://github.com/RustPython/Parser#b07966695a28945c12f84c955312d9fdbecdd48e"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5e9d560c6dd4dc774d4bbad48c770e074c178c4ed5f6fd0521fcdb639af21bdd"
 dependencies = [
  "is-macro",
  "memchr",
- "ruff_source_location",
- "ruff_text_size",
+ "rustpython-parser-vendored",
+]
+
+[[package]]
+name = "rustpython-parser-vendored"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "17ae3062d7fe5fe38073f3a1c7145ed9a04e15f6e4a596d642c7db2d5cd2b51b"
+dependencies = [
+ "memchr",
+ "once_cell",
 ]
 
 [[package]]
@@ -770,18 +771,18 @@ checksum = "b0293b4b29daaf487284529cc2f5675b8e57c61f70167ba415a463651fd6a918"
 
 [[package]]
 name = "serde"
-version = "1.0.186"
+version = "1.0.188"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9f5db24220c009de9bd45e69fb2938f4b6d2df856aa9304ce377b3180f83b7c1"
+checksum = "cf9e0fcba69a370eed61bcf2b728575f726b50b55cba78064753d708ddc7549e"
 dependencies = [
  "serde_derive",
 ]
 
 [[package]]
 name = "serde_derive"
-version = "1.0.186"
+version = "1.0.188"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5ad697f7e0b65af4983a4ce8f56ed5b357e8d3c36651bf6a7e13639c17b8e670"
+checksum = "4eca7ac642d82aa35b60049a6eccb4be6be75e599bd2e9adb5f875a737654af2"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -984,16 +985,14 @@ checksum = "f962df74c8c05a667b5ee8bcf162993134c104e96440b663c8daa176dc772d8c"
 [[package]]
 name = "unicode_names2"
 version = "0.6.0"
-source = "git+https://github.com/youknowone/unicode_names2.git?rev=4ce16aa85cbcdd9cc830410f1a72ef9a235f2fde#4ce16aa85cbcdd9cc830410f1a72ef9a235f2fde"
-dependencies = [
- "phf",
-]
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "446c96c6dd42604779487f0a981060717156648c1706aa1f464677f03c6cc059"
 
 [[package]]
 name = "url"
-version = "2.4.0"
+version = "2.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "50bff7831e19200a85b17131d085c25d7811bc4e186efdaf54bbd132994a88cb"
+checksum = "143b538f18257fac9cad154828a57c6bf5157e1aa604d4816b5995bf6de87ae5"
 dependencies = [
  "form_urlencoded",
  "idna",
