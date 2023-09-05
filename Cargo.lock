@@ -155,8 +155,9 @@ checksum = "a26ae43d7bcc3b814de94796a5e736d4029efb0ee900c12e2d54c993ad1a1e07"
 
 [[package]]
 name = "els"
-version = "0.1.32-nightly.0"
-source = "git+https://github.com/erg-lang/erg?branch=main#d8835fd169ff42467c2cfea4013a03aeeba88057"
+version = "0.1.32-nightly.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d64ff7aa566fa24ecc955cb17649f65eaa0401926a43785589864ebad8da4cd9"
 dependencies = [
  "erg_common",
  "erg_compiler",
@@ -179,8 +180,9 @@ dependencies = [
 
 [[package]]
 name = "erg_common"
-version = "0.6.20-nightly.0"
-source = "git+https://github.com/erg-lang/erg?branch=main#d8835fd169ff42467c2cfea4013a03aeeba88057"
+version = "0.6.20-nightly.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a5938643fcee96603ff9d1df6df3a5b088079d7e2122607fd9d374f60440cf02"
 dependencies = [
  "backtrace-on-stack-overflow",
  "parking_lot",
@@ -189,8 +191,9 @@ dependencies = [
 
 [[package]]
 name = "erg_compiler"
-version = "0.6.20-nightly.0"
-source = "git+https://github.com/erg-lang/erg?branch=main#d8835fd169ff42467c2cfea4013a03aeeba88057"
+version = "0.6.20-nightly.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c88aaafbbe1eb293316e1e78af55acae6e840580f9b5a74aeed387a27c8c8988"
 dependencies = [
  "erg_common",
  "erg_parser",
@@ -198,8 +201,9 @@ dependencies = [
 
 [[package]]
 name = "erg_parser"
-version = "0.6.20-nightly.0"
-source = "git+https://github.com/erg-lang/erg?branch=main#d8835fd169ff42467c2cfea4013a03aeeba88057"
+version = "0.6.20-nightly.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9a129213e4217d11ac5420afdb8e63bcca553d1cc4900e977f7619c4e1c801a6"
 dependencies = [
  "erg_common",
  "unicode-xid",
@@ -399,9 +403,9 @@ dependencies = [
 
 [[package]]
 name = "memchr"
-version = "2.6.2"
+version = "2.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5486aed0026218e61b8a01d5fbd5a0a134649abb71a0e53b7bc088529dced86e"
+checksum = "8f232d6ef707e1956a43342693d2a31e72989554d58299d7a88738cc95b0d35c"
 
 [[package]]
 name = "memoffset"
@@ -455,9 +459,9 @@ dependencies = [
 
 [[package]]
 name = "object"
-version = "0.32.0"
+version = "0.32.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "77ac5bbd07aea88c60a577a1ce218075ffd59208b2d7ca97adf9bfc5aeb21ebe"
+checksum = "9cf5f9dd3933bd50a9e1f149ec995f39ae2c496d31fd772c1fd45ebc27e902b0"
 dependencies = [
  "memchr",
 ]
@@ -575,7 +579,7 @@ dependencies = [
 
 [[package]]
 name = "py2erg"
-version = "0.0.42"
+version = "0.0.43"
 dependencies = [
  "erg_common",
  "erg_compiler",
@@ -585,7 +589,7 @@ dependencies = [
 
 [[package]]
 name = "pylyzer"
-version = "0.0.42"
+version = "0.0.43"
 dependencies = [
  "els",
  "erg_common",
@@ -782,7 +786,7 @@ checksum = "4eca7ac642d82aa35b60049a6eccb4be6be75e599bd2e9adb5f875a737654af2"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.29",
+ "syn 2.0.31",
 ]
 
 [[package]]
@@ -804,7 +808,7 @@ checksum = "8725e1dfadb3a50f7e5ce0b1a540466f6ed3fe7a0fca2ac2b8b831d31316bd00"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.29",
+ "syn 2.0.31",
 ]
 
 [[package]]
@@ -850,9 +854,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "2.0.29"
+version = "2.0.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c324c494eba9d92503e6f1ef2e6df781e78f6a7705a0202d9801b198807d518a"
+checksum = "718fa2415bcb8d8bd775917a1bf12a7931b6dfa890753378538118181e0cb398"
 dependencies = [
  "proc-macro2",
  "quote",
