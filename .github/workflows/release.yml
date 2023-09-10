@@ -30,12 +30,12 @@ jobs:
     strategy:
       matrix:
         include:
-          # - target: armv7-unknown-linux-gnueabihf
-          #   os: ubuntu-latest
-          # - target: aarch64-unknown-linux-gnu
-          #   os: ubuntu-latest
-          # - target: aarch64-apple-darwin
-          #   os: macos-latest
+          - target: armv7-unknown-linux-gnueabihf
+            os: ubuntu-latest
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-latest
+          - target: aarch64-apple-darwin
+            os: macos-latest
           - target: x86_64-unknown-linux-gnu
             os: ubuntu-latest
           - target: x86_64-apple-darwin
@@ -47,14 +47,19 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
       - name: setup-tools
         run: |
           rustup update stable
-          rustup target add ${{ matrix.target }}
-          pip3 install maturin
+          pip3 install twine build
+        # rustup target add ${{ matrix.target }}
       - name: upload
         run: |
-          maturin publish -u mtshiba -p ${{ secrets.PYPI_PASSWORD }} --target ${{ matrix.target }} --skip-existing
+          python3 -m build --wheel
+          twine upload -u mtshiba -p ${{ secrets.PYPI_PASSWORD }} dist/*
+        # maturin publish -u mtshiba -p ${{ secrets.PYPI_PASSWORD }} --target ${{ matrix.target }} --skip-existing
   upload-assets:
     needs: create-release
     strategy:

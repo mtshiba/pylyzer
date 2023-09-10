@@ -1,0 +1,57 @@
+from pathlib import Path
+import os
+import shlex
+from glob import glob
+import tomllib
+
+from setuptools import setup
+from setuptools_rust import RustBin
+
+with open("README.md", encoding="utf-8", errors="ignore") as fp:
+    long_description = fp.read()
+
+with open("Cargo.toml", "rb") as fp:
+    toml = tomllib.load(fp)
+    name = toml["package"]["name"]
+    description = toml["package"]["description"]
+    version = toml["workspace"]["package"]["version"]
+    license = toml["workspace"]["package"]["license"]
+    url = toml["workspace"]["package"]["repository"]
+
+cargo_args = ["--no-default-features"]
+
+home = os.path.expanduser("~")
+file_and_dirs = glob(".erg/lib/**", recursive=True, root_dir=home)
+paths = [Path(home + "/" + path) for path in file_and_dirs if os.path.isfile(home + "/" + path)]
+files = [(str(path).removesuffix("/" + path.name).removeprefix(home + "/"), str(path)) for path in paths]
+data_files = {}
+for key, value in files:
+    if key in data_files:
+        data_files[key].append(value)
+    else:
+        data_files[key] = [value]
+data_files = list(data_files.items())
+
+setup(
+    name=name,
+    author="mtshiba",
+    author_email="sbym1346@gmail.com",
+    url=url,
+    description=description,
+    long_description=long_description,
+    long_description_content_type="text/markdown",
+    version=version,
+    license=license,
+    python_requires=">=3",
+    rust_extensions=[
+        RustBin("pylyzer", args=cargo_args, cargo_manifest_args=["--locked"])
+    ],
+    classifiers=[
+        "Development Status :: 2 - Pre-Alpha",
+        "Operating System :: OS Independent",
+        "Programming Language :: Python",
+        "Programming Language :: Rust",
+        "Topic :: Software Development :: Quality Assurance",
+    ],
+    data_files=data_files,
+)
