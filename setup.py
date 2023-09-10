@@ -54,7 +54,7 @@ setup(
     long_description_content_type="text/markdown",
     version=version,
     license=license,
-    python_requires=">=3",
+    python_requires=">=3.11",
     rust_extensions=[
         RustBin("pylyzer", args=cargo_args, cargo_manifest_args=["--locked"])
     ],
