@@ -10,7 +10,7 @@ use erg_common::spawn::exec_new_thread;
 fn run() {
     let cfg = config::parse_args();
     if cfg.mode == ErgMode::LanguageServer {
-        let mut lang_server = Server::<PythonAnalyzer, SimplePythonParser>::new(cfg);
+        let mut lang_server = Server::<PythonAnalyzer, SimplePythonParser>::new(cfg, None);
         lang_server.run().unwrap_or_else(|_| {
             std::process::exit(1);
         });
