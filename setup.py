@@ -3,9 +3,21 @@ import os
 import shlex
 from glob import glob
 import tomllib
+import shutil
 
-from setuptools import setup
+from setuptools import setup, Command
 from setuptools_rust import RustBin
+
+class Clean(Command):
+    user_options = []
+    def initialize_options(self):
+        pass
+    def finalize_options(self):
+        pass
+    def run(self):
+        # super().run()
+        for d in ["build", "dist", "src/pylyzer.egg-info"]:
+            shutil.rmtree(d, ignore_errors=True)
 
 with open("README.md", encoding="utf-8", errors="ignore") as fp:
     long_description = fp.read()
@@ -23,7 +35,7 @@ cargo_args = ["--no-default-features"]
 home = os.path.expanduser("~")
 file_and_dirs = glob(".erg/lib/**", recursive=True, root_dir=home)
 paths = [Path(home + "/" + path) for path in file_and_dirs if os.path.isfile(home + "/" + path)]
-files = [(str(path).removesuffix("/" + path.name).removeprefix(home + "/"), str(path)) for path in paths]
+files = [(str(path).removesuffix("/" + path.name).removeprefix(home), str(path)) for path in paths]
 data_files = {}
 for key, value in files:
     if key in data_files:
@@ -46,6 +58,9 @@ setup(
     rust_extensions=[
         RustBin("pylyzer", args=cargo_args, cargo_manifest_args=["--locked"])
     ],
+    cmdclass={
+        "clean": Clean,
+    },
     classifiers=[
         "Development Status :: 2 - Pre-Alpha",
         "Operating System :: OS Independent",

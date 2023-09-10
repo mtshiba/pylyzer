@@ -10,6 +10,12 @@
 
 ## Installation
 
+### pip
+
+```bash
+pip install pylyzer
+```
+
 ### cargo (rust package manager)
 
 ```bash
@@ -24,18 +30,6 @@ cargo install --path .
 ```
 
 Make sure that `cargo/rustc` is up-to-date, as pylyzer may be written with the latest language features.
-
-### pip
-
-```bash
-pip install pylyzer
-```
-
-__If installed this way, you also need to [install Erg](https://github.com/mtshiba/ergup).__
-
-```bash
-curl -L https://github.com/mtshiba/ergup/raw/main/ergup.py | python3
-```
 
 ### [GitHub Releases](https://github.com/mtshiba/pylyzer/releases/latest)
 
