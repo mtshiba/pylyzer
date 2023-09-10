@@ -30,12 +30,6 @@ jobs:
     strategy:
       matrix:
         include:
-          # - target: armv7-unknown-linux-gnueabihf
-          #   os: ubuntu-latest
-          # - target: aarch64-unknown-linux-gnu
-          #   os: ubuntu-latest
-          # - target: aarch64-apple-darwin
-          #   os: macos-latest
           - target: x86_64-unknown-linux-gnu
             platform: linux
             os: ubuntu-latest
@@ -45,8 +39,6 @@ jobs:
           - target: x86_64-pc-windows-msvc
             platform: windows
             os: windows-latest
-          # - target: i686-pc-windows-msvc
-          #   os: windows-latest
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
@@ -56,12 +48,11 @@ jobs:
       - name: setup-tools
         run: |
           rustup update stable
-          pip3 install twine build cibuildwheel setuptools-rust
+          pip3 install twine build cibuildwheel setuptools-rust tomli
           rustup target add ${{ matrix.target }}
       - name: build
         run: cibuildwheel --output-dir dist --platform ${{ matrix.platform }}
         env:
-          # CIBW_BUILD: '${{ matrix.python-version }}-*'
           # rust doesn't seem to be available for musl linux on i686
           CIBW_SKIP: '*-musllinux_i686'
           CIBW_ENVIRONMENT: 'PATH="$HOME/.cargo/bin:$PATH" CARGO_TERM_COLOR="always"'
@@ -70,7 +61,6 @@ jobs:
           CIBW_BEFORE_BUILD_LINUX: >
             curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain=stable --profile=minimal -y &&
             rustup show
-          # CIBW_TEST_SKIP: '*-macosx_arm64 *-macosx_universal2:arm64'
           # CIBW_BUILD_VERBOSITY: 1
       - name: upload
         run: |

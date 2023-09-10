@@ -1,2 +1,2 @@
 [build-system]
-requires = ["setuptools", "setuptools-rust", "wheel"]
+requires = ["setuptools", "setuptools-rust", "wheel", "tomli"]

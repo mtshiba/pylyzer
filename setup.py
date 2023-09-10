@@ -2,11 +2,11 @@ from pathlib import Path
 import os
 import shlex
 from glob import glob
-import tomllib
 import shutil
 
 from setuptools import setup, Command
 from setuptools_rust import RustBin
+import tomli
 
 class Clean(Command):
     user_options = []
@@ -23,7 +23,7 @@ with open("README.md", encoding="utf-8", errors="ignore") as fp:
     long_description = fp.read()
 
 with open("Cargo.toml", "rb") as fp:
-    toml = tomllib.load(fp)
+    toml = tomli.load(fp)
     name = toml["package"]["name"]
     description = toml["package"]["description"]
     version = toml["workspace"]["package"]["version"]
@@ -54,7 +54,7 @@ setup(
     long_description_content_type="text/markdown",
     version=version,
     license=license,
-    python_requires=">=3.11",
+    python_requires=">=3",
     rust_extensions=[
         RustBin("pylyzer", args=cargo_args, cargo_manifest_args=["--locked"])
     ],
