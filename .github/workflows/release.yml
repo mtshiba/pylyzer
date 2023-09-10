@@ -57,6 +57,7 @@ jobs:
         # rustup target add ${{ matrix.target }}
       - name: upload
         run: |
+          cargo build --release
           python3 -m build --wheel
           twine upload -u mtshiba -p ${{ secrets.PYPI_PASSWORD }} dist/*
         # maturin publish -u mtshiba -p ${{ secrets.PYPI_PASSWORD }} --target ${{ matrix.target }} --skip-existing
