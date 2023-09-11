@@ -155,9 +155,9 @@ checksum = "a26ae43d7bcc3b814de94796a5e736d4029efb0ee900c12e2d54c993ad1a1e07"
 
 [[package]]
 name = "els"
-version = "0.1.33-nightly.1"
+version = "0.1.33-nightly.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8d90ce06b81836342feef59d9f1730340b39e32a9f488827c12919e3a9784cb2"
+checksum = "4ccf778a0d7538e66cca834f20f5d8ed6ccf1220ff16ed0f222f6b66564d5996"
 dependencies = [
  "erg_common",
  "erg_compiler",
@@ -181,9 +181,9 @@ dependencies = [
 
 [[package]]
 name = "erg_common"
-version = "0.6.21-nightly.1"
+version = "0.6.21-nightly.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8c9e3dc0e21777787ea3fdc174f29fd6cdc8d7a6d671fcf7ed583c5f2c614956"
+checksum = "6b9c92d6525572e26c3f4d3ae527745615aa04dcbec0f7ed86b625262c9512f6"
 dependencies = [
  "backtrace-on-stack-overflow",
  "parking_lot",
@@ -192,9 +192,9 @@ dependencies = [
 
 [[package]]
 name = "erg_compiler"
-version = "0.6.21-nightly.1"
+version = "0.6.21-nightly.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dfff095a4ce56412940dcf8d43e6897f85242365a9529c0d7e0cb10029668090"
+checksum = "df901b20dbfe677b04bfe1a57d50cd12217267ff39d97e222db768f42db6c23b"
 dependencies = [
  "erg_common",
  "erg_parser",
@@ -202,9 +202,9 @@ dependencies = [
 
 [[package]]
 name = "erg_parser"
-version = "0.6.21-nightly.1"
+version = "0.6.21-nightly.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8a76f132bafed4fd84fb90a1c8f3ecde6a238f462ab2e8ca18e9d19ac27fd07c"
+checksum = "bb1fc83c4eaf03438a7c3be8a12de5c567509ec1ce02c9d202ea9ac81b671383"
 dependencies = [
  "erg_common",
  "unicode-xid",
@@ -428,9 +428,9 @@ dependencies = [
 
 [[package]]
 name = "molc"
-version = "0.1.0"
+version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a19b669aab31ca7552fc43cb9ab08e325113aa090f7bf97a2112b3d6241ba898"
+checksum = "9485212d67a88d2169ee683420e1a2fe763afb96a3901ebfabb5ba095d0d2eaa"
 dependencies = [
  "lsp-types",
  "serde",
@@ -798,14 +798,14 @@ checksum = "4eca7ac642d82aa35b60049a6eccb4be6be75e599bd2e9adb5f875a737654af2"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.31",
+ "syn 2.0.32",
 ]
 
 [[package]]
 name = "serde_json"
-version = "1.0.105"
+version = "1.0.106"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "693151e1ac27563d6dbcec9dee9fbd5da8539b20fa14ad3752b2e6d363ace360"
+checksum = "2cc66a619ed80bf7a0f6b17dd063a84b88f6dea1813737cf469aef1d081142c2"
 dependencies = [
  "itoa",
  "ryu",
@@ -820,7 +820,7 @@ checksum = "8725e1dfadb3a50f7e5ce0b1a540466f6ed3fe7a0fca2ac2b8b831d31316bd00"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.31",
+ "syn 2.0.32",
 ]
 
 [[package]]
@@ -866,9 +866,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "2.0.31"
+version = "2.0.32"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "718fa2415bcb8d8bd775917a1bf12a7931b6dfa890753378538118181e0cb398"
+checksum = "239814284fd6f1a4ffe4ca893952cdd93c224b6a1571c9a9eadd670295c0c9e2"
 dependencies = [
  "proc-macro2",
  "quote",

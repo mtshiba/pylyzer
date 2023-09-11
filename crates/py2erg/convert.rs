@@ -16,7 +16,7 @@ use erg_compiler::erg_parser::ast::{
     PreDeclTypeSpec, ReDef, Record, RecordAttrs, Set, Signature, SubrSignature, SubrTypeSpec,
     Tuple, TupleTypeSpec, TypeAscription, TypeBoundSpecs, TypeSpec, TypeSpecWithOp, UnaryOp,
     VarName, VarPattern, VarRecordAttr, VarRecordAttrs, VarRecordPattern, VarSignature,
-    VisModifierSpec,
+    VisModifierSpec, ArrayComprehension, SetComprehension,
 };
 use erg_compiler::erg_parser::desugar::Desugarer;
 use erg_compiler::erg_parser::token::{Token, TokenKind, COLON, DOT, EQUAL};
@@ -796,11 +796,7 @@ impl ASTConverter {
                 let py_ast::Expr::Tuple(mut tuple) = args else {
                     return Self::gen_dummy_type_spec(args.location());
                 };
-                let (l_brace, r_brace) = Self::gen_enclosure_tokens(
-                    TokenKind::LBrace,
-                    tuple.elts.iter(),
-                    tuple.location(),
-                );
+                let (l_brace, r_brace) = Self::gen_enclosure_tokens(TokenKind::LBrace, tuple.range);
                 let key_t = self.convert_expr(tuple.elts.remove(0));
                 let key_t = match Parser::validate_const_expr(key_t) {
                     Ok(key_t) => key_t,
@@ -844,11 +840,7 @@ impl ASTConverter {
                 let py_ast::Expr::Tuple(tuple) = args else {
                     return Self::gen_dummy_type_spec(args.location());
                 };
-                let parens = Self::gen_enclosure_tokens(
-                    TokenKind::LParen,
-                    tuple.elts.iter(),
-                    tuple.location(),
-                );
+                let parens = Self::gen_enclosure_tokens(TokenKind::LParen, tuple.range);
                 let tys = tuple
                     .elts
                     .into_iter()
@@ -917,33 +909,24 @@ impl ASTConverter {
         }
     }
 
-    fn gen_enclosure_tokens<'i, Elems>(
-        l_kind: TokenKind,
-        elems: Elems,
-        expr_loc: PyLocation,
-    ) -> (Token, Token)
-    where
-        Elems: Iterator<Item = &'i py_ast::Expr> + ExactSizeIterator,
-    {
+    fn gen_enclosure_tokens(l_kind: TokenKind, expr_range: PySourceRange) -> (Token, Token) {
         let (l_cont, r_cont, r_kind) = match l_kind {
             TokenKind::LBrace => ("{", "}", TokenKind::RBrace),
             TokenKind::LParen => ("(", ")", TokenKind::RParen),
             TokenKind::LSqBr => ("[", "]", TokenKind::RSqBr),
             _ => unreachable!(),
         };
-        let (l_end, c_end) = if elems.len() == 0 {
-            (expr_loc.row.get(), expr_loc.column.get() - 1)
-        } else {
-            let last = elems.last().unwrap();
-            (last.location().row.get(), last.location().column.get())
-        };
+        let (line_end, c_end) = (
+            expr_range.end.unwrap_or(expr_range.start).row.get(),
+            expr_range.end.unwrap_or(expr_range.start).column.to_zero_indexed(),
+        );
         let l_brace = Token::new(
             l_kind,
             l_cont,
-            expr_loc.row.get(),
-            expr_loc.column.get() - 1,
+            expr_range.start.row.get(),
+            expr_range.start.column.to_zero_indexed(),
         );
-        let r_brace = Token::new(r_kind, r_cont, l_end, c_end);
+        let r_brace = Token::new(r_kind, r_cont, line_end, c_end);
         (l_brace, r_brace)
     }
 
@@ -1152,8 +1135,7 @@ impl ASTConverter {
                 Expr::Lambda(Lambda::new(sig, op, Block::new(body), DefId(0)))
             }
             py_ast::Expr::List(list) => {
-                let (l_sqbr, r_sqbr) =
-                    Self::gen_enclosure_tokens(TokenKind::LSqBr, list.elts.iter(), list.location());
+                let (l_sqbr, r_sqbr) = Self::gen_enclosure_tokens(TokenKind::LSqBr, list.range);
                 let elements = list
                     .elts
                     .into_iter()
@@ -1163,9 +1145,28 @@ impl ASTConverter {
                 let arr = Expr::Array(Array::Normal(NormalArray::new(l_sqbr, r_sqbr, elems)));
                 Self::mutate_expr(arr)
             }
+            py_ast::Expr::ListComp(comp) => {
+                let (l_sqbr, r_sqbr) = Self::gen_enclosure_tokens(TokenKind::LSqBr, comp.range);
+                let layout = self.convert_expr(*comp.elt);
+                let generator = comp.generators.into_iter().next().unwrap();
+                let target = self.convert_expr(generator.target);
+                let Expr::Accessor(Accessor::Ident(ident)) = target else {
+                    log!(err "unimplemented: {target}");
+                    let loc = pyloc_to_ergloc(comp.range);
+                    return Expr::Dummy(Dummy::new(Some(loc), vec![]));
+                };
+                let iter = self.convert_expr(generator.iter);
+                let guard = generator
+                    .ifs
+                    .into_iter()
+                    .next()
+                    .map(|ex| self.convert_expr(ex));
+                let generators = vec![(ident, iter)];
+                let arr = Expr::Array(Array::Comprehension(ArrayComprehension::new(l_sqbr, r_sqbr, Some(layout), generators, guard)));
+                Self::mutate_expr(arr)
+            }
             py_ast::Expr::Set(set) => {
-                let (l_brace, r_brace) =
-                    Self::gen_enclosure_tokens(TokenKind::LBrace, set.elts.iter(), set.location());
+                let (l_brace, r_brace) = Self::gen_enclosure_tokens(TokenKind::LBrace, set.range);
                 let elements = set
                     .elts
                     .into_iter()
@@ -1175,12 +1176,28 @@ impl ASTConverter {
                 Expr::Set(Set::Normal(NormalSet::new(l_brace, r_brace, elems)))
                 // Self::mutate_expr(set)
             }
+            py_ast::Expr::SetComp(comp) => {
+                let (l_brace, r_brace) = Self::gen_enclosure_tokens(TokenKind::LBrace, comp.range);
+                let layout = self.convert_expr(*comp.elt);
+                let generator = comp.generators.into_iter().next().unwrap();
+                let target = self.convert_expr(generator.target);
+                let Expr::Accessor(Accessor::Ident(ident)) = target else {
+                    log!(err "unimplemented: {target}");
+                    let loc = pyloc_to_ergloc(comp.range);
+                    return Expr::Dummy(Dummy::new(Some(loc), vec![]));
+                };
+                let iter = self.convert_expr(generator.iter);
+                let guard = generator
+                    .ifs
+                    .into_iter()
+                    .next()
+                    .map(|ex| self.convert_expr(ex));
+                let generators = vec![(ident, iter)];
+                Expr::Set(Set::Comprehension(SetComprehension::new(l_brace, r_brace, Some(layout), generators, guard)))
+                // Self::mutate_expr(set)
+            }
             py_ast::Expr::Dict(dict) => {
-                let (l_brace, r_brace) = Self::gen_enclosure_tokens(
-                    TokenKind::LBrace,
-                    dict.values.iter(),
-                    dict.location(),
-                );
+                let (l_brace, r_brace) = Self::gen_enclosure_tokens(TokenKind::LBrace, dict.range);
                 let kvs = dict
                     .keys
                     .into_iter()
