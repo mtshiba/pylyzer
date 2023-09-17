@@ -155,9 +155,9 @@ checksum = "a26ae43d7bcc3b814de94796a5e736d4029efb0ee900c12e2d54c993ad1a1e07"
 
 [[package]]
 name = "els"
-version = "0.1.33-nightly.2"
+version = "0.1.33-nightly.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4ccf778a0d7538e66cca834f20f5d8ed6ccf1220ff16ed0f222f6b66564d5996"
+checksum = "2071c53dedb31eab77b1471fa70ec6a540ec73a3f0e1717162b40c5cf54fc7b4"
 dependencies = [
  "erg_common",
  "erg_compiler",
@@ -181,9 +181,9 @@ dependencies = [
 
 [[package]]
 name = "erg_common"
-version = "0.6.21-nightly.3"
+version = "0.6.21-nightly.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6b9c92d6525572e26c3f4d3ae527745615aa04dcbec0f7ed86b625262c9512f6"
+checksum = "f775028ebc97f519ee43464be3eb2c1cc45aeac50df469c643c2d17935b9d955"
 dependencies = [
  "backtrace-on-stack-overflow",
  "parking_lot",
@@ -192,9 +192,9 @@ dependencies = [
 
 [[package]]
 name = "erg_compiler"
-version = "0.6.21-nightly.3"
+version = "0.6.21-nightly.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "df901b20dbfe677b04bfe1a57d50cd12217267ff39d97e222db768f42db6c23b"
+checksum = "ad8314dbce480ac7982fdf0ca539586ae3d64d823a74efbee64c5910515a1a69"
 dependencies = [
  "erg_common",
  "erg_parser",
@@ -202,9 +202,9 @@ dependencies = [
 
 [[package]]
 name = "erg_parser"
-version = "0.6.21-nightly.3"
+version = "0.6.21-nightly.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bb1fc83c4eaf03438a7c3be8a12de5c567509ec1ce02c9d202ea9ac81b671383"
+checksum = "eeb7f92b72ac7031dc13c58daa5dd49bb44a2faf1a420a471eb3502e7353f29d"
 dependencies = [
  "erg_common",
  "unicode-xid",
@@ -591,7 +591,7 @@ dependencies = [
 
 [[package]]
 name = "py2erg"
-version = "0.0.45"
+version = "0.0.46"
 dependencies = [
  "erg_common",
  "erg_compiler",
@@ -601,7 +601,7 @@ dependencies = [
 
 [[package]]
 name = "pylyzer"
-version = "0.0.45"
+version = "0.0.46"
 dependencies = [
  "els",
  "erg_common",
