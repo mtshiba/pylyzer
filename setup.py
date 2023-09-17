@@ -33,7 +33,7 @@ with open("Cargo.toml", "rb") as fp:
 cargo_args = ["--no-default-features"]
 
 home = os.path.expanduser("~")
-file_and_dirs = glob(".erg/lib/**", recursive=True, root_dir=home)
+file_and_dirs = glob(home + "/" + ".erg/lib/**", recursive=True)
 paths = [Path(home + "/" + path) for path in file_and_dirs if os.path.isfile(home + "/" + path)]
 files = [(str(path).removesuffix("/" + path.name).removeprefix(home), str(path)) for path in paths]
 data_files = {}
@@ -54,7 +54,7 @@ setup(
     long_description_content_type="text/markdown",
     version=version,
     license=license,
-    python_requires=">=3",
+    python_requires=">=3.7",
     rust_extensions=[
         RustBin("pylyzer", args=cargo_args, cargo_manifest_args=["--locked"])
     ],
