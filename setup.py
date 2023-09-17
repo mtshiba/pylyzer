@@ -1,3 +1,5 @@
+# To build the package, run `python -m build --wheel`.
+
 from pathlib import Path
 import os
 import shlex
@@ -7,6 +9,18 @@ import shutil
 from setuptools import setup, Command
 from setuptools_rust import RustBin
 import tomli
+
+def removeprefix(string, prefix):
+    if string.startswith(prefix):
+        return string[len(prefix):]
+    else:
+        return string
+
+def removesuffix(string, suffix):
+    if string.endswith(suffix):
+        return string[:-len(suffix)]
+    else:
+        return string
 
 class Clean(Command):
     user_options = []
@@ -34,8 +48,8 @@ cargo_args = ["--no-default-features"]
 
 home = os.path.expanduser("~")
 file_and_dirs = glob(home + "/" + ".erg/lib/**", recursive=True)
-paths = [Path(home + "/" + path) for path in file_and_dirs if os.path.isfile(home + "/" + path)]
-files = [(str(path).removesuffix("/" + path.name).removeprefix(home), str(path)) for path in paths]
+paths = [Path(path) for path in file_and_dirs if os.path.isfile(path)]
+files = [(removeprefix(removesuffix(str(path), "/" + path.name), home), str(path)) for path in paths]
 data_files = {}
 for key, value in files:
     if key in data_files:
