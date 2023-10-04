@@ -1054,7 +1054,7 @@ impl ASTConverter {
                     .keywords
                     .into_iter()
                     .map(|Keyword { arg, value, range }| {
-                        let name = arg.unwrap();
+                        let name = arg.unwrap_or(rustpython_ast::Identifier::new("_"));
                         let name = Token::symbol_with_loc(name.to_string(), pyloc_to_ergloc(range));
                         let ex = self.convert_expr(value);
                         KwArg::new(name, None, ex)
