@@ -155,9 +155,9 @@ checksum = "a26ae43d7bcc3b814de94796a5e736d4029efb0ee900c12e2d54c993ad1a1e07"
 
 [[package]]
 name = "els"
-version = "0.1.33-nightly.4"
+version = "0.1.34-nightly.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2071c53dedb31eab77b1471fa70ec6a540ec73a3f0e1717162b40c5cf54fc7b4"
+checksum = "936f90087d4e2af16d8a6253c5c54447413088ad85308c108b9103a1e223f484"
 dependencies = [
  "erg_common",
  "erg_compiler",
@@ -181,9 +181,9 @@ dependencies = [
 
 [[package]]
 name = "erg_common"
-version = "0.6.21-nightly.4"
+version = "0.6.22-nightly.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f775028ebc97f519ee43464be3eb2c1cc45aeac50df469c643c2d17935b9d955"
+checksum = "829b2830ee83e14ab2a07eac8cf693c4235e6a94dbdedb9dd7291aa623414e18"
 dependencies = [
  "backtrace-on-stack-overflow",
  "parking_lot",
@@ -192,9 +192,9 @@ dependencies = [
 
 [[package]]
 name = "erg_compiler"
-version = "0.6.21-nightly.4"
+version = "0.6.22-nightly.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ad8314dbce480ac7982fdf0ca539586ae3d64d823a74efbee64c5910515a1a69"
+checksum = "bc4f85efd95a0322cd27e8332bfc6020516a5dc17911facdd36c2138f8eb7186"
 dependencies = [
  "erg_common",
  "erg_parser",
@@ -202,9 +202,9 @@ dependencies = [
 
 [[package]]
 name = "erg_parser"
-version = "0.6.21-nightly.4"
+version = "0.6.22-nightly.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eeb7f92b72ac7031dc13c58daa5dd49bb44a2faf1a420a471eb3502e7353f29d"
+checksum = "1baa48eca2a9f1c2231fea0611cba222e096d46dcd9c3fb15f8a8442daf27481"
 dependencies = [
  "erg_common",
  "unicode-xid",
@@ -404,9 +404,9 @@ dependencies = [
 
 [[package]]
 name = "memchr"
-version = "2.6.3"
+version = "2.6.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8f232d6ef707e1956a43342693d2a31e72989554d58299d7a88738cc95b0d35c"
+checksum = "f665ee40bc4a3c5590afb1e9677db74a508659dfd71e126420da8274909a0167"
 
 [[package]]
 name = "memoffset"
@@ -428,9 +428,9 @@ dependencies = [
 
 [[package]]
 name = "molc"
-version = "0.2.5"
+version = "0.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4ddf7a75ab924d95e6dcf73f24cdc820968008956a56ea76489a937be41ac7ba"
+checksum = "76b41715c0dba18256b97ed045313b93baf8de0a665280220247390a7e801842"
 dependencies = [
  "lsp-types",
  "serde",
@@ -591,7 +591,7 @@ dependencies = [
 
 [[package]]
 name = "py2erg"
-version = "0.0.47"
+version = "0.0.48"
 dependencies = [
  "erg_common",
  "erg_compiler",
@@ -601,7 +601,7 @@ dependencies = [
 
 [[package]]
 name = "pylyzer"
-version = "0.0.47"
+version = "0.0.48"
 dependencies = [
  "els",
  "erg_common",
@@ -777,9 +777,9 @@ checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
 
 [[package]]
 name = "semver"
-version = "1.0.18"
+version = "1.0.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b0293b4b29daaf487284529cc2f5675b8e57c61f70167ba415a463651fd6a918"
+checksum = "ad977052201c6de01a8ef2aa3378c4bd23217a056337d1d6da40468d267a4fb0"
 
 [[package]]
 name = "serde"
@@ -798,7 +798,7 @@ checksum = "4eca7ac642d82aa35b60049a6eccb4be6be75e599bd2e9adb5f875a737654af2"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.36",
+ "syn 2.0.37",
 ]
 
 [[package]]
@@ -820,7 +820,7 @@ checksum = "8725e1dfadb3a50f7e5ce0b1a540466f6ed3fe7a0fca2ac2b8b831d31316bd00"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.36",
+ "syn 2.0.37",
 ]
 
 [[package]]
@@ -843,9 +843,9 @@ checksum = "38b58827f4464d87d377d175e90bf58eb00fd8716ff0a62f80356b5e61555d0d"
 
 [[package]]
 name = "smallvec"
-version = "1.11.0"
+version = "1.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "62bb4feee49fdd9f707ef802e22365a35de4b7b299de4763d44bfea899442ff9"
+checksum = "942b4a808e05215192e39f4ab80813e599068285906cc91aa64f923db842bd5a"
 
 [[package]]
 name = "static_assertions"
@@ -866,9 +866,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "2.0.36"
+version = "2.0.37"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "91e02e55d62894af2a08aca894c6577281f76769ba47c94d5756bec8ac6e7373"
+checksum = "7303ef2c05cd654186cb250d29049a24840ca25d2747c25c0381c8d9e2f582e8"
 dependencies = [
  "proc-macro2",
  "quote",
