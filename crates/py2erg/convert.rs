@@ -1510,7 +1510,8 @@ impl ASTConverter {
         let class = TypeSpec::mono(ident.clone());
         let class_as_expr = Expr::Accessor(Accessor::Ident(ident));
         let (base_type, attrs) = self.extract_method(body, inherit);
-        let methods = Methods::new(class, class_as_expr, VisModifierSpec::Public(DOT), attrs);
+        self.block_id_counter += 1;
+        let methods = Methods::new(DefId(self.block_id_counter), class, class_as_expr, VisModifierSpec::Public(DOT), attrs);
         (base_type, vec![methods])
     }
 
