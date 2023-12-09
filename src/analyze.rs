@@ -192,7 +192,7 @@ impl PythonAnalyzer {
     }
 
     fn check(&mut self, erg_ast: AST, mut errors: CompileErrors, mut warns: CompileErrors, mode: &str) -> Result<CompleteArtifact, IncompleteArtifact> {
-        match self.checker.build_module(erg_ast, mode) {
+        match self.checker.build_from_ast(erg_ast, mode) {
             Ok(mut artifact) => {
                 artifact.warns.extend(warns);
                 artifact.warns =

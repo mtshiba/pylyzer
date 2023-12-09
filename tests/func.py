@@ -15,3 +15,8 @@ def h(x: str):
     if True:
         x = "a" # OK
     return x
+
+def var(*varargs, **kwargs):
+    return varargs, kwargs
+
+_ = var(1, 2, 3, a=1, b=2, c=3)

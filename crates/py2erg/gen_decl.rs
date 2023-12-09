@@ -5,7 +5,7 @@ use erg_common::io::Input;
 use erg_common::log;
 use erg_common::traits::LimitedDisplay;
 use erg_compiler::build_package::{CheckStatus, PylyzerStatus};
-use erg_compiler::hir::{Expr, HIR};
+use erg_compiler::hir::{Expr, HIR, ClassDef};
 use erg_compiler::ty::value::{GenTypeObj, TypeObj};
 use erg_compiler::ty::{HasType, Type};
 
@@ -123,7 +123,7 @@ impl DeclFileGenerator {
                         self.code += &decl;
                     }
                 }
-                for attr in def.methods.into_iter() {
+                for attr in ClassDef::take_all_methods(def.methods_list) {
                     self.gen_chunk_decl(attr);
                 }
                 self.namespace = stash;

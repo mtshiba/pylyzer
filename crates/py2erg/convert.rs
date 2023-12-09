@@ -452,9 +452,12 @@ impl ASTConverter {
     }
 
     fn convert_params(&mut self, params: Arguments) -> Params {
-        fn split_args(params: Arguments) -> (Vec<Arg>, Vec<(Arg, py_ast::Expr)>) {
+        #[allow(clippy::type_complexity)]
+        fn split_args(params: Arguments) -> (Vec<Arg>, Option<Arg>, Vec<(Arg, py_ast::Expr)>, Option<Arg>) {
             let mut args = Vec::new();
             let mut with_defaults = Vec::new();
+            let var_args = params.vararg.map(|x| *x);
+            let kw_args = params.kwarg.map(|x| *x);
             for arg in params
                 .posonlyargs
                 .into_iter()
@@ -467,18 +470,20 @@ impl ASTConverter {
                     args.push(arg.def);
                 }
             }
-            (args, with_defaults)
+            (args, var_args, with_defaults, kw_args)
         }
-        let (non_defaults, defaults) = split_args(params);
+        let (non_defaults, var_args, defaults, kw_args) = split_args(params);
         let non_defaults = non_defaults
             .into_iter()
             .map(|p| self.convert_nd_param(p))
             .collect();
+        let var_params = var_args.map(|p| self.convert_nd_param(p));
         let defaults = defaults
             .into_iter()
             .map(|(kw, default)| self.convert_default_param(kw, default))
             .collect();
-        Params::new(non_defaults, None, defaults, None)
+        let kw_var_params = kw_args.map(|p| self.convert_nd_param(p));
+        Params::new(non_defaults, var_params, defaults, kw_var_params, None)
     }
 
     fn convert_for_param(&mut self, name: String, loc: PyLocation) -> NonDefaultParamSignature {
@@ -572,7 +577,7 @@ impl ASTConverter {
 
     fn convert_for_body(&mut self, lhs: Option<py_ast::Expr>, body: Suite) -> Lambda {
         let (param, block) = self.convert_opt_expr_to_param(lhs);
-        let params = Params::new(vec![param], None, vec![], None);
+        let params = Params::new(vec![param], None, vec![], None, None);
         self.block_id_counter += 1;
         self.block_ids.push(self.block_id_counter);
         let body = body
@@ -652,7 +657,7 @@ impl ASTConverter {
                         }
                     }
                 }
-                let elems = ConstArgs::new(elems, None, vec![], None);
+                let elems = ConstArgs::new(elems, None, vec![], None, None);
                 TypeSpec::Enum(elems)
             }
             // TODO: distinguish from collections.abc.Callable
@@ -688,6 +693,7 @@ impl ASTConverter {
                     non_defaults,
                     None,
                     vec![],
+                    None,
                     ARROW,
                     ret,
                 ))
@@ -790,7 +796,7 @@ impl ASTConverter {
                     global,
                     Identifier::private("Array!".into()),
                 ));
-                TypeSpec::poly(acc, ConstArgs::new(vec![elem_t, len], None, vec![], None))
+                TypeSpec::poly(acc, ConstArgs::new(vec![elem_t, len], None, vec![], None, None))
             }
             "dict" => {
                 let py_ast::Expr::Tuple(mut tuple) = args else {
@@ -834,7 +840,7 @@ impl ASTConverter {
                     global,
                     Identifier::private("Dict!".into()),
                 ));
-                TypeSpec::poly(acc, ConstArgs::new(vec![dict], None, vec![], None))
+                TypeSpec::poly(acc, ConstArgs::new(vec![dict], None, vec![], None, None))
             }
             "tuple" => {
                 let py_ast::Expr::Tuple(tuple) = args else {
@@ -1022,7 +1028,7 @@ impl ASTConverter {
             py_ast::Expr::IfExp(if_) => {
                 let loc = if_.location();
                 let block = self.convert_expr(*if_.body);
-                let params = Params::new(vec![], None, vec![], None);
+                let params = Params::new(vec![], None, vec![], None, None);
                 let sig = LambdaSignature::new(params.clone(), None, TypeBoundSpecs::empty());
                 let body = Lambda::new(sig, Token::DUMMY, Block::new(vec![block]), DefId(0));
                 let test = self.convert_expr(*if_.test);
@@ -1074,7 +1080,7 @@ impl ASTConverter {
                     let rp = Token::new(TokenKind::RParen, ")", loc.row.get(), last_col);
                     (lp, rp)
                 };
-                let args = Args::new(pos_args, None, kw_args, Some(paren));
+                let args = Args::new(pos_args, None, kw_args, None, Some(paren));
                 function.call_expr(args)
             }
             py_ast::Expr::BinOp(bin) => {
@@ -1374,7 +1380,7 @@ impl ASTConverter {
             VisModifierSpec::Public(DOT),
             VarName::from_static("__call__"),
         );
-        let params = Params::new(params, None, vec![], None);
+        let params = Params::new(params, None, vec![], None, None);
         let class_ident = Identifier::public_with_line(
             DOT,
             self.namespace.last().unwrap().into(),
@@ -1402,7 +1408,7 @@ impl ASTConverter {
             VisModifierSpec::Public(DOT),
             VarName::from_static("__call__"),
         );
-        let params = Params::new(vec![], None, vec![], None);
+        let params = Params::empty();
         let class_ident =
             Identifier::public_with_line(DOT, self.namespace.last().unwrap().into(), line as u32);
         let class_ident_expr = Expr::Accessor(Accessor::Ident(class_ident.clone()));
@@ -1896,7 +1902,7 @@ impl ASTConverter {
             py_ast::Stmt::While(while_) => {
                 let loc = while_.location();
                 let test = self.convert_expr(*while_.test);
-                let params = Params::new(vec![], None, vec![], None);
+                let params = Params::empty();
                 let empty_sig = LambdaSignature::new(params, None, TypeBoundSpecs::empty());
                 let block = self.convert_block(while_.body, BlockKind::While);
                 let body = Lambda::new(empty_sig, Token::DUMMY, block, DefId(0));
@@ -1907,7 +1913,7 @@ impl ASTConverter {
             py_ast::Stmt::If(if_) => {
                 let loc = if_.location();
                 let block = self.convert_block(if_.body, BlockKind::If);
-                let params = Params::new(vec![], None, vec![], None);
+                let params = Params::empty();
                 let sig = LambdaSignature::new(params.clone(), None, TypeBoundSpecs::empty());
                 let body = Lambda::new(sig, Token::DUMMY, block, DefId(0));
                 let test = self.convert_expr(*if_.test);
