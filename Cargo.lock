@@ -121,9 +121,9 @@ checksum = "a26ae43d7bcc3b814de94796a5e736d4029efb0ee900c12e2d54c993ad1a1e07"
 
 [[package]]
 name = "els"
-version = "0.1.39-nightly.0"
+version = "0.1.39-nightly.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e35e675cfa42fba9067fce99587dbfc396596cd0231bb84f5fc58b8564845ff8"
+checksum = "1056f3babebc87eb323354053ff9c5c11612013c3ca5df5be7ae03a20fac886a"
 dependencies = [
  "erg_common",
  "erg_compiler",
@@ -147,9 +147,9 @@ dependencies = [
 
 [[package]]
 name = "erg_common"
-version = "0.6.27-nightly.0"
+version = "0.6.27-nightly.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4ac75e02434b08efb90ff903ac462e453637043b3a6d35b306efbc83ca375ce6"
+checksum = "79163c184105f354bf4ce6593d2ce5fa563d0894cf2d1a008632e63ec3447bf4"
 dependencies = [
  "backtrace-on-stack-overflow",
  "parking_lot",
@@ -158,9 +158,9 @@ dependencies = [
 
 [[package]]
 name = "erg_compiler"
-version = "0.6.27-nightly.0"
+version = "0.6.27-nightly.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "627ed3f352f4159a859ec13f97ad945b9837dd09aa24261498674296a6ca367c"
+checksum = "f0fbb777de378216f1f0b73c1a3029e0942a56fa8377b329db9ef1de2e695b9d"
 dependencies = [
  "erg_common",
  "erg_parser",
@@ -168,9 +168,9 @@ dependencies = [
 
 [[package]]
 name = "erg_parser"
-version = "0.6.27-nightly.0"
+version = "0.6.27-nightly.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "741691700b21dda252eb47d21967e44347320520ee263529241739da165a5718"
+checksum = "a75aa981a50310dfdf49fcf074a558f36be141a166ed9ff0f7bcd1065e94491b"
 dependencies = [
  "erg_common",
  "erg_proc_macros",
@@ -179,9 +179,9 @@ dependencies = [
 
 [[package]]
 name = "erg_proc_macros"
-version = "0.6.27-nightly.0"
+version = "0.6.27-nightly.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c204aeef3905b06ecddf20812e18c43e3c4bcc10690cc3485511b8871f63922a"
+checksum = "b4c9e98a5aefa5e4ffba88f754d33abd7a532c2608083edb29134a11fc4f07bf"
 dependencies = [
  "erg_common",
  "quote",

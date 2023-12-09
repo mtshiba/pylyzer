@@ -76,7 +76,7 @@ fn exec_func() -> Result<(), String> {
 
 #[test]
 fn exec_class() -> Result<(), String> {
-    expect("tests/class.py", 0, 4)
+    expect("tests/class.py", 0, 5)
 }
 
 #[test]
@@ -96,7 +96,7 @@ fn exec_typespec() -> Result<(), String> {
 
 #[test]
 fn exec_projection() -> Result<(), String> {
-    expect("tests/projection.py", 0, 4)
+    expect("tests/projection.py", 0, 5)
 }
 
 #[test]

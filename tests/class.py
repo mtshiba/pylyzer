@@ -49,6 +49,8 @@ class D:
 class E(D):
     def __add__(self, other: E):
         return E(self.c + other.c)
+    def invalid(self):
+        return self.d # ERR: E object has no attribute `d`
 
 c1 = D(1).c + 1
 d = D(1) + D(2)
