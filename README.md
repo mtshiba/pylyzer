@@ -19,7 +19,7 @@ pip install pylyzer
 ### cargo (rust package manager)
 
 ```bash
-cargo install pylyzer
+cargo install pylyzer --locked
 ```
 
 ### build from source
