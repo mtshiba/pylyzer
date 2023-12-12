@@ -121,9 +121,9 @@ checksum = "a26ae43d7bcc3b814de94796a5e736d4029efb0ee900c12e2d54c993ad1a1e07"
 
 [[package]]
 name = "els"
-version = "0.1.39-nightly.1"
+version = "0.1.39"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1056f3babebc87eb323354053ff9c5c11612013c3ca5df5be7ae03a20fac886a"
+checksum = "ffd42e8978b184d5f012a5fe25961db7f7324d257c714694d839126205d45a46"
 dependencies = [
  "erg_common",
  "erg_compiler",
@@ -147,9 +147,9 @@ dependencies = [
 
 [[package]]
 name = "erg_common"
-version = "0.6.27-nightly.1"
+version = "0.6.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "79163c184105f354bf4ce6593d2ce5fa563d0894cf2d1a008632e63ec3447bf4"
+checksum = "321bb2f3c0bf5d909ea3ae3b00e35a01a5a9ad62cfdf38e85f3a7ecc54e788b1"
 dependencies = [
  "backtrace-on-stack-overflow",
  "parking_lot",
@@ -158,9 +158,9 @@ dependencies = [
 
 [[package]]
 name = "erg_compiler"
-version = "0.6.27-nightly.1"
+version = "0.6.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f0fbb777de378216f1f0b73c1a3029e0942a56fa8377b329db9ef1de2e695b9d"
+checksum = "91391469dab934ef1e076d17eb45208850f0ff43fdc553e1dd71a4e7ba4c5aa1"
 dependencies = [
  "erg_common",
  "erg_parser",
@@ -168,9 +168,9 @@ dependencies = [
 
 [[package]]
 name = "erg_parser"
-version = "0.6.27-nightly.1"
+version = "0.6.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a75aa981a50310dfdf49fcf074a558f36be141a166ed9ff0f7bcd1065e94491b"
+checksum = "527b7e67cdf08912f6cb81f6b60c6447b074879a825dabc4b7609c164d70526b"
 dependencies = [
  "erg_common",
  "erg_proc_macros",
@@ -179,9 +179,9 @@ dependencies = [
 
 [[package]]
 name = "erg_proc_macros"
-version = "0.6.27-nightly.1"
+version = "0.6.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b4c9e98a5aefa5e4ffba88f754d33abd7a532c2608083edb29134a11fc4f07bf"
+checksum = "15d9ab2370602287dc6e6abfd278cd93255671ebd37c1957ce7626348303cf70"
 dependencies = [
  "erg_common",
  "quote",
@@ -524,7 +524,7 @@ dependencies = [
 
 [[package]]
 name = "py2erg"
-version = "0.0.50"
+version = "0.0.51"
 dependencies = [
  "erg_common",
  "erg_compiler",
@@ -534,7 +534,7 @@ dependencies = [
 
 [[package]]
 name = "pylyzer"
-version = "0.0.50"
+version = "0.0.51"
 dependencies = [
  "els",
  "erg_common",
