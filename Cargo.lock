@@ -599,7 +599,7 @@ dependencies = [
 
 [[package]]
 name = "py2erg"
-version = "0.0.51"
+version = "0.0.52"
 dependencies = [
  "erg_common",
  "erg_compiler",
@@ -609,7 +609,7 @@ dependencies = [
 
 [[package]]
 name = "pylyzer"
-version = "0.0.51"
+version = "0.0.52"
 dependencies = [
  "els",
  "erg_common",
