@@ -1258,7 +1258,7 @@ impl ASTConverter {
     fn check_init_sig(&mut self, sig: &Signature) -> Option<()> {
         match sig {
             Signature::Subr(subr) => {
-                if let Some(first) = subr.params.non_defaults.get(0) {
+                if let Some(first) = subr.params.non_defaults.first() {
                     if first.inspect().map(|s| &s[..]) == Some("self") {
                         return Some(());
                     }

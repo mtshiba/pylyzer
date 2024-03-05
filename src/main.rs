@@ -14,10 +14,8 @@ fn run() {
     copy_dot_erg();
     let cfg = config::parse_args();
     if cfg.mode == ErgMode::LanguageServer {
-        let mut lang_server = Server::<PythonAnalyzer, SimplePythonParser>::new(cfg, None);
-        lang_server.run().unwrap_or_else(|_| {
-            std::process::exit(1);
-        });
+        let lang_server = Server::<PythonAnalyzer, SimplePythonParser>::new(cfg, None);
+        lang_server.run();
     } else {
         let mut analyzer = PythonAnalyzer::new(cfg);
         analyzer.run();
