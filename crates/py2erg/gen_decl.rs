@@ -1,8 +1,10 @@
 use std::fs::File;
 use std::io::{BufWriter, Write};
+use std::path::Path;
 
 use erg_common::io::Input;
 use erg_common::log;
+use erg_common::pathutil::mod_name;
 use erg_common::traits::LimitedDisplay;
 use erg_compiler::build_package::{CheckStatus, PylyzerStatus};
 use erg_compiler::hir::{Expr, HIR, ClassDef};
@@ -73,10 +75,11 @@ impl DeclFileGenerator {
                 // `import http.client` => `http = pyimport "http"`
                 let decl = if ref_t.is_py_module() {
                     name = name.split('.').next().unwrap().to_string();
+                    let full_path_str = ref_t.typarams()[0].to_string_unabbreviated();
+                    let mod_name = mod_name(Path::new(full_path_str.trim_matches('"')));
                     format!(
-                        "{}.{name} = pyimport {}",
+                        "{}.{name} = pyimport \"{mod_name}\"",
                         self.namespace,
-                        ref_t.typarams()[0]
                     )
                 } else {
                     format!("{}.{name}: {typ}", self.namespace)

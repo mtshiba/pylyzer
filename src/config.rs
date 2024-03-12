@@ -74,7 +74,11 @@ OPTIONS
 pub(crate) fn parse_args() -> ErgConfig {
     let mut args = env::args();
     args.next(); // "pylyzer"
-    let mut cfg = ErgConfig::default();
+    let mut cfg = ErgConfig {
+        effect_check: false,
+        ownership_check: false,
+        ..ErgConfig::default()
+    };
     while let Some(arg) = args.next() {
         match &arg[..] {
             "--" => {

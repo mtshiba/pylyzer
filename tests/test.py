@@ -10,9 +10,8 @@ def add2(x: int, y: int) -> str: # ERR
 
 print(add2(1, 2))
 
-# ERR
 for i in [1, 2, 3]:
-    j = i + "aa"
+    j = i + "aa" # ERR
     print(j)
 
 a: int # OK

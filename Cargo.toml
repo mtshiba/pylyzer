@@ -22,13 +22,13 @@ edition = "2021"
 repository = "https://github.com/mtshiba/pylyzer"
 
 [workspace.dependencies]
-erg_common = { version = "0.6.32", features = ["py_compat", "els"] }
-erg_compiler = { version = "0.6.32", features = ["py_compat", "els"] }
-els = { version = "0.1.44", features = ["py_compat"] }
-rustpython-parser = { version = "0.3.0", features = ["all-nodes-with-ranges", "location"] }
-rustpython-ast = { version = "0.3.0", features = ["all-nodes-with-ranges", "location"] }
-# rustpython-parser = { git = "https://github.com/RustPython/Parser", version = "0.3.0", features = ["all-nodes-with-ranges", "location"] }
-# rustpython-ast = { git = "https://github.com/RustPython/Parser", version = "0.3.0", features = ["all-nodes-with-ranges", "location"] }
+erg_common = { version = "0.6.33-nightly.2", features = ["py_compat", "els"] }
+erg_compiler = { version = "0.6.33-nightly.2", features = ["py_compat", "els"] }
+els = { version = "0.1.45-nightly.2", features = ["py_compat"] }
+# rustpython-parser = { version = "0.3.0", features = ["all-nodes-with-ranges", "location"] }
+# rustpython-ast = { version = "0.3.0", features = ["all-nodes-with-ranges", "location"] }
+rustpython-parser = { git = "https://github.com/RustPython/Parser", version = "0.3.1", features = ["all-nodes-with-ranges", "location"] }
+rustpython-ast = { git = "https://github.com/RustPython/Parser", version = "0.3.1", features = ["all-nodes-with-ranges", "location"] }
 # erg_compiler = { git = "https://github.com/erg-lang/erg", branch = "main", features = ["py_compat", "els"] }
 # erg_common = { git = "https://github.com/erg-lang/erg", branch = "main", features = ["py_compat", "els"] }
 # els = { git = "https://github.com/erg-lang/erg", branch = "main", features = ["py_compat"] }
