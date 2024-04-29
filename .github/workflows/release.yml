@@ -26,7 +26,7 @@ jobs:
           cargo login ${{ secrets.CARGO_TOKEN }}
           chmod +x cargo_publish.sh
           ./cargo_publish.sh --cargo-only
-  pypi:
+  make-pypi-artifacts:
     strategy:
       matrix:
         include:
@@ -62,12 +62,35 @@ jobs:
             curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain=stable --profile=minimal -y &&
             rustup show
           # CIBW_BUILD_VERBOSITY: 1
-      - name: upload
-        run: |
-          twine upload -u mtshiba -p ${{ secrets.PYPI_PASSWORD }} --skip-existing dist/*
+        # - name: upload
+        #   run: |
+        #     twine upload -u mtshiba -p ${{ secrets.PYPI_PASSWORD }} --skip-existing dist/*
         # cargo build --release --target ${{ matrix.target }}
         # python3 -m build --wheel
         # maturin publish -u mtshiba -p ${{ secrets.PYPI_PASSWORD }} --target ${{ matrix.target }} --skip-existing
+      - name: upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ matrix.platform }}
+          path: dist
+  publish-pypi-artifacts:
+    needs: make-pypi-artifacts
+    runs-on: ubuntu-latest
+    permissions:
+      # For pypi trusted publishing
+      id-token: write
+    steps:
+      - name: download-artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: dist-*
+          path: dist
+          merge-multiple: true
+      - name: Publish to PyPi
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          skip-existing: true
+          verbose: true
   upload-assets:
     needs: create-release
     strategy:
