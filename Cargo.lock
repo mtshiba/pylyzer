@@ -124,9 +124,9 @@ checksum = "11157ac094ffbdde99aa67b23417ebdd801842852b500e395a45a9c0aac03e4a"
 
 [[package]]
 name = "els"
-version = "0.1.45-nightly.2"
+version = "0.1.48-nightly.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "49404b037f820c6e8b8a15584af22a5fccabe74d519357ba3766921fb5e3d5e3"
+checksum = "9fc7d9b7e85dd36847b2e3fcb4a400c1f25a49c7ecfa0e9f25bdad91070cba32"
 dependencies = [
  "erg_common",
  "erg_compiler",
@@ -138,9 +138,9 @@ dependencies = [
 
 [[package]]
 name = "erg_common"
-version = "0.6.33-nightly.2"
+version = "0.6.36-nightly.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8664ce92ba1d715ca25d6dbb8079edf0a4d68fb11a53725fdab8f3e689c93f7c"
+checksum = "e25256e6a5de7886319cf6bc830b92b04a9f722eac3fdf43a82fc9d43e9336a1"
 dependencies = [
  "backtrace-on-stack-overflow",
  "erg_proc_macros",
@@ -150,9 +150,9 @@ dependencies = [
 
 [[package]]
 name = "erg_compiler"
-version = "0.6.33-nightly.2"
+version = "0.6.36-nightly.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4d242a00905c54ffe9427889277a99f782f0e5a8eb8a6e508a45d40dca075f1e"
+checksum = "d224db567e7d13a30a52f7178623434922d781d8bc4310c7adae7052ec21cb18"
 dependencies = [
  "erg_common",
  "erg_parser",
@@ -160,9 +160,9 @@ dependencies = [
 
 [[package]]
 name = "erg_parser"
-version = "0.6.33-nightly.2"
+version = "0.6.36-nightly.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "762fe7e8e90c34e834f1c37ee00db1a3b004a45f57efbbc9689a93443e77e51f"
+checksum = "16ba6fbccd31c15bc032fbd52be75b7965f10a192adfed440e2d961bdd52e47f"
 dependencies = [
  "erg_common",
  "erg_proc_macros",
@@ -171,9 +171,9 @@ dependencies = [
 
 [[package]]
 name = "erg_proc_macros"
-version = "0.6.33-nightly.2"
+version = "0.6.36-nightly.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8d0aa1b2d6dd1f6d22553926c4d7054a1ba2419cf27db8913925b7fddbbba48d"
+checksum = "40f73fb45d76f14edb6076c1b0bbd0c9ee7531663595674dd6ae667d13fed769"
 dependencies = [
  "quote",
  "syn 1.0.109",
@@ -391,9 +391,9 @@ dependencies = [
 
 [[package]]
 name = "molc"
-version = "0.2.8"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "518188a50ad95f57dd852ec777c4dfd65ed2402fdc0e20fa47628f98f215eee6"
+checksum = "4584f5f0dfee2be636c6413e44e0b73e23ea299d212fa7124d4c87696533c8a8"
 dependencies = [
  "lsp-types",
  "serde",

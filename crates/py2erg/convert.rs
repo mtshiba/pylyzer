@@ -8,15 +8,15 @@ use erg_common::traits::{Locational, Stream};
 use erg_common::{log, set};
 use erg_compiler::artifact::IncompleteArtifact;
 use erg_compiler::erg_parser::ast::{
-    Accessor, Args, Array, BinOp, Block, ClassAttr, ClassAttrs, ClassDef, ConstAccessor, ConstArgs,
+    Accessor, Args, List, BinOp, Block, ClassAttr, ClassAttrs, ClassDef, ConstAccessor, ConstArgs,
     ConstAttribute, ConstDict, ConstExpr, ConstKeyValue, ConstPosArg, Decorator, Def, DefBody,
     DefId, DefaultParamSignature, Dict, Dummy, Expr, Identifier, KeyValue, KwArg, Lambda,
-    LambdaSignature, Literal, Methods, Module, NonDefaultParamSignature, NormalArray, NormalDict,
+    LambdaSignature, Literal, Methods, Module, NonDefaultParamSignature, NormalList, NormalDict,
     NormalRecord, NormalSet, NormalTuple, ParamPattern, ParamTySpec, Params, PosArg,
     PreDeclTypeSpec, ReDef, Record, RecordAttrs, Set, Signature, SubrSignature, SubrTypeSpec,
     Tuple, TupleTypeSpec, TypeAscription, TypeBoundSpecs, TypeSpec, TypeSpecWithOp, UnaryOp,
     VarName, VarPattern, VarRecordAttr, VarRecordAttrs, VarRecordPattern, VarSignature,
-    VisModifierSpec, ArrayComprehension, SetComprehension,
+    VisModifierSpec, ListComprehension, SetComprehension,
 };
 use erg_compiler::erg_parser::desugar::Desugarer;
 use erg_compiler::erg_parser::token::{Token, TokenKind, COLON, DOT, EQUAL};
@@ -100,7 +100,7 @@ fn escape_name(name: String) -> String {
         "complex" => "Complex".into(),
         "str" => "Str".into(),
         "bool" => "Bool".into(),
-        "list" => "GenericArray".into(),
+        "list" => "GenericList".into(),
         "bytes" => "Bytes".into(),
         // "range" => "GenericRange".into(),
         "dict" => "GenericDict".into(),
@@ -794,7 +794,7 @@ impl ASTConverter {
                     ConstExpr::Accessor(ConstAccessor::Local(Identifier::private("global".into())));
                 let acc = ConstAccessor::Attr(ConstAttribute::new(
                     global,
-                    Identifier::private("Array!".into()),
+                    Identifier::private("List!".into()),
                 ));
                 TypeSpec::poly(acc, ConstArgs::new(vec![elem_t, len], None, vec![], None, None))
             }
@@ -1148,7 +1148,7 @@ impl ASTConverter {
                     .map(|ex| PosArg::new(self.convert_expr(ex)))
                     .collect::<Vec<_>>();
                 let elems = Args::pos_only(elements, None);
-                let arr = Expr::Array(Array::Normal(NormalArray::new(l_sqbr, r_sqbr, elems)));
+                let arr = Expr::List(List::Normal(NormalList::new(l_sqbr, r_sqbr, elems)));
                 Self::mutate_expr(arr)
             }
             py_ast::Expr::ListComp(comp) => {
@@ -1168,7 +1168,7 @@ impl ASTConverter {
                     .next()
                     .map(|ex| self.convert_expr(ex));
                 let generators = vec![(ident, iter)];
-                let arr = Expr::Array(Array::Comprehension(ArrayComprehension::new(l_sqbr, r_sqbr, Some(layout), generators, guard)));
+                let arr = Expr::List(List::Comprehension(ListComprehension::new(l_sqbr, r_sqbr, Some(layout), generators, guard)));
                 Self::mutate_expr(arr)
             }
             py_ast::Expr::Set(set) => {

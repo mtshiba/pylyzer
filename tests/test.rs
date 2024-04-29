@@ -1,9 +1,8 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use erg_common::config::ErgConfig;
 use erg_common::io::Input;
 use erg_common::spawn::exec_new_thread;
-use erg_common::traits::Stream;
 use erg_compiler::artifact::{CompleteArtifact, IncompleteArtifact};
 use pylyzer::PythonAnalyzer;
 
@@ -61,6 +60,15 @@ fn exec_test() -> Result<(), String> {
 
 #[test]
 fn exec_import() -> Result<(), String> {
+    if Path::new("tests/__pycache__").exists() {
+        std::fs::remove_dir_all("tests/__pycache__").unwrap();
+    }
+    if Path::new("tests/foo/__pycache__").exists() {
+        std::fs::remove_dir_all("tests/foo/__pycache__").unwrap();
+    }
+    if Path::new("tests/bar/__pycache__").exists() {
+        std::fs::remove_dir_all("tests/bar/__pycache__").unwrap();
+    }
     expect("tests/import.py", 1, 2)
 }
 
@@ -110,8 +118,8 @@ fn exec_casting() -> Result<(), String> {
 }
 
 #[test]
-fn exec_collections() -> Result<(), String> {
-    expect("tests/collections.py", 0, 4)
+fn exec_collection() -> Result<(), String> {
+    expect("tests/collection.py", 0, 4)
 }
 
 #[test]

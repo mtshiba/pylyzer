@@ -79,11 +79,12 @@ pub(crate) fn parse_args() -> ErgConfig {
         ownership_check: false,
         ..ErgConfig::default()
     };
+    let mut runtime_args: Vec<&'static str> = Vec::new();
     while let Some(arg) = args.next() {
         match &arg[..] {
             "--" => {
                 for arg in args {
-                    cfg.runtime_args.push(Box::leak(arg.into_boxed_str()));
+                    runtime_args.push(Box::leak(arg.into_boxed_str()));
                 }
                 break;
             }
@@ -131,12 +132,13 @@ For more information try `pylyzer --help`"
                 );
                 if let Some("--") = args.next().as_ref().map(|s| &s[..]) {
                     for arg in args {
-                        cfg.runtime_args.push(Box::leak(arg.into_boxed_str()));
+                        runtime_args.push(Box::leak(arg.into_boxed_str()));
                     }
                 }
                 break;
             }
         }
     }
+    cfg.runtime_args = runtime_args.into();
     cfg
 }
