@@ -22,16 +22,11 @@ pip install pylyzer
 cargo install pylyzer --locked
 ```
 
-> [!WARNING]
-> Currently, the stable version of pylyzer cannot be installed with rustc >= 1.76.0 due to a dependency problem.
-> Ref: <https://github.com/RustPython/Parser/issues/114>
-> You can install the latest version from the source.
-
 ### build from source
 
 ```bash
 git clone https://github.com/mtshiba/pylyzer.git
-cargo install --path .
+cargo install --path . --locked
 ```
 
 Make sure that `cargo/rustc` is up-to-date, as pylyzer may be written with the latest language features.
