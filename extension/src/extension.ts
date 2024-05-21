@@ -1,9 +1,5 @@
-import { ExtensionContext, commands, window, workspace } from "vscode";
-import {
-	LanguageClient,
-	LanguageClientOptions,
-	ServerOptions,
-} from "vscode-languageclient/node";
+import { type ExtensionContext, commands, window, workspace } from "vscode";
+import { LanguageClient, type LanguageClientOptions, type ServerOptions } from "vscode-languageclient/node";
 import { showReferences } from "./commands";
 
 let client: LanguageClient | undefined;
@@ -11,9 +7,7 @@ let client: LanguageClient | undefined;
 async function startLanguageClient(context: ExtensionContext) {
 	try {
 		const executablePath = (() => {
-			const executablePath = workspace
-				.getConfiguration("pylyzer")
-				.get<string>("executablePath", "");
+			const executablePath = workspace.getConfiguration("pylyzer").get<string>("executablePath", "");
 			return executablePath === "" ? "pylyzer" : executablePath;
 		})();
 		const enableDiagnostics = workspace.getConfiguration("pylyzer").get<boolean>("diagnostics", true);
@@ -84,13 +78,11 @@ async function restartLanguageClient() {
 }
 
 export async function activate(context: ExtensionContext) {
-	context.subscriptions.push(
-		commands.registerCommand("pylyzer.restartLanguageServer", () => restartLanguageClient())
-	);
+	context.subscriptions.push(commands.registerCommand("pylyzer.restartLanguageServer", () => restartLanguageClient()));
 	context.subscriptions.push(
 		commands.registerCommand("pylyzer.showReferences", async (uri, position, locations) => {
-			await showReferences(client, uri, position, locations)
-		})
+			await showReferences(client, uri, position, locations);
+		}),
 	);
 	await startLanguageClient(context);
 }
