@@ -1,0 +1,31 @@
+{
+	"$schema": "https://biomejs.dev/schemas/1.7.3/schema.json",
+	"organizeImports": {
+		"enabled": true
+	},
+	"formatter": {
+		"enabled": true,
+		"indentStyle": "tab",
+		"lineWidth": 120,
+		"ignore": ["dist/**", "out/**", ".vscode-test/**", ".vscode/**"]
+	},
+	"linter": {
+		"enabled": true,
+		"rules": {
+			"recommended": true
+		},
+		"ignore": ["dist/**", "out/**", ".vscode-test/**", ".vscode/**"]
+	},
+	"javascript": {
+		"formatter": {
+			"indentStyle": "tab",
+			"lineWidth": 120
+		}
+	},
+	"json": {
+		"formatter": {
+			"indentStyle": "tab",
+			"lineWidth": 120
+		}
+	}
+}
