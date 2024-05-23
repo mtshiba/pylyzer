@@ -9,4 +9,4 @@ src/**
 **/*.ts
 .gitignore
 webpack.config.js
-rome.json
+biome.json

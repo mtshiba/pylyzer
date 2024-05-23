@@ -1,103 +1,92 @@
 {
-  "name": "pylyzer",
-  "displayName": "pylyzer",
-  "description": "A fast Python static code analyzer & language server for VSCode",
-  "publisher": "pylyzer",
-  "version": "0.1.7",
-  "engines": {
-    "vscode": "^1.70.0"
-  },
-  "categories": [
-    "Programming Languages",
-    "Linters"
-  ],
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/mtshiba/pylyzer.git"
-  },
-  "icon": "images/pylyzer-logo.png",
-  "main": "./dist/extension.js",
-  "activationEvents": [
-    "onLanguage:python"
-  ],
-  "contributes": {
-    "commands": [
-      {
-        "title": "Restart the pylyzer language server",
-        "category": "python",
-        "command": "pylyzer.restartLanguageServer"
-      }
-    ],
-    "languages": [
-      {
-        "id": "python",
-        "aliases": [
-          "Python",
-          "python"
-        ],
-        "extensions": [
-          ".py"
-        ]
-      }
-    ],
-    "configuration": {
-      "type": "object",
-      "title": "pylyzer",
-      "properties": {
-        "pylyzer.diagnostics": {
-          "type": "boolean",
-          "default": true,
-          "markdownDescription": "Enable diagnostics"
-        },
-        "pylyzer.inlayHints": {
-          "type": "boolean",
-          "default": false,
-          "markdownDescription": "Enable inlay hints (this feature is unstable)"
-        },
-        "pylyzer.smartCompletion": {
-          "type": "boolean",
-          "default": true,
-          "markdownDescription": "Enable smart completion (see [ELS features](https://github.com/erg-lang/erg/blob/main/crates/els/doc/features.md))"
-        }
-      }
-    }
-  },
-  "scripts": {
-    "vscode:publish": "vsce publish",
-    "vscode:prepublish": "npm run package",
-    "vscode:package": "vsce package",
-    "compile": "webpack",
-    "watch": "webpack --watch",
-    "package": "webpack --mode production --devtool hidden-source-map",
-    "compile-tests": "tsc -p . --outDir out",
-    "watch-tests": "tsc -p . -w --outDir out",
-    "pretest": "npm run compile-tests && npm run compile && npm run lint",
-    "test": "node ./out/test/runTest.js",
-    "type-check": "tsc --noEmit",
-    "lint": "rome check .",
-    "format": "rome format .",
-    "lint:fix": "rome check --apply .",
-    "lint:fix-suggested": "rome check --apply-suggested .",
-    "format:fix": "rome format --write ."
-  },
-  "dependencies": {
-    "vscode-languageclient": "^8.0.2"
-  },
-  "devDependencies": {
-    "@types/glob": "^8.0.0",
-    "@types/mocha": "^10.0.1",
-    "@types/node": "18.x",
-    "@types/vscode": "^1.70.0",
-    "@vscode/test-electron": "^2.2.1",
-    "glob": "^8.0.3",
-    "mocha": "^10.2.0",
-    "rome": "^10.0.1",
-    "ts-loader": "^9.4.2",
-    "typescript": "^4.9.4",
-    "webpack": "^5.75.0",
-    "webpack-cli": "^5.0.1"
-  },
-  "lint-staged": {
-    "*": "rome format --write"
-  }
+	"name": "pylyzer",
+	"displayName": "pylyzer",
+	"description": "A fast Python static code analyzer & language server for VSCode",
+	"publisher": "pylyzer",
+	"version": "0.1.7",
+	"engines": {
+		"vscode": "^1.70.0"
+	},
+	"categories": ["Programming Languages", "Linters"],
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/mtshiba/pylyzer.git"
+	},
+	"icon": "images/pylyzer-logo.png",
+	"main": "./dist/extension.js",
+	"activationEvents": ["onLanguage:python"],
+	"contributes": {
+		"commands": [
+			{
+				"title": "Restart the pylyzer language server",
+				"category": "python",
+				"command": "pylyzer.restartLanguageServer"
+			}
+		],
+		"languages": [
+			{
+				"id": "python",
+				"aliases": ["Python", "python"],
+				"extensions": [".py"]
+			}
+		],
+		"configuration": {
+			"type": "object",
+			"title": "pylyzer",
+			"properties": {
+				"pylyzer.diagnostics": {
+					"type": "boolean",
+					"default": true,
+					"markdownDescription": "Enable diagnostics"
+				},
+				"pylyzer.inlayHints": {
+					"type": "boolean",
+					"default": false,
+					"markdownDescription": "Enable inlay hints (this feature is unstable)"
+				},
+				"pylyzer.smartCompletion": {
+					"type": "boolean",
+					"default": true,
+					"markdownDescription": "Enable smart completion (see [ELS features](https://github.com/erg-lang/erg/blob/main/crates/els/doc/features.md))"
+				}
+			}
+		}
+	},
+	"scripts": {
+		"vscode:publish": "vsce publish",
+		"vscode:prepublish": "npm run package",
+		"vscode:package": "vsce package",
+		"compile": "webpack",
+		"watch": "webpack --watch",
+		"package": "webpack --mode production --devtool hidden-source-map",
+		"compile-tests": "tsc -p . --outDir out",
+		"watch-tests": "tsc -p . -w --outDir out",
+		"pretest": "npm run compile-tests && npm run compile && npm run lint",
+		"test": "node ./out/test/runTest.js",
+		"type-check": "tsc --noEmit",
+		"lint": "biome lint .",
+		"format": "biome format .",
+		"lint:fix-suggested": "biome check --apply .",
+		"format:fix": "biome format --write ."
+	},
+	"dependencies": {
+		"vscode-languageclient": "^8.0.2"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^1.7.3",
+		"@types/glob": "^8.0.0",
+		"@types/mocha": "^10.0.1",
+		"@types/node": "18.x",
+		"@types/vscode": "^1.70.0",
+		"@vscode/test-electron": "^2.2.1",
+		"glob": "^8.0.3",
+		"mocha": "^10.2.0",
+		"ts-loader": "^9.4.2",
+		"typescript": "^4.9.4",
+		"webpack": "^5.75.0",
+		"webpack-cli": "^5.0.1"
+	},
+	"lint-staged": {
+		"*": "biome format --write"
+	}
 }
