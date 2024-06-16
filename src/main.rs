@@ -1,7 +1,7 @@
 mod analyze;
 mod config;
-mod handle_err;
 mod copy;
+mod handle_err;
 
 use analyze::{PythonAnalyzer, SimplePythonParser};
 use els::Server;

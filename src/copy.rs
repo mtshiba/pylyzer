@@ -1,5 +1,5 @@
+use std::fs::{copy, create_dir_all, read_dir};
 use std::path::Path;
-use std::fs::{copy, read_dir, create_dir_all};
 
 use erg_common::env::{erg_path, python_site_packages};
 
@@ -31,8 +31,7 @@ pub(crate) fn copy_dot_erg() {
     for site_packages in python_site_packages() {
         if site_packages.join(".erg").exists() {
             println!("Copying site-package/.erg to {}", erg_path().display());
-            copy_dir(site_packages.join(".erg"), erg_path())
-                .expect("Failed to copy .erg");
+            copy_dir(site_packages.join(".erg"), erg_path()).expect("Failed to copy .erg");
         }
     }
 }

@@ -55,7 +55,7 @@ pub fn expect(file_path: &'static str, warns: usize, errors: usize) -> Result<()
 
 #[test]
 fn exec_test() -> Result<(), String> {
-    expect("tests/test.py", 0, 15)
+    expect("tests/test.py", 0, 13)
 }
 
 #[test]
@@ -105,6 +105,11 @@ fn exec_typespec() -> Result<(), String> {
 #[test]
 fn exec_projection() -> Result<(), String> {
     expect("tests/projection.py", 0, 5)
+}
+
+#[test]
+fn exec_list() -> Result<(), String> {
+    expect("tests/list.py", 0, 2)
 }
 
 #[test]

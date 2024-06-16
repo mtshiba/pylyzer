@@ -30,16 +30,6 @@ class C:
 dic = {"a": 1, "b": 2}
 print(dic["c"]) # ERR
 
-arr = [1, 2, 3]
-print(arr[4]) # ERR
-
-# OK
-for i in range(3):
-    print(arr[i])
-# ERR
-for i in range(4):
-    print(arr[i])
-
 def f(d1, d2: dict[str, int]):
     _ = d1["b"] # OK
     _ = d2["a"] # OK

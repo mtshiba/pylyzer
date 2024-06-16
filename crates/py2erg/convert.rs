@@ -8,15 +8,15 @@ use erg_common::traits::{Locational, Stream};
 use erg_common::{log, set};
 use erg_compiler::artifact::IncompleteArtifact;
 use erg_compiler::erg_parser::ast::{
-    Accessor, Args, List, BinOp, Block, ClassAttr, ClassAttrs, ClassDef, ConstAccessor, ConstArgs,
+    Accessor, Args, BinOp, Block, ClassAttr, ClassAttrs, ClassDef, ConstAccessor, ConstArgs,
     ConstAttribute, ConstDict, ConstExpr, ConstKeyValue, ConstPosArg, Decorator, Def, DefBody,
     DefId, DefaultParamSignature, Dict, Dummy, Expr, Identifier, KeyValue, KwArg, Lambda,
-    LambdaSignature, Literal, Methods, Module, NonDefaultParamSignature, NormalList, NormalDict,
-    NormalRecord, NormalSet, NormalTuple, ParamPattern, ParamTySpec, Params, PosArg,
-    PreDeclTypeSpec, ReDef, Record, RecordAttrs, Set, Signature, SubrSignature, SubrTypeSpec,
-    Tuple, TupleTypeSpec, TypeAscription, TypeBoundSpecs, TypeSpec, TypeSpecWithOp, UnaryOp,
-    VarName, VarPattern, VarRecordAttr, VarRecordAttrs, VarRecordPattern, VarSignature,
-    VisModifierSpec, ListComprehension, SetComprehension,
+    LambdaSignature, List, ListComprehension, Literal, Methods, Module, NonDefaultParamSignature,
+    NormalDict, NormalList, NormalRecord, NormalSet, NormalTuple, ParamPattern, ParamTySpec,
+    Params, PosArg, PreDeclTypeSpec, ReDef, Record, RecordAttrs, Set, SetComprehension, Signature,
+    SubrSignature, SubrTypeSpec, Tuple, TupleTypeSpec, TypeAscription, TypeBoundSpecs, TypeSpec,
+    TypeSpecWithOp, UnaryOp, VarName, VarPattern, VarRecordAttr, VarRecordAttrs, VarRecordPattern,
+    VarSignature, VisModifierSpec,
 };
 use erg_compiler::erg_parser::desugar::Desugarer;
 use erg_compiler::erg_parser::token::{Token, TokenKind, COLON, DOT, EQUAL};
@@ -102,6 +102,7 @@ fn escape_name(name: String) -> String {
         "bool" => "Bool".into(),
         "list" => "GenericList".into(),
         "bytes" => "Bytes".into(),
+        "bytearray" => "ByteArray!".into(),
         // "range" => "GenericRange".into(),
         "dict" => "GenericDict".into(),
         "set" => "GenericSet".into(),
@@ -453,7 +454,9 @@ impl ASTConverter {
 
     fn convert_params(&mut self, params: Arguments) -> Params {
         #[allow(clippy::type_complexity)]
-        fn split_args(params: Arguments) -> (Vec<Arg>, Option<Arg>, Vec<(Arg, py_ast::Expr)>, Option<Arg>) {
+        fn split_args(
+            params: Arguments,
+        ) -> (Vec<Arg>, Option<Arg>, Vec<(Arg, py_ast::Expr)>, Option<Arg>) {
             let mut args = Vec::new();
             let mut with_defaults = Vec::new();
             let var_args = params.vararg.map(|x| *x);
@@ -796,7 +799,10 @@ impl ASTConverter {
                     global,
                     Identifier::private("List!".into()),
                 ));
-                TypeSpec::poly(acc, ConstArgs::new(vec![elem_t, len], None, vec![], None, None))
+                TypeSpec::poly(
+                    acc,
+                    ConstArgs::new(vec![elem_t, len], None, vec![], None, None),
+                )
             }
             "dict" => {
                 let py_ast::Expr::Tuple(mut tuple) = args else {
@@ -924,7 +930,11 @@ impl ASTConverter {
         };
         let (line_end, c_end) = (
             expr_range.end.unwrap_or(expr_range.start).row.get(),
-            expr_range.end.unwrap_or(expr_range.start).column.to_zero_indexed(),
+            expr_range
+                .end
+                .unwrap_or(expr_range.start)
+                .column
+                .to_zero_indexed(),
         );
         let l_brace = Token::new(
             l_kind,
@@ -1168,7 +1178,13 @@ impl ASTConverter {
                     .next()
                     .map(|ex| self.convert_expr(ex));
                 let generators = vec![(ident, iter)];
-                let arr = Expr::List(List::Comprehension(ListComprehension::new(l_sqbr, r_sqbr, Some(layout), generators, guard)));
+                let arr = Expr::List(List::Comprehension(ListComprehension::new(
+                    l_sqbr,
+                    r_sqbr,
+                    Some(layout),
+                    generators,
+                    guard,
+                )));
                 Self::mutate_expr(arr)
             }
             py_ast::Expr::Set(set) => {
@@ -1199,7 +1215,13 @@ impl ASTConverter {
                     .next()
                     .map(|ex| self.convert_expr(ex));
                 let generators = vec![(ident, iter)];
-                Expr::Set(Set::Comprehension(SetComprehension::new(l_brace, r_brace, Some(layout), generators, guard)))
+                Expr::Set(Set::Comprehension(SetComprehension::new(
+                    l_brace,
+                    r_brace,
+                    Some(layout),
+                    generators,
+                    guard,
+                )))
                 // Self::mutate_expr(set)
             }
             py_ast::Expr::Dict(dict) => {
@@ -1234,6 +1256,24 @@ impl ASTConverter {
                     self.convert_ident("__getitem__".to_string(), subs.slice.location()),
                 );
                 method.call1(self.convert_expr(*subs.slice))
+            }
+            py_ast::Expr::Slice(slice) => {
+                let loc = slice.location();
+                let start = slice.lower.map(|ex| self.convert_expr(*ex));
+                let stop = slice.upper.map(|ex| self.convert_expr(*ex));
+                let step = slice.step.map(|ex| self.convert_expr(*ex));
+                let mut args = Args::empty();
+                if let Some(start) = start {
+                    args.push_pos(PosArg::new(start));
+                }
+                if let Some(stop) = stop {
+                    args.push_pos(PosArg::new(stop));
+                }
+                if let Some(step) = step {
+                    args.push_pos(PosArg::new(step));
+                }
+                let slice = self.convert_ident("slice".to_string(), loc);
+                slice.call(args).into()
             }
             _other => {
                 log!(err "unimplemented: {:?}", _other);
@@ -1302,14 +1342,18 @@ impl ASTConverter {
             init_def.ln_end().unwrap_or(0),
             init_def.col_end().unwrap_or(0),
         );
-        let Signature::Subr(sig) = init_def.sig else { unreachable!() };
+        let Signature::Subr(sig) = init_def.sig else {
+            unreachable!()
+        };
         let mut fields = vec![];
         let mut params = vec![];
         for chunk in init_def.body.block {
             #[allow(clippy::single_match)]
             match chunk {
                 Expr::ReDef(redef) => {
-                    let Accessor::Attr(attr) = redef.attr else { continue; };
+                    let Accessor::Attr(attr) = redef.attr else {
+                        continue;
+                    };
                     // if `self.foo == ...`
                     if attr.obj.get_name().map(|s| &s[..]) == Some("self") {
                         let (param_typ_name, arg_typ_name) = if let Some(t_spec_op) = sig
@@ -1517,7 +1561,13 @@ impl ASTConverter {
         let class_as_expr = Expr::Accessor(Accessor::Ident(ident));
         let (base_type, attrs) = self.extract_method(body, inherit);
         self.block_id_counter += 1;
-        let methods = Methods::new(DefId(self.block_id_counter), class, class_as_expr, VisModifierSpec::Public(DOT), attrs);
+        let methods = Methods::new(
+            DefId(self.block_id_counter),
+            class,
+            class_as_expr,
+            VisModifierSpec::Public(DOT),
+            attrs,
+        );
         (base_type, vec![methods])
     }
 

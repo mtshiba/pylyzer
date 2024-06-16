@@ -2,20 +2,21 @@ use erg_common::config::ErgConfig;
 use erg_common::error::{ErrorCore, ErrorKind, MultiErrorDisplay};
 use erg_common::style::colors::{BLUE, GREEN, RED, YELLOW};
 use erg_common::style::RESET;
-use erg_common::traits::{New, ExitStatus, Runnable, Stream};
+use erg_common::traits::{ExitStatus, New, Runnable, Stream};
 use erg_common::Str;
-use erg_compiler::GenericHIRBuilder;
 use erg_compiler::artifact::{BuildRunnable, Buildable, CompleteArtifact, IncompleteArtifact};
 use erg_compiler::build_package::{CheckStatus, GenericPackageBuilder};
 use erg_compiler::context::ModuleContext;
 use erg_compiler::erg_parser::ast::{Module, AST};
 use erg_compiler::erg_parser::build_ast::ASTBuildable;
 use erg_compiler::erg_parser::error::{
-    CompleteArtifact as ParseArtifact, IncompleteArtifact as IncompleteParseArtifact, ParseErrors, ParserRunnerErrors,
+    CompleteArtifact as ParseArtifact, IncompleteArtifact as IncompleteParseArtifact, ParseErrors,
+    ParserRunnerErrors,
 };
 use erg_compiler::erg_parser::parse::Parsable;
 use erg_compiler::error::{CompileError, CompileErrors};
 use erg_compiler::module::SharedCompilerResource;
+use erg_compiler::GenericHIRBuilder;
 use py2erg::{dump_decl_er, reserve_decl_er, ShadowingMode};
 use rustpython_ast::source_code::{RandomLocator, SourceRange};
 use rustpython_ast::{Fold, ModModule};
@@ -32,9 +33,7 @@ impl Parsable for SimplePythonParser {
     fn parse(code: String) -> Result<ParseArtifact, IncompleteParseArtifact<Module, ParseErrors>> {
         let mut slf = Self::new(ErgConfig::string(code.clone()));
         slf.build_ast(code)
-            .map(|art| {
-                ParseArtifact::new(art.ast.module, art.warns.into())
-            })
+            .map(|art| ParseArtifact::new(art.ast.module, art.warns.into()))
             .map_err(|iart| {
                 IncompleteParseArtifact::new(
                     iart.ast.map(|art| art.module),
@@ -55,7 +54,10 @@ impl ASTBuildable for SimplePythonParser {
     fn build_ast(
         &mut self,
         code: String,
-    ) -> Result<ParseArtifact<AST, ParserRunnerErrors>, IncompleteParseArtifact<AST, ParserRunnerErrors>> {
+    ) -> Result<
+        ParseArtifact<AST, ParserRunnerErrors>,
+        IncompleteParseArtifact<AST, ParserRunnerErrors>,
+    > {
         let filename = self.cfg.input.filename();
         let py_program = self.parse_py_code(code)?;
         let shadowing = if cfg!(feature = "debug") {
@@ -64,7 +66,14 @@ impl ASTBuildable for SimplePythonParser {
             ShadowingMode::Invisible
         };
         let converter = py2erg::ASTConverter::new(ErgConfig::default(), shadowing);
-        let IncompleteArtifact{ object: Some(erg_module), errors, warns } = converter.convert_program(py_program) else { unreachable!() };
+        let IncompleteArtifact {
+            object: Some(erg_module),
+            errors,
+            warns,
+        } = converter.convert_program(py_program)
+        else {
+            unreachable!()
+        };
         let erg_ast = AST::new(erg_common::Str::rc(&filename), erg_module);
         if errors.is_empty() {
             Ok(ParseArtifact::new(erg_ast, warns.into()))
@@ -79,7 +88,10 @@ impl ASTBuildable for SimplePythonParser {
 }
 
 impl SimplePythonParser {
-    pub fn parse_py_code(&self, code: String) -> Result<ModModule<SourceRange>, IncompleteParseArtifact<AST, ParserRunnerErrors>>{
+    pub fn parse_py_code(
+        &self,
+        code: String,
+    ) -> Result<ModModule<SourceRange>, IncompleteParseArtifact<AST, ParserRunnerErrors>> {
         let py_program = ModModule::parse(&code, "<stdin>").map_err(|err| {
             let mut locator = RandomLocator::new(&code);
             // let mut locator = LinearLocator::new(&py_code);
@@ -99,7 +111,11 @@ impl SimplePythonParser {
                 ),
             );
             let err = CompileError::new(core, self.cfg.input.clone(), "".into());
-            IncompleteParseArtifact::new(None, ParserRunnerErrors::from(err), ParserRunnerErrors::empty())
+            IncompleteParseArtifact::new(
+                None,
+                ParserRunnerErrors::from(err),
+                ParserRunnerErrors::empty(),
+            )
         })?;
         let mut locator = RandomLocator::new(&code);
         // let mut locator = LinearLocator::new(&code);
@@ -118,7 +134,8 @@ pub struct PythonAnalyzer {
 
 impl New for PythonAnalyzer {
     fn new(cfg: ErgConfig) -> Self {
-        let checker = GenericPackageBuilder::new(cfg.clone(), SharedCompilerResource::new(cfg.clone()));
+        let checker =
+            GenericPackageBuilder::new(cfg.clone(), SharedCompilerResource::new(cfg.clone()));
         Self { checker, cfg }
     }
 }
@@ -173,7 +190,8 @@ impl Buildable for PythonAnalyzer {
         &mut self,
         ast: AST,
         mode: &str,
-    ) -> Result<CompleteArtifact<erg_compiler::hir::HIR>, IncompleteArtifact<erg_compiler::hir::HIR>> {
+    ) -> Result<CompleteArtifact<erg_compiler::hir::HIR>, IncompleteArtifact<erg_compiler::hir::HIR>>
+    {
         self.check(ast, CompileErrors::empty(), CompileErrors::empty(), mode)
     }
     fn pop_context(&mut self) -> Option<ModuleContext> {
@@ -191,7 +209,13 @@ impl PythonAnalyzer {
         New::new(cfg)
     }
 
-    fn check(&mut self, erg_ast: AST, mut errors: CompileErrors, mut warns: CompileErrors, mode: &str) -> Result<CompleteArtifact, IncompleteArtifact> {
+    fn check(
+        &mut self,
+        erg_ast: AST,
+        mut errors: CompileErrors,
+        mut warns: CompileErrors,
+        mode: &str,
+    ) -> Result<CompleteArtifact, IncompleteArtifact> {
         match self.checker.build_from_ast(erg_ast, mode) {
             Ok(mut artifact) => {
                 artifact.warns.extend(warns);
@@ -224,21 +248,23 @@ impl PythonAnalyzer {
     ) -> Result<CompleteArtifact, IncompleteArtifact> {
         let filename = self.cfg.input.filename();
         let parser = SimplePythonParser::new(self.cfg.copy());
-        let py_program = parser.parse_py_code(py_code)
-            .map_err(|iart| {
-                IncompleteArtifact::new(
-                    None,
-                    iart.errors.into(),
-                    iart.warns.into(),
-                )
-            })?;
+        let py_program = parser
+            .parse_py_code(py_code)
+            .map_err(|iart| IncompleteArtifact::new(None, iart.errors.into(), iart.warns.into()))?;
         let shadowing = if cfg!(feature = "debug") {
             ShadowingMode::Visible
         } else {
             ShadowingMode::Invisible
         };
         let converter = py2erg::ASTConverter::new(self.cfg.copy(), shadowing);
-        let IncompleteArtifact{ object: Some(erg_module), errors, warns } = converter.convert_program(py_program) else { unreachable!() };
+        let IncompleteArtifact {
+            object: Some(erg_module),
+            errors,
+            warns,
+        } = converter.convert_program(py_program)
+        else {
+            unreachable!()
+        };
         let erg_ast = AST::new(erg_common::Str::rc(&filename), erg_module);
         erg_common::log!("AST:\n{erg_ast}");
         self.check(erg_ast, errors, warns, mode)

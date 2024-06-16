@@ -3,11 +3,12 @@ use std::io::{BufWriter, Write};
 use std::path::Path;
 
 use erg_common::io::Input;
-use erg_common::log;
 use erg_common::pathutil::mod_name;
+use erg_common::set::Set;
 use erg_common::traits::LimitedDisplay;
+use erg_common::{log, Str};
 use erg_compiler::build_package::{CheckStatus, PylyzerStatus};
-use erg_compiler::hir::{Expr, HIR, ClassDef};
+use erg_compiler::hir::{ClassDef, Expr, HIR};
 use erg_compiler::ty::value::{GenTypeObj, TypeObj};
 use erg_compiler::ty::{HasType, Type};
 
@@ -23,6 +24,7 @@ fn escape_type(typ: String) -> String {
 pub struct DeclFileGenerator {
     filename: String,
     namespace: String,
+    imported: Set<Str>,
     code: String,
 }
 
@@ -44,6 +46,7 @@ impl DeclFileGenerator {
         Self {
             filename: input.filename().replace(".py", ".d.er"),
             namespace: "".to_string(),
+            imported: Set::new(),
             code,
         }
     }
@@ -77,10 +80,19 @@ impl DeclFileGenerator {
                     name = name.split('.').next().unwrap().to_string();
                     let full_path_str = ref_t.typarams()[0].to_string_unabbreviated();
                     let mod_name = mod_name(Path::new(full_path_str.trim_matches('"')));
-                    format!(
-                        "{}.{name} = pyimport \"{mod_name}\"",
-                        self.namespace,
-                    )
+                    let imported = if self.imported.insert(mod_name.clone()) {
+                        format!("{}.{mod_name} = pyimport \"{mod_name}\"", self.namespace)
+                    } else {
+                        "".to_string()
+                    };
+                    if self.imported.insert(name.clone().into()) {
+                        format!(
+                            "{}.{name} = pyimport \"{mod_name}\"\n{imported}",
+                            self.namespace,
+                        )
+                    } else {
+                        imported
+                    }
                 } else {
                     format!("{}.{name}: {typ}", self.namespace)
                 };
