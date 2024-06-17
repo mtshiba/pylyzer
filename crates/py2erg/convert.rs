@@ -2177,6 +2177,7 @@ impl ASTConverter {
                 imports.push(VarRecordAttr::new(true_name, alias));
             }
         }
+        let no_import = imports.is_empty();
         let attrs = VarRecordAttrs::new(imports);
         let pat = VarRecordPattern::new(Token::DUMMY, attrs, Token::DUMMY);
         let var = VarSignature::new(VarPattern::Record(pat), None);
@@ -2184,7 +2185,9 @@ impl ASTConverter {
             Signature::Var(var),
             DefBody::new(EQUAL, Block::new(vec![call]), DefId(0)),
         ));
-        if exprs.is_empty() {
+        if no_import {
+            Expr::Dummy(Dummy::new(None, exprs))
+        } else if exprs.is_empty() {
             def
         } else {
             exprs.push(def);

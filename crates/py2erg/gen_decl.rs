@@ -70,10 +70,9 @@ impl DeclFileGenerator {
                     .ident()
                     .inspect()
                     .replace('\0', "")
-                    .replace('%', "___");
+                    .replace(['%', '*'], "___");
                 let ref_t = def.sig.ident().ref_t();
-                let typ = ref_t.replace_failure().to_string_unabbreviated();
-                let typ = escape_type(typ);
+                let typ = escape_type(ref_t.replace_failure().to_string_unabbreviated());
                 // Erg can automatically import nested modules
                 // `import http.client` => `http = pyimport "http"`
                 let decl = if ref_t.is_py_module() {
@@ -104,14 +103,19 @@ impl DeclFileGenerator {
                     .ident()
                     .inspect()
                     .replace('\0', "")
-                    .replace('%', "___");
+                    .replace(['%', '*'], "___");
                 let src = format!("{}.{class_name}", self.namespace);
                 let stash = std::mem::replace(&mut self.namespace, src);
                 let decl = format!(".{class_name}: ClassType");
                 self.code += &decl;
                 self.code.push('\n');
                 if let GenTypeObj::Subclass(class) = &def.obj {
-                    let sup = class.sup.as_ref().typ().to_string_unabbreviated();
+                    let sup = class
+                        .sup
+                        .as_ref()
+                        .typ()
+                        .replace_failure()
+                        .to_string_unabbreviated();
                     let sup = escape_type(sup);
                     let decl = format!(".{class_name} <: {sup}\n");
                     self.code += &decl;
@@ -122,7 +126,7 @@ impl DeclFileGenerator {
                 }) = def.obj.base_or_sup()
                 {
                     for (attr, t) in rec.iter() {
-                        let typ = escape_type(t.to_string_unabbreviated());
+                        let typ = escape_type(t.replace_failure().to_string_unabbreviated());
                         let decl = format!("{}.{}: {typ}\n", self.namespace, attr.symbol);
                         self.code += &decl;
                     }
@@ -133,7 +137,7 @@ impl DeclFileGenerator {
                 }) = def.obj.additional()
                 {
                     for (attr, t) in rec.iter() {
-                        let typ = escape_type(t.to_string_unabbreviated());
+                        let typ = escape_type(t.replace_failure().to_string_unabbreviated());
                         let decl = format!("{}.{}: {typ}\n", self.namespace, attr.symbol);
                         self.code += &decl;
                     }

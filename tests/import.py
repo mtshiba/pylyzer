@@ -1,5 +1,6 @@
 import export
 import foo
+from . import foo
 from foo import bar
 from foo import baz
 import random
