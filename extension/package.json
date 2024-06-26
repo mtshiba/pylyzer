@@ -66,14 +66,14 @@
 		"type-check": "tsc --noEmit",
 		"lint": "biome lint .",
 		"format": "biome format .",
-		"lint:fix-suggested": "biome check --apply .",
+		"lint:fix-suggested": "biome check --write .",
 		"format:fix": "biome format --write ."
 	},
 	"dependencies": {
 		"vscode-languageclient": "^8.0.2"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "^1.7.3",
+		"@biomejs/biome": "^1.8.2",
 		"@types/glob": "^8.0.0",
 		"@types/mocha": "^10.0.1",
 		"@types/node": "18.x",
