@@ -1,5 +1,9 @@
 import { type ExtensionContext, commands, window, workspace } from "vscode";
-import { LanguageClient, type LanguageClientOptions, type ServerOptions } from "vscode-languageclient/node";
+import {
+	LanguageClient,
+	type LanguageClientOptions,
+	type ServerOptions,
+} from "vscode-languageclient/node";
 import { showReferences } from "./commands";
 
 let client: LanguageClient | undefined;
@@ -7,16 +11,30 @@ let client: LanguageClient | undefined;
 async function startLanguageClient(context: ExtensionContext) {
 	try {
 		const executablePath = (() => {
-			const executablePath = workspace.getConfiguration("pylyzer").get<string>("executablePath", "");
+			const executablePath = workspace
+				.getConfiguration("pylyzer")
+				.get<string>("executablePath", "");
 			return executablePath === "" ? "pylyzer" : executablePath;
 		})();
-		const enableDiagnostics = workspace.getConfiguration("pylyzer").get<boolean>("diagnostics", true);
-		const enableInlayHints = workspace.getConfiguration("pylyzer").get<boolean>("inlayHints", false);
-		const enableSemanticTokens = workspace.getConfiguration("pylyzer").get<boolean>("semanticTokens", true);
-		const enableHover = workspace.getConfiguration("pylyzer").get<boolean>("hover", true);
-		const smartCompletion = workspace.getConfiguration("pylyzer").get<boolean>("smartCompletion", true);
+		const enableDiagnostics = workspace
+			.getConfiguration("pylyzer")
+			.get<boolean>("diagnostics", true);
+		const enableInlayHints = workspace
+			.getConfiguration("pylyzer")
+			.get<boolean>("inlayHints", false);
+		const enableSemanticTokens = workspace
+			.getConfiguration("pylyzer")
+			.get<boolean>("semanticTokens", true);
+		const enableHover = workspace
+			.getConfiguration("pylyzer")
+			.get<boolean>("hover", true);
+		const smartCompletion = workspace
+			.getConfiguration("pylyzer")
+			.get<boolean>("smartCompletion", true);
 		/* optional features */
-		const checkOnType = workspace.getConfiguration("pylyzer").get<boolean>("checkOnType", false);
+		const checkOnType = workspace
+			.getConfiguration("pylyzer")
+			.get<boolean>("checkOnType", false);
 		const args = ["--server"];
 		args.push("--");
 		if (!enableDiagnostics) {
@@ -78,11 +96,18 @@ async function restartLanguageClient() {
 }
 
 export async function activate(context: ExtensionContext) {
-	context.subscriptions.push(commands.registerCommand("pylyzer.restartLanguageServer", () => restartLanguageClient()));
 	context.subscriptions.push(
-		commands.registerCommand("pylyzer.showReferences", async (uri, position, locations) => {
-			await showReferences(client, uri, position, locations);
-		}),
+		commands.registerCommand("pylyzer.restartLanguageServer", () =>
+			restartLanguageClient(),
+		),
+	);
+	context.subscriptions.push(
+		commands.registerCommand(
+			"pylyzer.showReferences",
+			async (uri, position, locations) => {
+				await showReferences(client, uri, position, locations);
+			},
+		),
 	);
 	await startLanguageClient(context);
 }
