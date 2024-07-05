@@ -16,12 +16,6 @@ def removeprefix(string, prefix):
     else:
         return string
 
-def removesuffix(string, suffix):
-    if string.endswith(suffix):
-        return string[:-len(suffix)]
-    else:
-        return string
-
 class Clean(Command):
     user_options = []
     def initialize_options(self):
@@ -49,7 +43,7 @@ cargo_args = ["--no-default-features"]
 home = os.path.expanduser("~")
 file_and_dirs = glob(home + "/" + ".erg/lib/**", recursive=True)
 paths = [Path(path) for path in file_and_dirs if os.path.isfile(path)]
-files = [(removeprefix(removesuffix(str(path), "/" + path.name), home), str(path)) for path in paths]
+files = [(removeprefix(str(path.parent), home), str(path)) for path in paths]
 data_files = {}
 for key, value in files:
     if key in data_files:
