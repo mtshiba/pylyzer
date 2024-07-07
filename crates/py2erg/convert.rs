@@ -2048,10 +2048,11 @@ impl ASTConverter {
                             DefBody::new(EQUAL, Block::new(vec![call]), DefId(0)),
                         )
                     } else {
-                        self.register_name_info(&name.name, NameKind::Variable);
+                        let top_module = name.name.split('.').next().unwrap();
+                        self.register_name_info(top_module, NameKind::Variable);
                         let var = VarSignature::new(
                             VarPattern::Ident(
-                                self.convert_ident(name.name.to_string(), name.location()),
+                                self.convert_ident(top_module.to_string(), name.location()),
                             ),
                             None,
                         );
@@ -2159,20 +2160,29 @@ impl ASTConverter {
                 VarSignature::new(VarPattern::Ident(ident), None)
             };
             // from foo import bar, baz (if bar, baz is a module) ==> bar = import "foo/bar"; baz = import "foo/baz"
-            if let Ok(_path) = name_path {
-                let cont = format!("\"{module}/{}\"", name.name);
-                let mod_name = Expr::Literal(Literal::new(Token::new(
-                    TokenKind::StrLit,
-                    cont,
-                    location.row.get(),
-                    location.column.to_zero_indexed(),
-                )));
-                let call = import_acc.clone().call1(mod_name);
-                let def = Def::new(
-                    Signature::Var(alias),
-                    DefBody::new(EQUAL, Block::new(vec![call]), DefId(0)),
-                );
-                exprs.push(Expr::Def(def));
+            if let Ok(mut path) = name_path {
+                if path.ends_with("__init__.py") {
+                    path.pop();
+                }
+                let mod_name = path.file_name().unwrap();
+                if name.name.as_str() == mod_name.to_string_lossy().trim_end_matches(".py") {
+                    let cont = format!("\"{module}/{}\"", name.name);
+                    let mod_name = Expr::Literal(Literal::new(Token::new(
+                        TokenKind::StrLit,
+                        cont,
+                        location.row.get(),
+                        location.column.to_zero_indexed(),
+                    )));
+                    let call = import_acc.clone().call1(mod_name);
+                    let def = Def::new(
+                        Signature::Var(alias),
+                        DefBody::new(EQUAL, Block::new(vec![call]), DefId(0)),
+                    );
+                    exprs.push(Expr::Def(def));
+                } else {
+                    // name.name: Foo, file_name: foo.py
+                    imports.push(VarRecordAttr::new(true_name, alias));
+                }
             } else {
                 imports.push(VarRecordAttr::new(true_name, alias));
             }

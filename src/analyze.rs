@@ -5,7 +5,7 @@ use erg_common::style::RESET;
 use erg_common::traits::{ExitStatus, New, Runnable, Stream};
 use erg_common::Str;
 use erg_compiler::artifact::{BuildRunnable, Buildable, CompleteArtifact, IncompleteArtifact};
-use erg_compiler::build_package::{CheckStatus, GenericPackageBuilder};
+use erg_compiler::build_package::GenericPackageBuilder;
 use erg_compiler::context::ModuleContext;
 use erg_compiler::erg_parser::ast::{Module, AST};
 use erg_compiler::erg_parser::build_ast::ASTBuildable;
@@ -17,7 +17,7 @@ use erg_compiler::erg_parser::parse::Parsable;
 use erg_compiler::error::{CompileError, CompileErrors};
 use erg_compiler::module::SharedCompilerResource;
 use erg_compiler::GenericHIRBuilder;
-use py2erg::{dump_decl_er, reserve_decl_er, ShadowingMode};
+use py2erg::{dump_decl_package, ShadowingMode};
 use rustpython_ast::source_code::{RandomLocator, SourceRange};
 use rustpython_ast::{Fold, ModModule};
 use rustpython_parser::{Parse, ParseErrorType};
@@ -267,13 +267,19 @@ impl PythonAnalyzer {
         };
         let erg_ast = AST::new(erg_common::Str::rc(&filename), erg_module);
         erg_common::log!("AST:\n{erg_ast}");
-        self.check(erg_ast, errors, warns, mode)
+        let res = self.check(erg_ast, errors, warns, mode);
+        if self.cfg.mode.is_language_server() {
+            // mod_cache doesn't contains the current module
+            // we don't cache the current module's result for now
+            dump_decl_package(&self.checker.shared().mod_cache);
+        }
+        res
     }
 
     pub fn run(&mut self) {
-        if self.cfg.dist_dir.is_some() {
+        /*if self.cfg.dist_dir.is_some() {
             reserve_decl_er(self.cfg.input.clone());
-        }
+        }*/
         let py_code = self.cfg.input.read();
         let filename = self.cfg.input.filename();
         println!("{BLUE}Start checking{RESET}: {filename}");
@@ -289,11 +295,7 @@ impl PythonAnalyzer {
                 }
                 println!("{GREEN}All checks OK{RESET}: {}", self.cfg.input.filename());
                 if self.cfg.dist_dir.is_some() {
-                    dump_decl_er(
-                        self.cfg.input.clone(),
-                        artifact.object,
-                        CheckStatus::Succeed,
-                    );
+                    dump_decl_package(&self.checker.shared().mod_cache);
                     println!("A declaration file has been generated to __pycache__ directory.");
                 }
                 std::process::exit(0);
@@ -321,11 +323,7 @@ impl PythonAnalyzer {
                 };
                 // Even if type checking fails, some APIs are still valid, so generate a file
                 if self.cfg.dist_dir.is_some() {
-                    dump_decl_er(
-                        self.cfg.input.clone(),
-                        artifact.object.unwrap(),
-                        CheckStatus::Failed,
-                    );
+                    dump_decl_package(&self.checker.shared().mod_cache);
                     println!("A declaration file has been generated to __pycache__ directory.");
                 }
                 std::process::exit(code);

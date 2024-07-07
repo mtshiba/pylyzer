@@ -1,14 +1,14 @@
-use std::fs::File;
+use std::fs::{create_dir_all, File};
 use std::io::{BufWriter, Write};
 use std::path::Path;
 
-use erg_common::io::Input;
-use erg_common::pathutil::mod_name;
+use erg_common::pathutil::{mod_name, NormalizedPathBuf};
 use erg_common::set::Set;
 use erg_common::traits::LimitedDisplay;
 use erg_common::{log, Str};
 use erg_compiler::build_package::{CheckStatus, PylyzerStatus};
 use erg_compiler::hir::{ClassDef, Expr, HIR};
+use erg_compiler::module::SharedModuleCache;
 use erg_compiler::ty::value::{GenTypeObj, TypeObj};
 use erg_compiler::ty::{HasType, Type};
 
@@ -29,30 +29,33 @@ pub struct DeclFileGenerator {
 }
 
 impl DeclFileGenerator {
-    pub fn new(input: &Input, status: CheckStatus) -> Self {
+    pub fn new(path: &NormalizedPathBuf, status: CheckStatus) -> Self {
         let (timestamp, hash) = {
-            let py_file_path = input.path();
-            let metadata = std::fs::metadata(py_file_path).unwrap();
+            let metadata = std::fs::metadata(path).unwrap();
             let dummy_hash = metadata.len();
             (metadata.modified().unwrap(), dummy_hash)
         };
         let status = PylyzerStatus {
             status,
-            file: input.path().into(),
+            file: path.to_path_buf(),
             timestamp,
             hash,
         };
         let code = format!("{status}\n");
         Self {
-            filename: input.filename().replace(".py", ".d.er"),
+            filename: path
+                .file_name()
+                .unwrap()
+                .to_string_lossy()
+                .replace(".py", ".d.er"),
             namespace: "".to_string(),
             imported: Set::new(),
             code,
         }
     }
 
-    pub fn gen_decl_er(mut self, hir: HIR) -> DeclFile {
-        for chunk in hir.module.into_iter() {
+    pub fn gen_decl_er(mut self, hir: &HIR) -> DeclFile {
+        for chunk in hir.module.iter() {
             self.gen_chunk_decl(chunk);
         }
         log!("code:\n{}", self.code);
@@ -62,7 +65,7 @@ impl DeclFileGenerator {
         }
     }
 
-    fn gen_chunk_decl(&mut self, chunk: Expr) {
+    fn gen_chunk_decl(&mut self, chunk: &Expr) {
         match chunk {
             Expr::Def(def) => {
                 let mut name = def
@@ -142,13 +145,13 @@ impl DeclFileGenerator {
                         self.code += &decl;
                     }
                 }
-                for attr in ClassDef::take_all_methods(def.methods_list) {
+                for attr in ClassDef::get_all_methods(&def.methods_list) {
                     self.gen_chunk_decl(attr);
                 }
                 self.namespace = stash;
             }
             Expr::Dummy(dummy) => {
-                for chunk in dummy.into_iter() {
+                for chunk in dummy.iter() {
                     self.gen_chunk_decl(chunk);
                 }
             }
@@ -158,31 +161,31 @@ impl DeclFileGenerator {
     }
 }
 
-pub fn reserve_decl_er(input: Input) {
-    let mut dir = input.dir();
-    dir.push("__pycache__");
-    let pycache_dir = dir.as_path();
-    if !pycache_dir.exists() {
-        std::fs::create_dir(pycache_dir).unwrap();
+fn dump_decl_er(path: &NormalizedPathBuf, hir: &HIR, status: CheckStatus) {
+    let decl_gen = DeclFileGenerator::new(path, status);
+    let file = decl_gen.gen_decl_er(hir);
+    let Some(dir) = path.parent().and_then(|p| p.canonicalize().ok()) else {
+        return;
+    };
+    let cache_dir = dir.join("__pycache__");
+    if !cache_dir.exists() {
+        let _ = create_dir_all(&cache_dir);
     }
-    let filename = input.filename();
-    let mut path = pycache_dir.join(filename);
-    path.set_extension("d.er");
+    let path = cache_dir.join(file.filename);
     if !path.exists() {
-        let _f = File::create(path).unwrap();
+        let _f = File::create(&path);
     }
+    let Ok(f) = File::options().write(true).open(path) else {
+        return;
+    };
+    let mut f = BufWriter::new(f);
+    let _ = f.write_all(file.code.as_bytes());
 }
 
-pub fn dump_decl_er(input: Input, hir: HIR, status: CheckStatus) {
-    let decl_gen = DeclFileGenerator::new(&input, status);
-    let file = decl_gen.gen_decl_er(hir);
-    let mut dir = input.dir();
-    dir.push("__pycache__");
-    let pycache_dir = dir.as_path();
-    let f = File::options()
-        .write(true)
-        .open(pycache_dir.join(file.filename))
-        .unwrap();
-    let mut f = BufWriter::new(f);
-    f.write_all(file.code.as_bytes()).unwrap();
+pub fn dump_decl_package(modules: &SharedModuleCache) {
+    for (path, module) in modules.raw_iter() {
+        if let Some(hir) = module.hir.as_ref() {
+            dump_decl_er(path, hir, module.status);
+        }
+    }
 }

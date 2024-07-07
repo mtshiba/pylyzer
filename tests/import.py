@@ -1,7 +1,7 @@
 import export
 import foo
 from . import foo
-from foo import bar
+from foo import bar, Bar
 from foo import baz
 import random
 from random import randint as rdi
@@ -28,6 +28,7 @@ assert d.x == 1
 assert d.y == 2
 
 assert foo.i == 0
+assert Bar().f() == 1
 
 from glob import glob
 print(glob("*"))
