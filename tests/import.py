@@ -41,3 +41,5 @@ assert dt.datetime.max == max_date
 
 Resp = http.client.HTTPResponse
 assert export.http.client.HTTPResponse == Resp
+
+_ = bar.Baz
