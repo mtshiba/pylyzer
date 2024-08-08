@@ -59,3 +59,13 @@ ok = D(1) - C(1, 2) # OK
 assert D(1) > D(0)
 c = -d # OK
 e = E(1)
+
+class F:
+    def __init__(self, x: int, y: int = 1, z: int = 2):
+        self.x = x
+        self.y = y
+        self.z = z
+
+_ = F(1)
+_ = F(1, 2)
+_ = F(1, z=1, y=2)

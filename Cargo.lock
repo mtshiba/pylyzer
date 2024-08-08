@@ -93,9 +93,9 @@ checksum = "1fd0f2584146f6f2ef48085050886acf353beff7305ebd1ae69500e27c67f64b"
 
 [[package]]
 name = "cc"
-version = "1.1.7"
+version = "1.1.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "26a5c3fd7bfa1ce3897a3a3501d362b2d87b7f2583ebcb4a949ec25911025cbc"
+checksum = "504bdec147f2cc13c8b57ed9401fd8a147cc66b67ad5cb241394244f2c947549"
 
 [[package]]
 name = "cfg-if"
@@ -136,9 +136,9 @@ checksum = "60b1af1c220855b6ceac025d3f6ecdd2b7c4894bfe9cd9bda4fbb4bc7c0d4cf0"
 
 [[package]]
 name = "els"
-version = "0.1.52"
+version = "0.1.53"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0eca7c5ae3d98cc8ef73819e728ea90708d33420a75586755d54992952d9cff5"
+checksum = "97104e067d1a4432a49a18da26af10a0f51d8d99f69e46aeb9890440f6a36457"
 dependencies = [
  "erg_common",
  "erg_compiler",
@@ -150,9 +150,9 @@ dependencies = [
 
 [[package]]
 name = "erg_common"
-version = "0.6.40"
+version = "0.6.41"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4cb5b57f6b06f7f5bf3ba92db2cb0945f831949ec790e4b94d957b5850df5694"
+checksum = "3868e184db0bb4a69538aa0744f6b19e51c43233f5369f8e7e114c263b9ff996"
 dependencies = [
  "backtrace-on-stack-overflow",
  "erg_proc_macros",
@@ -162,9 +162,9 @@ dependencies = [
 
 [[package]]
 name = "erg_compiler"
-version = "0.6.40"
+version = "0.6.41"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c7a5756da082d9d29758a38dee559d217bac305a04f547ddf272dc6f15a0dbec"
+checksum = "f7fcd5809b7797e85a87555cbe5d79580749a8b9ba8edf0ac7a422ad90c67793"
 dependencies = [
  "erg_common",
  "erg_parser",
@@ -172,9 +172,9 @@ dependencies = [
 
 [[package]]
 name = "erg_parser"
-version = "0.6.40"
+version = "0.6.41"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "58a34e9d94bdaafa86ffec7987f77692bbc56d86619500efdd3af8e721da9778"
+checksum = "9f986e2ca5c640c39083fcfe97009f11138458b1f1e3aa17595c81e9ae9e33d0"
 dependencies = [
  "erg_common",
  "erg_proc_macros",
@@ -183,9 +183,9 @@ dependencies = [
 
 [[package]]
 name = "erg_proc_macros"
-version = "0.6.40"
+version = "0.6.41"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3fb04dd4aed649befebd02854ee2a37607f526774810f7c79f6481e0abd93525"
+checksum = "e828d1dcb5ee351dcba9707a8ecd46e9ba510367595e922a26528fa0d2853920"
 dependencies = [
  "quote",
  "syn 1.0.109",
@@ -445,9 +445,9 @@ dependencies = [
 
 [[package]]
 name = "object"
-version = "0.36.2"
+version = "0.36.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3f203fa8daa7bb185f760ae12bd8e097f63d17041dcdcaf675ac54cdf863170e"
+checksum = "27b64972346851a39438c60b341ebc01bba47464ae329e55cf343eb93964efd9"
 dependencies = [
  "memchr",
 ]
@@ -642,8 +642,8 @@ dependencies = [
 
 [[package]]
 name = "rustpython-ast"
-version = "0.3.1"
-source = "git+https://github.com/RustPython/Parser#00d2f1d1a7522ef9c85c10dfa5f0bb7178dee655"
+version = "0.4.0"
+source = "git+https://github.com/RustPython/Parser#a5b08096a0b77e8f39cd6abdc998bb770dd0c79b"
 dependencies = [
  "is-macro",
  "malachite-bigint",
@@ -653,8 +653,8 @@ dependencies = [
 
 [[package]]
 name = "rustpython-parser"
-version = "0.3.1"
-source = "git+https://github.com/RustPython/Parser#00d2f1d1a7522ef9c85c10dfa5f0bb7178dee655"
+version = "0.4.0"
+source = "git+https://github.com/RustPython/Parser#a5b08096a0b77e8f39cd6abdc998bb770dd0c79b"
 dependencies = [
  "anyhow",
  "is-macro",
@@ -676,8 +676,8 @@ dependencies = [
 
 [[package]]
 name = "rustpython-parser-core"
-version = "0.3.1"
-source = "git+https://github.com/RustPython/Parser#00d2f1d1a7522ef9c85c10dfa5f0bb7178dee655"
+version = "0.4.0"
+source = "git+https://github.com/RustPython/Parser#a5b08096a0b77e8f39cd6abdc998bb770dd0c79b"
 dependencies = [
  "is-macro",
  "memchr",
@@ -686,8 +686,8 @@ dependencies = [
 
 [[package]]
 name = "rustpython-parser-vendored"
-version = "0.3.1"
-source = "git+https://github.com/RustPython/Parser#00d2f1d1a7522ef9c85c10dfa5f0bb7178dee655"
+version = "0.4.0"
+source = "git+https://github.com/RustPython/Parser#a5b08096a0b77e8f39cd6abdc998bb770dd0c79b"
 dependencies = [
  "memchr",
  "once_cell",
@@ -713,18 +713,18 @@ checksum = "61697e0a1c7e512e84a621326239844a24d8207b4669b41bc18b32ea5cbf988b"
 
 [[package]]
 name = "serde"
-version = "1.0.204"
+version = "1.0.205"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bc76f558e0cbb2a839d37354c575f1dc3fdc6546b5be373ba43d95f231bf7c12"
+checksum = "e33aedb1a7135da52b7c21791455563facbbcc43d0f0f66165b42c21b3dfb150"
 dependencies = [
  "serde_derive",
 ]
 
 [[package]]
 name = "serde_derive"
-version = "1.0.204"
+version = "1.0.205"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e0cd7e117be63d3c3678776753929474f3b04a43a080c744d6b0ae2a8c28e222"
+checksum = "692d6f5ac90220161d6774db30c662202721e64aed9058d2c394f451261420c1"
 dependencies = [
  "proc-macro2",
  "quote",

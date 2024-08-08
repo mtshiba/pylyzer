@@ -1346,7 +1346,6 @@ impl ASTConverter {
             unreachable!()
         };
         let mut fields = vec![];
-        let mut params = vec![];
         for chunk in init_def.body.block {
             #[allow(clippy::single_match)]
             match chunk {
@@ -1356,41 +1355,33 @@ impl ASTConverter {
                     };
                     // if `self.foo == ...`
                     if attr.obj.get_name().map(|s| &s[..]) == Some("self") {
-                        let (param_typ_name, arg_typ_name) = if let Some(t_spec_op) = sig
+                        // get attribute types
+                        let arg_typ_ident = if let Some(t_spec_op) = sig
                             .params
                             .non_defaults
                             .iter()
                             .find(|&param| param.inspect() == Some(attr.ident.inspect()))
                             .and_then(|param| param.t_spec.as_ref())
-                        {
+                            .or_else(|| {
+                                sig.params
+                                    .defaults
+                                    .iter()
+                                    .find(|&param| param.inspect() == Some(attr.ident.inspect()))
+                                    .and_then(|param| param.sig.t_spec.as_ref())
+                            }) {
                             let typ_name = t_spec_op.t_spec.to_string().replace('.', "");
-                            (typ_name.clone(), typ_name)
+                            Identifier::public_with_line(
+                                DOT,
+                                typ_name.into(),
+                                attr.obj.ln_begin().unwrap_or(0),
+                            )
                         } else {
-                            ("Obj".to_string(), "Never".to_string()) // accept any type, can be any type
+                            Identifier::public_with_line(
+                                DOT,
+                                "Never".into(),
+                                attr.obj.ln_begin().unwrap_or(0),
+                            )
                         };
-                        let param_typ_ident = Identifier::public_with_line(
-                            DOT,
-                            param_typ_name.into(),
-                            attr.obj.ln_begin().unwrap_or(0),
-                        );
-                        let param_typ_spec = TypeSpec::mono(param_typ_ident.clone());
-                        let expr = Expr::Accessor(Accessor::Ident(param_typ_ident.clone()));
-                        let as_op = Token::new(
-                            TokenKind::As,
-                            "as",
-                            param_typ_spec.ln_begin().unwrap_or(0),
-                            param_typ_spec.col_begin().unwrap_or(0),
-                        );
-                        let param_typ_spec = TypeSpecWithOp::new(as_op, param_typ_spec, expr);
-                        let arg_typ_ident = Identifier::public_with_line(
-                            DOT,
-                            arg_typ_name.into(),
-                            attr.obj.ln_begin().unwrap_or(0),
-                        );
-                        params.push(NonDefaultParamSignature::new(
-                            ParamPattern::VarName(attr.ident.name.clone()),
-                            Some(param_typ_spec),
-                        ));
                         let typ = Expr::Accessor(Accessor::Ident(arg_typ_ident));
                         let sig =
                             Signature::Var(VarSignature::new(VarPattern::Ident(attr.ident), None));
@@ -1424,7 +1415,6 @@ impl ASTConverter {
             VisModifierSpec::Public(DOT),
             VarName::from_static("__call__"),
         );
-        let params = Params::new(params, None, vec![], None, None);
         let class_ident = Identifier::public_with_line(
             DOT,
             self.namespace.last().unwrap().into(),
@@ -1432,6 +1422,10 @@ impl ASTConverter {
         );
         let class_ident_expr = Expr::Accessor(Accessor::Ident(class_ident.clone()));
         let class_spec = TypeSpecWithOp::new(COLON, TypeSpec::mono(class_ident), class_ident_expr);
+        let mut params = sig.params.clone();
+        if params.non_defaults.first().is_some_and(|param| param.inspect().map(|s| &s[..]) == Some("self")) {
+            params.non_defaults.remove(0);
+        }
         let sig = Signature::Subr(SubrSignature::new(
             set! { Decorator(Expr::static_local("Override")) },
             call_ident,
