@@ -36,10 +36,6 @@ def f(d1, d2: dict[str, int]):
     _ = d2[1] # ERR
     dic = {"a": 1}
     _ = dic["b"] # ERR
-    arr = [1, 2, 3]
-    _ = arr[4] # ERR
-    for i in range(4):
-        print(arr[i]) # ERR
 
 i, j = 1, 2
 assert i == 1

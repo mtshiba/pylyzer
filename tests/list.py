@@ -1,10 +1,11 @@
 l = [1, 2, 3]
 _ = l[1:2]
-print(l[4])  # ERR
+print(l[2])
+print(l["a"]) # ERR
 
 # OK
 for i in range(3):
     print(l[i])
 # ERR
-for i in range(4):
+for i in "abcd":
     print(l[i])

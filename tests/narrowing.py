@@ -7,3 +7,9 @@ def f(x: int | None):
     return None
 
 f(1)
+
+from typing import Optional
+
+x: Optional[int] = None
+if x is not None:
+    x += 1

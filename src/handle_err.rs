@@ -12,6 +12,19 @@ pub(crate) fn filter_errors(ctx: &ModuleContext, errors: CompileErrors) -> Compi
         .collect()
 }
 
+fn handle_name_error(error: CompileError) -> Option<CompileError> {
+    if error.core.main_message.contains("is already declared")
+        || error
+            .core
+            .main_message
+            .contains("cannot be assigned more than once")
+    {
+        None
+    } else {
+        Some(error)
+    }
+}
+
 fn filter_error(_ctx: &ModuleContext, mut error: CompileError) -> Option<CompileError> {
     match error.core.kind {
         ErrorKind::FeatureError => {
@@ -39,7 +52,7 @@ fn filter_error(_ctx: &ModuleContext, mut error: CompileError) -> Option<Compile
                 Some(error)
             }
         }
-        // ErrorKind::AssignError => handle_assign_error(error),
+        ErrorKind::NameError | ErrorKind::AssignError => handle_name_error(error),
         _ => Some(error),
     }
 }

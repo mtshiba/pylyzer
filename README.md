@@ -41,12 +41,6 @@ On average, pylyzer can inspect Python scripts more than __100 times faster__ th
 
 ![performance](https://raw.githubusercontent.com/mtshiba/pylyzer/main/images/performance.png)
 
-* Detailed analysis 🩺
-
-pylyzer can do more than the type checking. For example, it can detect out-of-bounds accesses to lists and accesses to nonexistent keys in dicts.
-
-![analysis](https://raw.githubusercontent.com/mtshiba/pylyzer/main/images/analysis.png)
-
 * Reports readability 📖
 
 While pytype/pyright's error reports are illegible, pylyzer shows where the error occurred and provides clear error messages.
