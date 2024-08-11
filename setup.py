@@ -10,11 +10,22 @@ from setuptools import setup, Command
 from setuptools_rust import RustBin
 import tomli
 
+try:
+    # setuptools >= 70.1.0
+    from setuptools.command.bdist_wheel import bdist_wheel
+except ImportError:
+    from wheel.bdist_wheel import bdist_wheel
+
 def removeprefix(string, prefix):
     if string.startswith(prefix):
         return string[len(prefix):]
     else:
         return string
+
+class BdistWheel(bdist_wheel):
+    def get_tag(self):
+        _, _, plat = super().get_tag()
+        return "py3", "none", plat
 
 class Clean(Command):
     user_options = []
@@ -68,6 +79,7 @@ setup(
     ],
     cmdclass={
         "clean": Clean,
+        "bdist_wheel": BdistWheel,
     },
     classifiers=[
         "Development Status :: 2 - Pre-Alpha",
