@@ -1356,7 +1356,7 @@ impl ASTConverter {
                     // if `self.foo == ...`
                     if attr.obj.get_name().map(|s| &s[..]) == Some("self") {
                         // get attribute types
-                        let arg_typ_ident = if let Some(t_spec_op) = sig
+                        let typ = if let Some(t_spec_op) = sig
                             .params
                             .non_defaults
                             .iter()
@@ -1370,19 +1370,20 @@ impl ASTConverter {
                                     .and_then(|param| param.sig.t_spec.as_ref())
                             }) {
                             let typ_name = t_spec_op.t_spec.to_string().replace('.', "");
-                            Identifier::public_with_line(
+                            Expr::from(Accessor::Ident(Identifier::public_with_line(
                                 DOT,
                                 typ_name.into(),
                                 attr.obj.ln_begin().unwrap_or(0),
-                            )
+                            )))
+                        } else if let Some(typ) = redef.t_spec.map(|t_spec| t_spec.t_spec_as_expr) {
+                            *typ
                         } else {
-                            Identifier::public_with_line(
+                            Expr::from(Accessor::Ident(Identifier::public_with_line(
                                 DOT,
                                 "Never".into(),
                                 attr.obj.ln_begin().unwrap_or(0),
-                            )
+                            )))
                         };
-                        let typ = Expr::Accessor(Accessor::Ident(arg_typ_ident));
                         let sig =
                             Signature::Var(VarSignature::new(VarPattern::Ident(attr.ident), None));
                         let body = DefBody::new(EQUAL, Block::new(vec![typ]), DefId(0));
@@ -1746,7 +1747,7 @@ impl ASTConverter {
                         let attr = value.attr(ident);
                         if let Some(value) = ann_assign.value {
                             let expr = self.convert_expr(*value);
-                            let redef = ReDef::new(attr, expr);
+                            let redef = ReDef::new(attr, Some(t_spec), expr);
                             Expr::ReDef(redef)
                         } else {
                             let tasc = TypeAscription::new(Expr::Accessor(attr), t_spec);
@@ -1774,7 +1775,7 @@ impl ASTConverter {
                                 let def = Def::new(sig, body);
                                 Expr::Def(def)
                             } else {
-                                let redef = ReDef::new(Accessor::Ident(ident), expr);
+                                let redef = ReDef::new(Accessor::Ident(ident), None, expr);
                                 Expr::ReDef(redef)
                             }
                         }
@@ -1784,7 +1785,7 @@ impl ASTConverter {
                                 .convert_attr_ident(attr.attr.to_string(), attr_name_loc(&value));
                             let attr = value.attr(ident);
                             let expr = self.convert_expr(*assign.value);
-                            let adef = ReDef::new(attr, expr);
+                            let adef = ReDef::new(attr, None, expr);
                             Expr::ReDef(adef)
                         }
                         py_ast::Expr::Tuple(tuple) => {
@@ -1897,7 +1898,7 @@ impl ASTConverter {
                             let ident = self.convert_ident(name.id.to_string(), name.location());
                             let bin =
                                 BinOp::new(op, Expr::Accessor(Accessor::Ident(prev_ident)), val);
-                            let redef = ReDef::new(Accessor::Ident(ident), Expr::BinOp(bin));
+                            let redef = ReDef::new(Accessor::Ident(ident), None, Expr::BinOp(bin));
                             Expr::ReDef(redef)
                         }
                     }
@@ -1908,7 +1909,7 @@ impl ASTConverter {
                             .convert_attr_ident(attr.attr.to_string(), attr_name_loc(&attr_value));
                         let attr = attr_value.attr(ident);
                         let bin = BinOp::new(op, Expr::Accessor(attr.clone()), assign_value);
-                        let redef = ReDef::new(attr, Expr::BinOp(bin));
+                        let redef = ReDef::new(attr, None, Expr::BinOp(bin));
                         Expr::ReDef(redef)
                     }
                     other => {

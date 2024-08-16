@@ -1,7 +1,8 @@
-i_arr = [0]
+i_lis = [0]
 
-i_arr.append(1)
-i_arr.append("a") # ERR
+i_lis.append(1)
+i_lis.append("a") # ERR
+_ = i_lis[0:0]
 
 union_arr: list[int | str] = []
 union_arr.append(1)
@@ -20,6 +21,7 @@ _ = dic2["c"] # OK
 t: tuple[int, str] = (1, "a")
 _ = t[0] == 1 # OK
 _ = t[1] == 1 # ERR
+_ = t[0:1]
 
 def f(s: Str): return None
 for i in getattr(1, "aaa", ()):
@@ -27,3 +29,5 @@ for i in getattr(1, "aaa", ()):
 
 assert 1 in [1, 2]
 assert 1 in {1, 2}
+assert 1 in {1: "a"}
+assert 1 in (1, 2)
