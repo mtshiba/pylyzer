@@ -16,11 +16,6 @@ pub struct DeclFile {
     pub filename: String,
     pub code: String,
 }
-
-fn escape_type(typ: String) -> String {
-    typ.replace('%', "Type_").replace("<module>", "")
-}
-
 pub struct DeclFileGenerator {
     filename: String,
     namespace: String,
@@ -65,10 +60,18 @@ impl DeclFileGenerator {
         }
     }
 
+    fn escape_type(&self, typ: String) -> String {
+        typ.replace('%', "Type_")
+            .replace("<module>", "")
+            .trim_start_matches(self.filename.trim_end_matches(".d.er"))
+            .trim_start_matches(&self.namespace)
+            .to_string()
+    }
+
     // e.g. `x: foo.Bar` => `foo = pyimport "foo"; x: foo.Bar`
     fn prepare_using_type(&mut self, typ: &Type) {
         let namespace = Str::rc(typ.namespace().split('.').next().unwrap());
-        if !namespace.is_empty() && self.imported.insert(namespace.clone()) {
+        if namespace != self.namespace && !namespace.is_empty() && self.imported.insert(namespace.clone()) {
             self.code += &format!("{namespace} = pyimport \"{namespace}\"\n");
         }
     }
@@ -84,7 +87,7 @@ impl DeclFileGenerator {
                     .replace(['%', '*'], "___");
                 let ref_t = def.sig.ident().ref_t();
                 self.prepare_using_type(ref_t);
-                let typ = escape_type(ref_t.replace_failure().to_string_unabbreviated());
+                let typ = self.escape_type(ref_t.replace_failure().to_string_unabbreviated());
                 // Erg can automatically import nested modules
                 // `import http.client` => `http = pyimport "http"`
                 let decl = if ref_t.is_py_module() {
@@ -129,7 +132,7 @@ impl DeclFileGenerator {
                         .replace_failure()
                         .to_string_unabbreviated();
                     self.prepare_using_type(class.sup.typ());
-                    let sup = escape_type(sup);
+                    let sup = self.escape_type(sup);
                     let decl = format!(".{class_name} <: {sup}\n");
                     self.code += &decl;
                 }
@@ -140,7 +143,7 @@ impl DeclFileGenerator {
                 {
                     for (attr, t) in rec.iter() {
                         self.prepare_using_type(t);
-                        let typ = escape_type(t.replace_failure().to_string_unabbreviated());
+                        let typ = self.escape_type(t.replace_failure().to_string_unabbreviated());
                         let decl = format!("{}.{}: {typ}\n", self.namespace, attr.symbol);
                         self.code += &decl;
                     }
@@ -152,7 +155,7 @@ impl DeclFileGenerator {
                 {
                     for (attr, t) in rec.iter() {
                         self.prepare_using_type(t);
-                        let typ = escape_type(t.replace_failure().to_string_unabbreviated());
+                        let typ = self.escape_type(t.replace_failure().to_string_unabbreviated());
                         let decl = format!("{}.{}: {typ}\n", self.namespace, attr.symbol);
                         self.code += &decl;
                     }
