@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 import datetime as dt
 from http.client import HTTPResponse
 import http
+from math import *
 
 i = random.randint(0, 1)
 print(i + 1)
@@ -43,3 +44,5 @@ Resp = http.client.HTTPResponse
 assert export.http.client.HTTPResponse == Resp
 
 _ = bar.Baz
+
+_ = sin(acos(exp(0))) # OK

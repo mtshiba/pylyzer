@@ -2193,6 +2193,29 @@ impl ASTConverter {
         }
     }
 
+    fn convert_glob_import(&mut self, location: PyLocation, module: String) -> Expr {
+        let import_acc = Expr::Accessor(Accessor::Ident(
+            self.convert_ident("__import__".to_string(), location),
+        ));
+        let cont = if module == "." {
+            "\"__init__\"".to_string()
+        } else {
+            format!("\"{module}\"")
+        };
+        let mod_name = Expr::Literal(Literal::new(Token::new(
+            TokenKind::StrLit,
+            cont,
+            location.row.get(),
+            location.column.to_zero_indexed(),
+        )));
+        let call = import_acc.clone().call1(mod_name);
+        let var = VarSignature::new(VarPattern::Glob(Token::DUMMY), None);
+        Expr::Def(Def::new(
+            Signature::Var(var),
+            DefBody::new(EQUAL, Block::new(vec![call]), DefId(0)),
+        ))
+    }
+
     /**
     ```erg
     from foo import bar # if bar, baz are modules
@@ -2242,6 +2265,9 @@ impl ASTConverter {
         let call = import_acc.clone().call1(mod_name);
         let mut exprs = vec![];
         let mut imports = vec![];
+        if names.len() == 1 && names[0].name.as_str() == "*" {
+            return self.convert_glob_import(location, module);
+        }
         for name in names {
             let name_path = self
                 .cfg
