@@ -71,7 +71,10 @@ impl DeclFileGenerator {
     // e.g. `x: foo.Bar` => `foo = pyimport "foo"; x: foo.Bar`
     fn prepare_using_type(&mut self, typ: &Type) {
         let namespace = Str::rc(typ.namespace().split('.').next().unwrap());
-        if namespace != self.namespace && !namespace.is_empty() && self.imported.insert(namespace.clone()) {
+        if namespace != self.namespace
+            && !namespace.is_empty()
+            && self.imported.insert(namespace.clone())
+        {
             self.code += &format!("{namespace} = pyimport \"{namespace}\"\n");
         }
     }

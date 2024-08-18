@@ -1,3 +1,4 @@
+use core::fmt;
 use std::path::Path;
 
 use erg_common::config::ErgConfig;
@@ -14,9 +15,9 @@ use erg_compiler::erg_parser::ast::{
     LambdaSignature, List, ListComprehension, Literal, Methods, Module, NonDefaultParamSignature,
     NormalDict, NormalList, NormalRecord, NormalSet, NormalTuple, ParamPattern, ParamTySpec,
     Params, PosArg, PreDeclTypeSpec, ReDef, Record, RecordAttrs, Set, SetComprehension, Signature,
-    SubrSignature, SubrTypeSpec, Tuple, TupleTypeSpec, TypeAscription, TypeBoundSpecs, TypeSpec,
-    TypeSpecWithOp, UnaryOp, VarName, VarPattern, VarRecordAttr, VarRecordAttrs, VarRecordPattern,
-    VarSignature, VisModifierSpec,
+    SubrSignature, SubrTypeSpec, Tuple, TupleTypeSpec, TypeAscription, TypeBoundSpec,
+    TypeBoundSpecs, TypeSpec, TypeSpecWithOp, UnaryOp, VarName, VarPattern, VarRecordAttr,
+    VarRecordAttrs, VarRecordPattern, VarSignature, VisModifierSpec,
 };
 use erg_compiler::erg_parser::desugar::Desugarer;
 use erg_compiler::erg_parser::token::{Token, TokenKind, COLON, DOT, EQUAL};
@@ -24,7 +25,7 @@ use erg_compiler::erg_parser::Parser;
 use erg_compiler::error::{CompileError, CompileErrors};
 use rustpython_parser::ast::located::{
     self as py_ast, Alias, Arg, Arguments, BoolOp, CmpOp, ExprConstant, Keyword, Located,
-    ModModule, Operator, Stmt, String, Suite, UnaryOp as UnOp,
+    ModModule, Operator, Stmt, String, Suite, TypeParam, UnaryOp as UnOp,
 };
 use rustpython_parser::source_code::{
     OneIndexed, SourceLocation as PyLocation, SourceRange as PySourceRange,
@@ -217,6 +218,49 @@ pub enum ShadowingMode {
     Visible,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct TypeVarInfo {
+    name: String,
+    bound: Option<Expr>,
+}
+
+impl fmt::Display for TypeVarInfo {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if let Some(bound) = &self.bound {
+            write!(f, "TypeVarInfo({} bound={})", self.name, bound)
+        } else {
+            write!(f, "TypeVarInfo({})", self.name)
+        }
+    }
+}
+
+impl TypeVarInfo {
+    pub const fn new(name: String, bound: Option<Expr>) -> Self {
+        Self { name, bound }
+    }
+}
+
+#[derive(Debug)]
+pub struct LocalContext {
+    name: String,
+    /// Erg does not allow variables to be defined multiple times, so rename them using this
+    names: HashMap<String, NameInfo>,
+    type_vars: HashMap<String, TypeVarInfo>,
+    // e.g. def id(x: T) -> T: ... => appeared_types = {T}
+    appeared_type_names: HashSet<String>,
+}
+
+impl LocalContext {
+    pub fn new(name: String) -> Self {
+        Self {
+            name,
+            names: HashMap::new(),
+            type_vars: HashMap::new(),
+            appeared_type_names: HashSet::new(),
+        }
+    }
+}
+
 /// AST must be converted in the following order:
 ///
 /// Params -> Block -> Signature
@@ -245,11 +289,9 @@ pub enum ShadowingMode {
 pub struct ASTConverter {
     cfg: ErgConfig,
     shadowing: ShadowingMode,
-    namespace: Vec<String>,
     block_id_counter: usize,
     block_ids: Vec<usize>,
-    /// Erg does not allow variables to be defined multiple times, so rename them using this
-    names: Vec<HashMap<String, NameInfo>>,
+    contexts: Vec<LocalContext>,
     warns: CompileErrors,
     errs: CompileErrors,
 }
@@ -259,18 +301,17 @@ impl ASTConverter {
         Self {
             shadowing,
             cfg,
-            namespace: vec![String::from("<module>")],
             block_id_counter: 0,
             block_ids: vec![0],
-            names: vec![HashMap::new()],
+            contexts: vec![LocalContext::new("<module>".into())],
             warns: CompileErrors::empty(),
             errs: CompileErrors::empty(),
         }
     }
 
     fn get_name(&self, name: &str) -> Option<&NameInfo> {
-        for ns in self.names.iter().rev() {
-            if let Some(ni) = ns.get(name) {
+        for ctx in self.contexts.iter().rev() {
+            if let Some(ni) = ctx.names.get(name) {
                 return Some(ni);
             }
         }
@@ -278,38 +319,67 @@ impl ASTConverter {
     }
 
     fn get_mut_name(&mut self, name: &str) -> Option<&mut NameInfo> {
-        for ns in self.names.iter_mut().rev() {
-            if let Some(ni) = ns.get_mut(name) {
+        for ctx in self.contexts.iter_mut().rev() {
+            if let Some(ni) = ctx.names.get_mut(name) {
                 return Some(ni);
             }
         }
         None
     }
 
+    fn get_type_var(&self, name: &str) -> Option<&TypeVarInfo> {
+        for ctx in self.contexts.iter().rev() {
+            if let Some(tv) = ctx.type_vars.get(name) {
+                return Some(tv);
+            }
+        }
+        None
+    }
+
     fn define_name(&mut self, name: String, info: NameInfo) {
-        self.names.last_mut().unwrap().insert(name, info);
+        self.contexts.last_mut().unwrap().names.insert(name, info);
     }
 
     fn declare_name(&mut self, name: String, info: NameInfo) {
-        self.names.first_mut().unwrap().insert(name, info);
+        self.contexts.first_mut().unwrap().names.insert(name, info);
+    }
+
+    fn define_type_var(&mut self, name: String, info: TypeVarInfo) {
+        self.contexts
+            .last_mut()
+            .unwrap()
+            .type_vars
+            .insert(name, info);
     }
 
     fn grow(&mut self, namespace: String) {
-        self.namespace.push(namespace);
-        self.names.push(HashMap::new());
+        self.contexts.push(LocalContext::new(namespace));
     }
 
     fn pop(&mut self) {
-        self.namespace.pop();
-        self.names.pop();
+        self.contexts.pop();
     }
 
     fn cur_block_id(&self) -> usize {
         *self.block_ids.last().unwrap()
     }
 
+    /// foo.bar.baz
     fn cur_namespace(&self) -> String {
-        self.namespace.join(".")
+        self.contexts
+            .iter()
+            .map(|ctx| &ctx.name[..])
+            .collect::<Vec<_>>()
+            .join(".")
+    }
+
+    // baz
+    fn cur_name(&self) -> &str {
+        &self.contexts.last().unwrap().name
+    }
+
+    fn cur_appeared_type_names(&self) -> &HashSet<String> {
+        &self.contexts.last().unwrap().appeared_type_names
     }
 
     fn register_name_info(&mut self, name: &str, kind: NameKind) -> CanShadow {
@@ -869,6 +939,11 @@ impl ASTConverter {
         #[allow(clippy::collapsible_match)]
         match expr {
             py_ast::Expr::Name(name) => {
+                self.contexts
+                    .last_mut()
+                    .unwrap()
+                    .appeared_type_names
+                    .insert(name.id.to_string());
                 self.convert_ident_type_spec(name.id.to_string(), name.location())
             }
             py_ast::Expr::Constant(cons) => {
@@ -1306,7 +1381,7 @@ impl ASTConverter {
                 self.errs.push(self_not_found_error(
                     self.cfg.input.clone(),
                     subr.loc(),
-                    self.namespace.join("."),
+                    self.cur_namespace(),
                 ));
                 Some(())
             }
@@ -1314,7 +1389,7 @@ impl ASTConverter {
                 self.errs.push(init_var_error(
                     self.cfg.input.clone(),
                     var.loc(),
-                    self.namespace.join("."),
+                    self.cur_namespace(),
                 ));
                 None
             }
@@ -1418,13 +1493,17 @@ impl ASTConverter {
         );
         let class_ident = Identifier::public_with_line(
             DOT,
-            self.namespace.last().unwrap().into(),
+            self.cur_name().to_string().into(),
             sig.ln_begin().unwrap_or(0),
         );
         let class_ident_expr = Expr::Accessor(Accessor::Ident(class_ident.clone()));
         let class_spec = TypeSpecWithOp::new(COLON, TypeSpec::mono(class_ident), class_ident_expr);
         let mut params = sig.params.clone();
-        if params.non_defaults.first().is_some_and(|param| param.inspect().map(|s| &s[..]) == Some("self")) {
+        if params
+            .non_defaults
+            .first()
+            .is_some_and(|param| param.inspect().map(|s| &s[..]) == Some("self"))
+        {
             params.non_defaults.remove(0);
         }
         let sig = Signature::Subr(SubrSignature::new(
@@ -1449,7 +1528,7 @@ impl ASTConverter {
         );
         let params = Params::empty();
         let class_ident =
-            Identifier::public_with_line(DOT, self.namespace.last().unwrap().into(), line as u32);
+            Identifier::public_with_line(DOT, self.cur_name().to_string().into(), line as u32);
         let class_ident_expr = Expr::Accessor(Accessor::Ident(class_ident.clone()));
         let class_spec = TypeSpecWithOp::new(COLON, TypeSpec::mono(class_ident), class_ident_expr);
         let sig = Signature::Subr(SubrSignature::new(
@@ -1566,15 +1645,49 @@ impl ASTConverter {
         (base_type, vec![methods])
     }
 
-    fn convert_funcdef(
-        &mut self,
-        name: String,
-        params: Arguments,
-        body: Vec<py_ast::Stmt>,
-        decorator_list: Vec<py_ast::Expr>,
-        returns: Option<py_ast::Expr>,
-        range: PySourceRange,
-    ) -> Expr {
+    fn get_type_bounds(&mut self, type_params: Vec<TypeParam>) -> TypeBoundSpecs {
+        let mut bounds = TypeBoundSpecs::empty();
+        if type_params.is_empty() {
+            for ty in self.cur_appeared_type_names() {
+                let name = VarName::from_str(ty.clone().into());
+                let op = Token::dummy(TokenKind::SubtypeOf, "<:");
+                if let Some(tv_info) = self.get_type_var(ty) {
+                    let bound = if let Some(bound) = &tv_info.bound {
+                        let t_spec = Parser::expr_to_type_spec(bound.clone())
+                            .unwrap_or(TypeSpec::Infer(name.token().clone()));
+                        let spec = TypeSpecWithOp::new(op, t_spec, bound.clone());
+                        TypeBoundSpec::non_default(name, spec)
+                    } else {
+                        TypeBoundSpec::Omitted(name)
+                    };
+                    bounds.push(bound);
+                }
+            }
+        }
+        for tp in type_params {
+            // TODO:
+            let Some(tv) = tp.as_type_var() else {
+                continue;
+            };
+            let name = VarName::from_str(tv.name.to_string().into());
+            let spec = if let Some(bound) = &tv.bound {
+                let op = Token::dummy(TokenKind::SubtypeOf, "<:");
+                let spec = self.convert_type_spec(*bound.clone());
+                let expr = self.convert_expr(*bound.clone());
+                let spec = TypeSpecWithOp::new(op, spec, expr);
+                TypeBoundSpec::non_default(name, spec)
+            } else {
+                TypeBoundSpec::Omitted(name)
+            };
+            bounds.push(spec);
+        }
+        bounds
+    }
+
+    fn convert_funcdef(&mut self, func_def: py_ast::StmtFunctionDef) -> Expr {
+        let name = func_def.name.to_string();
+        let params = *func_def.args;
+        let returns = func_def.returns.map(|x| *x);
         // if reassigning of a function referenced by other functions is occurred, it is an error
         if self.get_name(&name).is_some_and(|info| {
             info.defined_times > 0
@@ -1583,15 +1696,16 @@ impl ASTConverter {
         }) {
             let err = reassign_func_error(
                 self.cfg.input.clone(),
-                pyloc_to_ergloc(range),
-                self.namespace.join("."),
+                pyloc_to_ergloc(func_def.range),
+                self.cur_namespace(),
                 &name,
             );
             self.errs.push(err);
             Expr::Dummy(Dummy::new(None, vec![]))
         } else {
-            let loc = range.start;
-            let decos = decorator_list
+            let loc = func_def.range.start;
+            let decos = func_def
+                .decorator_list
                 .into_iter()
                 .map(|ex| Decorator(self.convert_expr(ex)))
                 .collect::<HashSet<_>>();
@@ -1613,14 +1727,9 @@ impl ASTConverter {
                 );
                 TypeSpecWithOp::new(colon, t_spec, self.convert_expr(ret))
             });
-            let sig = Signature::Subr(SubrSignature::new(
-                decos,
-                ident,
-                TypeBoundSpecs::empty(),
-                params,
-                return_t,
-            ));
-            let block = self.convert_block(body, BlockKind::Function);
+            let bounds = self.get_type_bounds(func_def.type_params);
+            let sig = Signature::Subr(SubrSignature::new(decos, ident, bounds, params, return_t));
+            let block = self.convert_block(func_def.body, BlockKind::Function);
             let body = DefBody::new(EQUAL, block, DefId(0));
             let def = Def::new(sig, body);
             self.pop();
@@ -1642,19 +1751,16 @@ impl ASTConverter {
     /// ```erg
     /// Foo = Inherit Bar
     /// ```
-    fn convert_classdef(
-        &mut self,
-        name: String,
-        body: Vec<py_ast::Stmt>,
-        bases: Vec<py_ast::Expr>,
-        decorator_list: Vec<py_ast::Expr>,
-        loc: PyLocation,
-    ) -> Expr {
-        let _decos = decorator_list
+    fn convert_classdef(&mut self, class_def: py_ast::StmtClassDef) -> Expr {
+        let loc = class_def.location();
+        let name = class_def.name.to_string();
+        let _decos = class_def
+            .decorator_list
             .into_iter()
             .map(|deco| self.convert_expr(deco))
             .collect::<Vec<_>>();
-        let mut bases = bases
+        let mut bases = class_def
+            .bases
             .into_iter()
             .map(|base| self.convert_expr(base))
             .collect::<Vec<_>>();
@@ -1667,7 +1773,7 @@ impl ASTConverter {
         let ident = self.convert_ident(name, class_name_loc);
         let sig = Signature::Var(VarSignature::new(VarPattern::Ident(ident.clone()), None));
         self.grow(ident.inspect().to_string());
-        let (base_type, methods) = self.extract_method_list(ident, body, inherit);
+        let (base_type, methods) = self.extract_method_list(ident, class_def.body, inherit);
         let classdef = if inherit {
             // TODO: multiple inheritance
             let pos_args = vec![PosArg::new(bases.remove(0))];
@@ -1763,6 +1869,20 @@ impl ASTConverter {
                     match lhs {
                         py_ast::Expr::Name(name) => {
                             let expr = self.convert_expr(*assign.value);
+                            if let Expr::Call(call) = &expr {
+                                if let Some("TypeVar") = call.obj.get_name().map(|s| &s[..]) {
+                                    let arg = if let Some(Expr::Literal(lit)) =
+                                        call.args.get_left_or_key("arg")
+                                    {
+                                        lit.token.content.trim_matches('\"').to_string()
+                                    } else {
+                                        name.id.to_string()
+                                    };
+                                    let bound = call.args.nth_or_key(1, "bound").cloned();
+                                    let info = TypeVarInfo::new(arg, bound);
+                                    self.define_type_var(name.id.to_string(), info);
+                                }
+                            }
                             let can_shadow = self.register_name_info(&name.id, NameKind::Variable);
                             let ident = self.convert_ident(name.id.to_string(), name.location());
                             if can_shadow.is_yes() {
@@ -1918,24 +2038,8 @@ impl ASTConverter {
                     }
                 }
             }
-            py_ast::Stmt::FunctionDef(func_def) => self.convert_funcdef(
-                func_def.name.to_string(),
-                *func_def.args,
-                func_def.body,
-                func_def.decorator_list,
-                func_def.returns.map(|x| *x),
-                func_def.range,
-            ),
-            py_ast::Stmt::ClassDef(class_def) => {
-                let class_loc = class_def.location();
-                self.convert_classdef(
-                    class_def.name.to_string(),
-                    class_def.body,
-                    class_def.bases,
-                    class_def.decorator_list,
-                    class_loc,
-                )
-            }
+            py_ast::Stmt::FunctionDef(func_def) => self.convert_funcdef(func_def),
+            py_ast::Stmt::ClassDef(class_def) => self.convert_classdef(class_def),
             py_ast::Stmt::For(for_) => {
                 let loc = for_.location();
                 let iter = self.convert_expr(*for_.iter);
@@ -1991,7 +2095,7 @@ impl ASTConverter {
                     value
                 } else {
                     let func_acc = Expr::Accessor(Accessor::Ident(
-                        self.convert_ident(self.namespace.last().unwrap().clone(), loc),
+                        self.convert_ident(self.cur_name().to_string(), loc),
                     ));
                     let return_acc = self.convert_ident("return".to_string(), loc);
                     let return_acc = Expr::Accessor(Accessor::attr(func_acc, return_acc));

@@ -138,6 +138,11 @@ fn exec_shadowing() -> Result<(), String> {
 }
 
 #[test]
+fn exec_typevar() -> Result<(), String> {
+    expect("tests/typevar.py", 0, 2)
+}
+
+#[test]
 fn exec_widening() -> Result<(), String> {
     expect("tests/widening.py", 0, 1)
 }
