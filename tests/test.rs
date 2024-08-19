@@ -129,7 +129,7 @@ fn exec_collection() -> Result<(), String> {
 
 #[test]
 fn exec_call() -> Result<(), String> {
-    expect("tests/call.py", 0, 3)
+    expect("tests/call.py", 0, 6)
 }
 
 #[test]
