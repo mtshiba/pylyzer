@@ -143,6 +143,11 @@ fn exec_typevar() -> Result<(), String> {
 }
 
 #[test]
+fn exec_union() -> Result<(), String> {
+    expect("tests/union.py", 0, 0)
+}
+
+#[test]
 fn exec_widening() -> Result<(), String> {
     expect("tests/widening.py", 0, 1)
 }
