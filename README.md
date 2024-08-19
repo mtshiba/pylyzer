@@ -101,9 +101,9 @@ pylyzer converts Python ASTs to Erg ASTs and passes them to Erg's type checker. 
   * [x] operator
   * [x] function/method
   * [x] class
-* [x] builtin modules resolving (partially)
-* [x] local scripts resolving
-* [ ] local packages resolving
+* [x] builtin modules analysis
+* [x] local scripts analysis
+* [x] local packages analysis
 * [x] collection types
   * [x] `list`
   * [x] `dict`
@@ -114,12 +114,17 @@ pylyzer converts Python ASTs to Erg ASTs and passes them to Erg's type checker. 
   * [x] `Literal`
   * [x] `Callable`
   * [ ] `TypedDict`
-  * [ ] type variable (`TypeVar`, `Generic`)
+  * [ ] type variable
+    * [x] `TypeVar`
+    * [x] type parameter syntax
+    * [ ] `Generic`
   * [ ] `Protocol`
   * [ ] `Final`
   * [ ] `Annotated`
   * [ ] `TypeAlias`
-  * [ ] type guard (`TypeGuard`)
+  * [ ] type guard
+    * [x] type narrowing
+    * [ ] `TypeGuard`
   * [ ] others
 * `collections.abc`
   * [x] `Iterable`
