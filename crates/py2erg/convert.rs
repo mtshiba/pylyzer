@@ -947,7 +947,22 @@ impl ASTConverter {
                 self.convert_ident_type_spec(name.id.to_string(), name.location())
             }
             py_ast::Expr::Constant(cons) => {
-                self.convert_ident_type_spec("NoneType".into(), cons.location())
+                if cons.value.is_none() {
+                    self.convert_ident_type_spec("NoneType".into(), cons.location())
+                } else if let Some(name) = cons.value.as_str() {
+                    self.convert_ident_type_spec(name.into(), cons.location())
+                } else {
+                    let err = CompileError::syntax_error(
+                        self.cfg.input.clone(),
+                        line!() as usize,
+                        pyloc_to_ergloc(cons.range()),
+                        self.cur_namespace(),
+                        format!("{:?} is not a type", cons.value),
+                        None,
+                    );
+                    self.errs.push(err);
+                    Self::gen_dummy_type_spec(cons.location())
+                }
             }
             py_ast::Expr::Attribute(attr) => {
                 let namespace = Box::new(self.convert_expr(*attr.value));

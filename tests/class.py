@@ -19,6 +19,8 @@ class C:
         return self.x
     def id(self) -> Self:
         return self
+    def id2(self) -> "C":
+        return self
 
 c = C(1, 2)
 assert c.x == 1
