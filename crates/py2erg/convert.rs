@@ -221,6 +221,7 @@ pub enum ShadowingMode {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TypeVarInfo {
     name: String,
+    constraints: Vec<Expr>,
     bound: Option<Expr>,
 }
 
@@ -235,8 +236,12 @@ impl fmt::Display for TypeVarInfo {
 }
 
 impl TypeVarInfo {
-    pub const fn new(name: String, bound: Option<Expr>) -> Self {
-        Self { name, bound }
+    pub const fn new(name: String, constraints: Vec<Expr>, bound: Option<Expr>) -> Self {
+        Self {
+            name,
+            constraints,
+            bound,
+        }
     }
 }
 
@@ -1662,6 +1667,7 @@ impl ASTConverter {
 
     fn get_type_bounds(&mut self, type_params: Vec<TypeParam>) -> TypeBoundSpecs {
         let mut bounds = TypeBoundSpecs::empty();
+        let mut errs = vec![];
         if type_params.is_empty() {
             for ty in self.cur_appeared_type_names() {
                 let name = VarName::from_str(ty.clone().into());
@@ -1671,6 +1677,42 @@ impl ASTConverter {
                         let t_spec = Parser::expr_to_type_spec(bound.clone())
                             .unwrap_or(TypeSpec::Infer(name.token().clone()));
                         let spec = TypeSpecWithOp::new(op, t_spec, bound.clone());
+                        TypeBoundSpec::non_default(name, spec)
+                    } else if !tv_info.constraints.is_empty() {
+                        if tv_info.constraints.len() == 1 {
+                            let err = CompileError::syntax_error(
+                                self.cfg.input.clone(),
+                                line!() as usize,
+                                pyloc_to_ergloc(type_params[0].range()),
+                                self.cur_namespace(),
+                                "TypeVar must have at least two constrained types".into(),
+                                None,
+                            );
+                            errs.push(err);
+                        }
+                        let op = Token::dummy(TokenKind::Colon, ":");
+                        let mut elems = vec![];
+                        for constraint in tv_info.constraints.iter() {
+                            if let Ok(expr) = Parser::validate_const_expr(constraint.clone()) {
+                                elems.push(ConstPosArg::new(expr));
+                            }
+                        }
+                        let t_spec = TypeSpec::Enum(ConstArgs::pos_only(elems, None));
+                        let elems = Args::pos_only(
+                            tv_info
+                                .constraints
+                                .iter()
+                                .cloned()
+                                .map(PosArg::new)
+                                .collect(),
+                            None,
+                        );
+                        let expr = Expr::Set(Set::Normal(NormalSet::new(
+                            Token::DUMMY,
+                            Token::DUMMY,
+                            elems,
+                        )));
+                        let spec = TypeSpecWithOp::new(op, t_spec, expr);
                         TypeBoundSpec::non_default(name, spec)
                     } else {
                         TypeBoundSpec::Omitted(name)
@@ -1696,6 +1738,7 @@ impl ASTConverter {
             };
             bounds.push(spec);
         }
+        self.errs.extend(errs);
         bounds
     }
 
@@ -1893,8 +1936,14 @@ impl ASTConverter {
                                     } else {
                                         name.id.to_string()
                                     };
-                                    let bound = call.args.nth_or_key(1, "bound").cloned();
-                                    let info = TypeVarInfo::new(arg, bound);
+                                    let mut constraints = vec![];
+                                    let mut nth = 1;
+                                    while let Some(constr) = call.args.get_nth(nth) {
+                                        constraints.push(constr.clone());
+                                        nth += 1;
+                                    }
+                                    let bound = call.args.get_with_key("bound").cloned();
+                                    let info = TypeVarInfo::new(arg, constraints, bound);
                                     self.define_type_var(name.id.to_string(), info);
                                 }
                             }

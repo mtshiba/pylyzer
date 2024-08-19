@@ -71,3 +71,10 @@ class F:
 _ = F(1)
 _ = F(1, 2)
 _ = F(1, z=1, y=2)
+
+class G(DoesNotExist):  # ERR
+    def foo(self):
+        return 1
+
+g = G()
+assert g.foo() == 1

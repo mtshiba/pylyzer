@@ -84,7 +84,7 @@ fn exec_func() -> Result<(), String> {
 
 #[test]
 fn exec_class() -> Result<(), String> {
-    expect("tests/class.py", 0, 5)
+    expect("tests/class.py", 0, 6)
 }
 
 #[test]
@@ -139,7 +139,7 @@ fn exec_shadowing() -> Result<(), String> {
 
 #[test]
 fn exec_typevar() -> Result<(), String> {
-    expect("tests/typevar.py", 0, 2)
+    expect("tests/typevar.py", 0, 3)
 }
 
 #[test]
