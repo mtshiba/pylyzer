@@ -13,6 +13,7 @@ repository.workspace = true
 members = [
     "crates/py2erg",
     "crates/pylyzer_core",
+    "crates/pylyzer_wasm",
 ]
 
 [workspace.package]

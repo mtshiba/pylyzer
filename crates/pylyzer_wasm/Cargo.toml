@@ -1,0 +1,19 @@
+[package]
+name = "pylyzer_wasm"
+description = "Wasm wrapper for pylyzer"
+version.workspace = true
+authors.workspace = true
+license.workspace = true
+edition.workspace = true
+repository.workspace = true
+publish = false
+
+[dependencies]
+wasm-bindgen = "0.2"
+erg_common = { workspace = true }
+erg_compiler = { workspace = true }
+pylyzer_core = { version = "*", path = "../pylyzer_core" }
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+path = "lib.rs"

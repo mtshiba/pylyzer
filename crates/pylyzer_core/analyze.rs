@@ -6,8 +6,8 @@ use erg_common::traits::{ExitStatus, New, Runnable, Stream};
 use erg_common::Str;
 use erg_compiler::artifact::{BuildRunnable, Buildable, CompleteArtifact, IncompleteArtifact};
 use erg_compiler::build_package::GenericPackageBuilder;
-use erg_compiler::context::ModuleContext;
-use erg_compiler::erg_parser::ast::{Module, AST};
+use erg_compiler::context::{Context, ContextProvider, ModuleContext};
+use erg_compiler::erg_parser::ast::{Module, VarName, AST};
 use erg_compiler::erg_parser::build_ast::ASTBuildable;
 use erg_compiler::erg_parser::error::{
     CompleteArtifact as ParseArtifact, IncompleteArtifact as IncompleteParseArtifact, ParseErrors,
@@ -16,6 +16,7 @@ use erg_compiler::erg_parser::error::{
 use erg_compiler::erg_parser::parse::Parsable;
 use erg_compiler::error::{CompileError, CompileErrors};
 use erg_compiler::module::SharedCompilerResource;
+use erg_compiler::varinfo::VarInfo;
 use erg_compiler::GenericHIRBuilder;
 use py2erg::{dump_decl_package, ShadowingMode};
 use rustpython_ast::source_code::{RandomLocator, SourceRange};
@@ -137,6 +138,18 @@ impl New for PythonAnalyzer {
         let checker =
             GenericPackageBuilder::new(cfg.clone(), SharedCompilerResource::new(cfg.clone()));
         Self { checker, cfg }
+    }
+}
+
+impl ContextProvider for PythonAnalyzer {
+    fn dir(&self) -> erg_common::dict::Dict<&VarName, &VarInfo> {
+        self.checker.dir()
+    }
+    fn get_receiver_ctx(&self, receiver_name: &str) -> Option<&Context> {
+        self.checker.get_receiver_ctx(receiver_name)
+    }
+    fn get_var_info(&self, name: &str) -> Option<(&VarName, &VarInfo)> {
+        self.checker.get_var_info(name)
     }
 }
 
