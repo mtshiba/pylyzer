@@ -1166,6 +1166,7 @@ impl ASTConverter {
             }
             py_ast::Expr::Call(call) => {
                 let loc = call.location();
+                let end_loc = call.end_location();
                 let function = self.convert_expr(*call.func);
                 let (pos_args, var_args): (Vec<_>, _) = call
                     .args
@@ -1201,10 +1202,15 @@ impl ASTConverter {
                     .into_iter()
                     .map(|Keyword { value, .. }| PosArg::new(self.convert_expr(value)))
                     .next();
-                let last_col = pos_args
-                    .last()
-                    .and_then(|last| last.col_end())
-                    .unwrap_or(function.col_end().unwrap_or(0) + 1);
+                let last_col = end_loc.map_or_else(
+                    || {
+                        pos_args
+                            .last()
+                            .and_then(|last| last.col_end())
+                            .unwrap_or(function.col_end().unwrap_or(0) + 1)
+                    },
+                    |loc| loc.row.get(),
+                );
                 let paren = {
                     let lp = Token::new(
                         TokenKind::LParen,

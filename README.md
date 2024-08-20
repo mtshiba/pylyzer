@@ -45,13 +45,13 @@ On average, pylyzer can inspect Python scripts more than __100 times faster__ th
 
 While pytype/pyright's error reports are illegible, pylyzer shows where the error occurred and provides clear error messages.
 
+### pyright
+
+![pyright_report](https://raw.githubusercontent.com/mtshiba/pylyzer/main/images/pyright_report.png)
+
 ### pylyzer 😃
 
 ![report](https://raw.githubusercontent.com/mtshiba/pylyzer/main/images/report.png)
-
-### pyright 🙃
-
-![pyright_report](https://raw.githubusercontent.com/mtshiba/pylyzer/main/images/pyright_report.png)
 
 * Rich LSP support 📝
 
@@ -104,6 +104,16 @@ pylyzer converts Python ASTs to Erg ASTs and passes them to Erg's type checker. 
 * [x] builtin modules analysis
 * [x] local scripts analysis
 * [x] local packages analysis
+* [x] LSP features
+  * [x] diagnostics
+  * [x] completion
+  * [x] rename
+  * [x] hover
+  * [x] goto definition
+  * [x] signature help
+  * [x] find references
+  * [x] document symbol
+  * [x] call hierarchy
 * [x] collection types
   * [x] `list`
   * [x] `dict`
@@ -114,17 +124,15 @@ pylyzer converts Python ASTs to Erg ASTs and passes them to Erg's type checker. 
   * [x] `Literal`
   * [x] `Callable`
   * [ ] `TypedDict`
-  * [ ] type variable
-    * [x] `TypeVar`
-    * [x] type parameter syntax
-    * [ ] `Generic`
+  * [x] `TypeVar`
+  * [ ] `Generic`
   * [ ] `Protocol`
   * [ ] `Final`
   * [ ] `Annotated`
   * [ ] `TypeAlias`
-  * [ ] type guard
-    * [x] type narrowing
-    * [ ] `TypeGuard`
+  * [ ] `TypeGuard`
+  * [x] type parameter syntax
+  * [x] type narrowing
   * [ ] others
 * `collections.abc`
   * [x] `Iterable`
@@ -135,6 +143,7 @@ pylyzer converts Python ASTs to Erg ASTs and passes them to Erg's type checker. 
 * [x] type assertion (`typing.cast`)
 * [x] type narrowing (`is`, `isinstance`)
 * [ ] `pyi` (stub) files support
+* [ ] glob pattern file check
 
 ---
 
