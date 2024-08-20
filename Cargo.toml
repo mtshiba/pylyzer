@@ -17,7 +17,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.0.60"
+version = "0.0.61"
 authors = ["Shunsuke Shibayama <sbym1346@gmail.com>"]
 license = "MIT OR Apache-2.0"
 edition = "2021"
@@ -46,7 +46,7 @@ backtrace = ["erg_common/backtrace", "els/backtrace", "pylyzer_core/backtrace"]
 experimental = ["erg_common/experimental", "els/experimental", "pylyzer_core/experimental"]
 
 [dependencies]
-pylyzer_core = { version = "0.0.60", path = "./crates/pylyzer_core" }
+pylyzer_core = { version = "0.0.61", path = "./crates/pylyzer_core" }
 erg_common = { workspace = true }
 els = { workspace = true }
 
