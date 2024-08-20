@@ -23,7 +23,6 @@ fn copy_dir(from: impl AsRef<Path>, to: impl AsRef<Path>) -> std::io::Result<()>
     Ok(())
 }
 
-#[allow(unused)]
 pub(crate) fn copy_dot_erg() {
     if erg_path().exists() {
         return;

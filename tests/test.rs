@@ -4,7 +4,7 @@ use erg_common::config::ErgConfig;
 use erg_common::io::Input;
 use erg_common::spawn::exec_new_thread;
 use erg_compiler::artifact::{CompleteArtifact, IncompleteArtifact};
-use pylyzer::PythonAnalyzer;
+use pylyzer_core::PythonAnalyzer;
 
 pub fn exec_analyzer(file_path: &'static str) -> Result<CompleteArtifact, IncompleteArtifact> {
     let cfg = ErgConfig {

@@ -569,6 +569,15 @@ dependencies = [
  "els",
  "erg_common",
  "erg_compiler",
+ "pylyzer_core",
+]
+
+[[package]]
+name = "pylyzer_core"
+version = "0.0.60"
+dependencies = [
+ "erg_common",
+ "erg_compiler",
  "py2erg",
  "rustpython-ast",
  "rustpython-parser",

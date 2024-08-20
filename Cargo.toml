@@ -12,6 +12,7 @@ repository.workspace = true
 [workspace]
 members = [
     "crates/py2erg",
+    "crates/pylyzer_core",
 ]
 
 [workspace.package]
@@ -37,19 +38,16 @@ rustpython-ast = { git = "https://github.com/RustPython/Parser", version = "0.4.
 # els = { path = "../erg/crates/els", features = ["py_compat"] }
 
 [features]
-debug = ["erg_compiler/debug", "erg_common/debug", "py2erg/debug"]
-large_thread = ["erg_compiler/large_thread", "erg_common/large_thread", "els/large_thread"]
-pretty = ["erg_compiler/pretty", "erg_common/pretty"]
-backtrace = ["erg_common/backtrace"]
-experimental = ["els/experimental", "erg_compiler/experimental", "erg_common/experimental"]
+debug = ["erg_common/debug", "pylyzer_core/debug"]
+large_thread = ["erg_common/large_thread", "els/large_thread", "pylyzer_core/large_thread"]
+pretty = ["erg_common/pretty", "pylyzer_core/pretty"]
+backtrace = ["erg_common/backtrace", "els/backtrace", "pylyzer_core/backtrace"]
+experimental = ["erg_common/experimental", "els/experimental", "pylyzer_core/experimental"]
 
 [dependencies]
-erg_compiler = { workspace = true }
+pylyzer_core = { version = "0.0.60", path = "./crates/pylyzer_core" }
 erg_common = { workspace = true }
 els = { workspace = true }
-rustpython-parser = { workspace = true }
-rustpython-ast = { workspace = true }
-py2erg = { version = "0.0.60", path = "./crates/py2erg" }
 
-[lib]
-path = "src/lib.rs"
+[dev-dependencies]
+erg_compiler = { workspace = true }

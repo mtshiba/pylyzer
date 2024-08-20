@@ -1,12 +1,10 @@
-mod analyze;
 mod config;
 mod copy;
-mod handle_err;
 
-use analyze::{PythonAnalyzer, SimplePythonParser};
 use els::Server;
 use erg_common::config::ErgMode;
 use erg_common::spawn::exec_new_thread;
+use pylyzer_core::{PythonAnalyzer, SimplePythonParser};
 
 use crate::copy::copy_dot_erg;
 

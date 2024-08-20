@@ -3,6 +3,9 @@ if [[ "$PWD" == */pylyzer ]]; then
         cd crates/py2erg
         echo "publish py2erg ..."
         cargo publish
+        cd ../pylyzer_core
+        echo "publish pylyzer_core ..."
+        cargo publish
         cd ../../
         cargo publish
         if [ "$1" = "--cargo-only" ]; then
