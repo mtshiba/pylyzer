@@ -693,9 +693,9 @@
 <p>You can install the VSCode extension from the <a href="https://marketplace.visualstudio.com/items?itemName=pylyzer.pylyzer">Marketplace</a> or from the command line:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>code<span class="w"> </span>--install-extension<span class="w"> </span>pylyzer.pylyzer
 </code></pre></div>
-<h2 id="what-is-the-difference-from-ruff">What is the difference from <a href="https://github.com/charliermarsh/ruff">Ruff</a>?<a class="headerlink" href="#what-is-the-difference-from-ruff" title="Permanent link">#</a></h2>
-<p><a href="https://github.com/charliermarsh/ruff">Ruff</a>, like pylyzer, is a static code analysis tool for Python written in Rust, but Ruff is a linter and pylyzer is a type checker &amp; language server.
-pylyzer does not perform linting, and Ruff does not perform type checking.</p>
+<h2 id="what-is-the-difference-from-ruff">What is the difference from <a href="https://github.com/astral-sh/ruff">Ruff</a>?<a class="headerlink" href="#what-is-the-difference-from-ruff" title="Permanent link">#</a></h2>
+<p><a href="https://github.com/astral-sh/ruff">Ruff</a>, like pylyzer, is a static code analysis tool for Python written in Rust, but Ruff is a linter and pylyzer is a type checker &amp; language server.
+pylyzer does not perform linting &amp; formatting, and Ruff does not perform type checking.</p>
 <h2 id="how-it-works">How it works<a class="headerlink" href="#how-it-works" title="Permanent link">#</a></h2>
 <p>pylyzer uses the type checker of <a href="https://erg-lang.org">the Erg programming language</a> internally.
 This language is a transpiled language that targets Python, and has a static type system.</p>
@@ -714,20 +714,24 @@ This language is a transpiled language that targets Python, and has a static typ
 </ul>
 <h2 id="todos">TODOs<a class="headerlink" href="#todos" title="Permanent link">#</a></h2>
 <ul class="task-list">
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> type checking</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> type checking<ul class="task-list">
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> variable</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> operator</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> function/method</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> class</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> type inference</li>
+</ul>
+</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> type inference<ul class="task-list">
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> variable</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> operator</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> function/method</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> class</li>
+</ul>
+</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> builtin modules analysis</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> local scripts analysis</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> local packages analysis</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> LSP features</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> LSP features<ul class="task-list">
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> diagnostics</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> completion</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> rename</li>
@@ -737,11 +741,16 @@ This language is a transpiled language that targets Python, and has a static typ
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> find references</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> document symbol</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> call hierarchy</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> collection types</li>
+</ul>
+</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> collection types<ul class="task-list">
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <code>list</code></li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <code>dict</code></li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <code>tuple</code></li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <code>typing</code></li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <code>set</code></li>
+</ul>
+</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <code>typing</code><ul class="task-list">
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <code>Union</code></li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <code>Optional</code></li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <code>Literal</code></li>
@@ -757,12 +766,16 @@ This language is a transpiled language that targets Python, and has a static typ
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> type parameter syntax</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> type narrowing</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> others</li>
-<li><code>collections.abc</code></li>
+</ul>
+</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <code>collections.abc</code><ul class="task-list">
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <code>Iterable</code></li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <code>Iterator</code></li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <code>Mapping</code></li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <code>Sequence</code></li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> others</li>
+</ul>
+</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> type assertion (<code>typing.cast</code>)</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> type narrowing (<code>is</code>, <code>isinstance</code>)</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <code>pyi</code> (stub) files support</li>
@@ -771,8 +784,10 @@ This language is a transpiled language that targets Python, and has a static typ
 <h2 id="join-us">Join us!<a class="headerlink" href="#join-us" title="Permanent link">#</a></h2>
 <p>We are looking for contributors to help us improve pylyzer. If you are interested in contributing and have any questions, please feel free to contact us.</p>
 <ul>
-<li><a href="https://discord.gg/kQBuaSUS46">Discord (Erg language)</a></li>
+<li><a href="https://discord.gg/kQBuaSUS46">Discord (Erg language)</a><ul>
 <li><a href="https://discord.com/channels/1006946336433774742/1056815981168697354">#pylyzer</a></li>
+</ul>
+</li>
 <li><a href="https://github.com/mtshiba/pylyzer/discussions">GitHub discussions</a></li>
 </ul>
 <hr />
