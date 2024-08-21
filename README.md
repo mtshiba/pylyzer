@@ -16,7 +16,7 @@
 pip install pylyzer
 ```
 
-### cargo (rust package manager)
+### cargo (Rust package manager)
 
 ```bash
 cargo install pylyzer --locked
@@ -29,7 +29,7 @@ git clone https://github.com/mtshiba/pylyzer.git
 cargo install --path . --locked
 ```
 
-Make sure that `cargo/rustc` is up-to-date, as pylyzer may be written with the latest language features.
+Make sure that `cargo`/`rustc` is up-to-date, as pylyzer may be written with the latest (stable) language features.
 
 ### [GitHub Releases](https://github.com/mtshiba/pylyzer/releases/latest)
 
@@ -69,10 +69,10 @@ You can install the VSCode extension from the [Marketplace](https://marketplace.
 code --install-extension pylyzer.pylyzer
 ```
 
-## What is the difference from [Ruff](https://github.com/charliermarsh/ruff)?
+## What is the difference from [Ruff](https://github.com/astral-sh/ruff)?
 
-[Ruff](https://github.com/charliermarsh/ruff), like pylyzer, is a static code analysis tool for Python written in Rust, but Ruff is a linter and pylyzer is a type checker & language server.
-pylyzer does not perform linting, and Ruff does not perform type checking.
+[Ruff](https://github.com/astral-sh/ruff), like pylyzer, is a static code analysis tool for Python written in Rust, but Ruff is a linter and pylyzer is a type checker & language server.
+pylyzer does not perform linting & formatting, and Ruff does not perform type checking.
 
 ## How it works
 
@@ -92,58 +92,67 @@ pylyzer converts Python ASTs to Erg ASTs and passes them to Erg's type checker. 
 ## TODOs
 
 * [x] type checking
-  * [x] variable
-  * [x] operator
-  * [x] function/method
-  * [x] class
+    * [x] variable
+    * [x] operator
+    * [x] function/method
+    * [x] class
 * [x] type inference
-  * [x] variable
-  * [x] operator
-  * [x] function/method
-  * [x] class
+    * [x] variable
+    * [x] operator
+    * [x] function/method
+    * [x] class
 * [x] builtin modules analysis
 * [x] local scripts analysis
 * [x] local packages analysis
 * [x] LSP features
-  * [x] diagnostics
-  * [x] completion
-  * [x] rename
-  * [x] hover
-  * [x] goto definition
-  * [x] signature help
-  * [x] find references
-  * [x] document symbol
-  * [x] call hierarchy
+    * [x] diagnostics
+    * [x] completion
+    * [x] rename
+    * [x] hover
+    * [x] goto definition
+    * [x] signature help
+    * [x] find references
+    * [x] document symbol
+    * [x] call hierarchy
 * [x] collection types
-  * [x] `list`
-  * [x] `dict`
-  * [x] `tuple`
+    * [x] `list`
+    * [x] `dict`
+    * [x] `tuple`
+    * [x] `set`
 * [ ] `typing`
-  * [x] `Union`
-  * [x] `Optional`
-  * [x] `Literal`
-  * [x] `Callable`
-  * [ ] `TypedDict`
-  * [x] `TypeVar`
-  * [ ] `Generic`
-  * [ ] `Protocol`
-  * [ ] `Final`
-  * [ ] `Annotated`
-  * [ ] `TypeAlias`
-  * [ ] `TypeGuard`
-  * [x] type parameter syntax
-  * [x] type narrowing
-  * [ ] others
-* `collections.abc`
-  * [x] `Iterable`
-  * [x] `Iterator`
-  * [x] `Mapping`
-  * [x] `Sequence`
-  * [ ] others
+    * [x] `Union`
+    * [x] `Optional`
+    * [x] `Literal`
+    * [x] `Callable`
+    * [ ] `TypedDict`
+    * [x] `TypeVar`
+    * [ ] `Generic`
+    * [ ] `Protocol`
+    * [ ] `Final`
+    * [ ] `Annotated`
+    * [ ] `TypeAlias`
+    * [ ] `TypeGuard`
+    * [x] type parameter syntax
+    * [x] type narrowing
+    * [ ] others
+* [ ] `collections.abc`
+    * [x] `Iterable`
+    * [x] `Iterator`
+    * [x] `Mapping`
+    * [x] `Sequence`
+    * [ ] others
 * [x] type assertion (`typing.cast`)
 * [x] type narrowing (`is`, `isinstance`)
 * [ ] `pyi` (stub) files support
 * [ ] glob pattern file check
+
+## Join us!
+
+We are looking for contributors to help us improve pylyzer. If you are interested in contributing and have any questions, please feel free to contact us.
+
+* [Discord (Erg language)](https://discord.gg/kQBuaSUS46)
+    * [#pylyzer](https://discord.com/channels/1006946336433774742/1056815981168697354)
+* [GitHub discussions](https://github.com/mtshiba/pylyzer/discussions)
 
 ---
 
