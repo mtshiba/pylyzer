@@ -1500,12 +1500,7 @@ impl ASTConverter {
                                     .find(|&param| param.inspect() == Some(attr.ident.inspect()))
                                     .and_then(|param| param.sig.t_spec.as_ref())
                             }) {
-                            let typ_name = t_spec_op.t_spec.to_string().replace('.', "");
-                            Expr::from(Accessor::Ident(Identifier::public_with_line(
-                                DOT,
-                                typ_name.into(),
-                                attr.obj.ln_begin().unwrap_or(0),
-                            )))
+                            *t_spec_op.t_spec_as_expr.clone()
                         } else if let Some(typ) = redef.t_spec.map(|t_spec| t_spec.t_spec_as_expr) {
                             *typ
                         } else {
