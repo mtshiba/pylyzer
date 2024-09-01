@@ -26,3 +26,20 @@ $ pylyzer -c "print('hello world')"
 Start checking: string
 All checks OK: string
 ```
+
+## --disable
+
+Disable a default LSP feature.
+Default (disableable) features are:
+
+* codeAction
+* codeLens
+* completion
+* diagnostics
+* findReferences
+* gotoDefinition
+* hover
+* inlayHint
+* rename
+* semanticTokens
+* signatureHelp

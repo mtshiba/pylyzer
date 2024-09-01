@@ -145,9 +145,9 @@ checksum = "60b1af1c220855b6ceac025d3f6ecdd2b7c4894bfe9cd9bda4fbb4bc7c0d4cf0"
 
 [[package]]
 name = "els"
-version = "0.1.54-nightly.5"
+version = "0.1.55-nightly.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bdc6282121d9e2871553e0731cfb88119cbfe76ce8aab08ac2be01f5644e3bee"
+checksum = "53cd4fb020c2357f6710be6e23a9a6b62fbf43c91ad2121d20f1afd0cde82a40"
 dependencies = [
  "erg_common",
  "erg_compiler",
@@ -159,9 +159,9 @@ dependencies = [
 
 [[package]]
 name = "erg_common"
-version = "0.6.42-nightly.5"
+version = "0.6.43-nightly.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c0dfc622cc65f230a05a284a21f62c8f4a3c964c51c97881cc4e01202ef2a3c0"
+checksum = "2a59a52380300a8cd0e73c400d6568b80ccced5a55076c1e28fa2f28fda980d0"
 dependencies = [
  "backtrace-on-stack-overflow",
  "erg_proc_macros",
@@ -171,9 +171,9 @@ dependencies = [
 
 [[package]]
 name = "erg_compiler"
-version = "0.6.42-nightly.5"
+version = "0.6.43-nightly.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "42247c4ab1eb33ed3e2e9e74f4773565eba4491f76bfbda4b965015938704ca1"
+checksum = "98ba16deaf1fe89b180453da6fe28471869502ffd289ef8996ef935f6151ef63"
 dependencies = [
  "erg_common",
  "erg_parser",
@@ -181,9 +181,9 @@ dependencies = [
 
 [[package]]
 name = "erg_parser"
-version = "0.6.42-nightly.5"
+version = "0.6.43-nightly.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6c921c178517c2071e45418e8c5b35e0c3a19021e4459283fd8f6997b89ba216"
+checksum = "f42d83ee9069552150616e49fa5fa7ea08da8aebee7837b843161ce484d42adc"
 dependencies = [
  "erg_common",
  "erg_proc_macros",
@@ -192,9 +192,9 @@ dependencies = [
 
 [[package]]
 name = "erg_proc_macros"
-version = "0.6.42-nightly.5"
+version = "0.6.43-nightly.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c1381ca7a7a0781834cb1d617cd8361cca23f880cb9c515d249905d585832734"
+checksum = "b8c49d659d539d72b99227ea870f0c1f5b30fb5c7cbc944931363f4dd4b26028"
 dependencies = [
  "quote",
  "syn 1.0.109",
