@@ -21,7 +21,9 @@ OPTIONS
     --version/-V                         バージョンを表示
     --verbose 0|1|2                      冗長性レベルを指定
     --server                             Language Serverを起動
-    --code/-c cmd                        文字列をプログラムに渡す",
+    --code/-c cmd                        文字列をプログラムに渡す
+    --dump-decl                          型宣言ファイルを出力
+    --disable                            指定した機能を無効化",
 
     "simplified_chinese" =>
     "\
@@ -36,7 +38,9 @@ OPTIONS
     --version/-V                         显示版本
     --verbose 0|1|2                      指定细致程度
     --server                             启动 Language Server
-    --code/-c cmd                        作为字符串传入程序",
+    --code/-c cmd                        作为字符串传入程序
+    --dump-decl                          输出类型声明文件
+    --disable                            禁用指定功能",
 
     "traditional_chinese" =>
         "\
@@ -51,7 +55,9 @@ OPTIONS
     --version/-V                         顯示版本
     --verbose 0|1|2                      指定細緻程度
     --server                             啟動 Language Server
-    --code/-c cmd                        作為字串傳入程式",
+    --code/-c cmd                        作為字串傳入程式
+    --dump-decl                          輸出類型宣告檔案
+    --disable                            禁用指定功能",
 
     "english" =>
         "\
@@ -66,7 +72,9 @@ OPTIONS
     --version/-V                         show version
     --verbose 0|1|2                      verbosity level
     --server                             start the Language Server
-    --code/-c cmd                        program passed in as string",
+    --code/-c cmd                        program passed in as string
+    --dump-decl                          output type declaration file
+    --disable                            disable specified features",
     )
 }
 
@@ -108,6 +116,10 @@ pub(crate) fn parse_args() -> ErgConfig {
                     .expect("the value of `--verbose` is not passed")
                     .parse::<u8>()
                     .expect("the value of `--verbose` is not a number");
+            }
+            "--disable" => {
+                let arg = args.next().expect("the value of `--disable` is not passed");
+                runtime_args.push(Box::leak(arg.into_boxed_str()));
             }
             "-V" | "--version" => {
                 println!("pylyzer {}", env!("CARGO_PKG_VERSION"));
