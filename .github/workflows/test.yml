@@ -40,12 +40,11 @@ jobs:
       run: |
         rustup update stable
         cargo install --path .
-    # TODO:
-    # - name: boto3
-    #   continue-on-error: true
-    #   run: |
-    #     pip3 install boto3
-    #     pylyzer -c "import boto3"
+    - name: boto3
+      continue-on-error: true
+      run: |
+        pip3 install boto3
+        pylyzer -c "import boto3" || true
     - name: urllib3
       run: |
         pip3 install urllib3
@@ -54,11 +53,10 @@ jobs:
       run: |
         pip3 install setuptools
         pylyzer -c "import setuptools" || true
-    # TODO:
-    # - name: requests
-    #   run: |
-    #     pip3 install requests
-    #     pylyzer -c "import requests" || true
+    - name: requests
+      run: |
+        pip3 install requests
+        pylyzer -c "import requests" || true
     - name: certifi
       run: |
         pip3 install certifi
