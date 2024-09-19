@@ -145,6 +145,7 @@ pylyzer converts Python ASTs to Erg ASTs and passes them to Erg's type checker. 
 * [x] type narrowing (`is`, `isinstance`)
 * [ ] `pyi` (stub) files support
 * [ ] glob pattern file check
+* [ ] `# type: ignore` directive
 
 ## Join us!
 

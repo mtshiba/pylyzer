@@ -24,9 +24,9 @@ edition = "2021"
 repository = "https://github.com/mtshiba/pylyzer"
 
 [workspace.dependencies]
-erg_common = { version = "0.6.43-nightly.3", features = ["py_compat", "els"] }
-erg_compiler = { version = "0.6.43-nightly.3", features = ["py_compat", "els"] }
-els = { version = "0.1.55-nightly.3", features = ["py_compat"] }
+erg_common = { version = "0.6.45-nightly.0", features = ["py_compat", "els"] }
+erg_compiler = { version = "0.6.45-nightly.0", features = ["py_compat", "els"] }
+els = { version = "0.1.57-nightly.0", features = ["py_compat"] }
 # rustpython-parser = { version = "0.3.0", features = ["all-nodes-with-ranges", "location"] }
 # rustpython-ast = { version = "0.3.0", features = ["all-nodes-with-ranges", "location"] }
 rustpython-parser = { git = "https://github.com/RustPython/Parser", version = "0.4.0", features = ["all-nodes-with-ranges", "location"] }
@@ -43,7 +43,8 @@ debug = ["erg_common/debug", "pylyzer_core/debug"]
 large_thread = ["erg_common/large_thread", "els/large_thread", "pylyzer_core/large_thread"]
 pretty = ["erg_common/pretty", "pylyzer_core/pretty"]
 backtrace = ["erg_common/backtrace", "els/backtrace", "pylyzer_core/backtrace"]
-experimental = ["erg_common/experimental", "els/experimental", "pylyzer_core/experimental"]
+experimental = ["erg_common/experimental", "els/experimental", "pylyzer_core/experimental", "parallel"]
+parallel = ["erg_common/parallel", "pylyzer_core/parallel"]
 
 [dependencies]
 pylyzer_core = { version = "0.0.61", path = "./crates/pylyzer_core" }

@@ -119,7 +119,7 @@ fn exec_narrowing() -> Result<(), String> {
 
 #[test]
 fn exec_casting() -> Result<(), String> {
-    expect("tests/casting.py", 1, 1)
+    expect("tests/casting.py", 4, 1)
 }
 
 #[test]
