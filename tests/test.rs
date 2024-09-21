@@ -113,6 +113,11 @@ fn exec_list() -> Result<(), String> {
 }
 
 #[test]
+fn exec_literal() -> Result<(), String> {
+    expect("tests/literal.py", 0, 2)
+}
+
+#[test]
 fn exec_narrowing() -> Result<(), String> {
     expect("tests/narrowing.py", 0, 1)
 }

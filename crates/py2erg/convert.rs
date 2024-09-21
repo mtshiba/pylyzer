@@ -1406,6 +1406,46 @@ impl ASTConverter {
                 let slice = self.convert_ident("slice".to_string(), loc);
                 slice.call(args).into()
             }
+            py_ast::Expr::JoinedStr(string) => {
+                if string.values.is_empty() {
+                    let loc = string.location();
+                    let stringify = self.convert_ident("str".to_string(), loc);
+                    return stringify.call(Args::empty()).into();
+                } else if string.values.len() == 1 {
+                    let loc = string.location();
+                    let mut values = string.values;
+                    let expr = self.convert_expr(values.remove(0));
+                    let stringify = self.convert_ident("str".to_string(), loc);
+                    return stringify.call1(expr).into();
+                }
+                let mut values = vec![];
+                for value in string.values {
+                    match value {
+                        py_ast::Expr::Constant(cons) => {
+                            let cons = self.convert_const(cons);
+                            values.push(cons);
+                        }
+                        py_ast::Expr::FormattedValue(form) => {
+                            let loc = form.location();
+                            let expr = self.convert_expr(*form.value);
+                            let stringify = self.convert_ident("str".to_string(), loc);
+                            values.push(stringify.call1(expr).into());
+                        }
+                        _ => {}
+                    }
+                }
+                let fst = values.remove(0);
+                values.into_iter().fold(fst, |acc, expr| {
+                    let plus = Token::dummy(TokenKind::Plus, "+");
+                    Expr::BinOp(BinOp::new(plus, acc, expr))
+                })
+            }
+            py_ast::Expr::FormattedValue(form) => {
+                let loc = form.location();
+                let expr = self.convert_expr(*form.value);
+                let stringify = self.convert_ident("str".to_string(), loc);
+                stringify.call1(expr).into()
+            }
             _other => {
                 log!(err "unimplemented: {:?}", _other);
                 Expr::Dummy(Dummy::new(None, vec![]))
@@ -1890,6 +1930,7 @@ impl ASTConverter {
     fn convert_statement(&mut self, stmt: Stmt, dont_call_return: bool) -> Expr {
         match stmt {
             py_ast::Stmt::Expr(stmt) => self.convert_expr(*stmt.value),
+            // type-annotated assignment
             py_ast::Stmt::AnnAssign(ann_assign) => {
                 let anot = self.convert_expr(*ann_assign.annotation.clone());
                 let t_spec = self.convert_type_spec(*ann_assign.annotation);
