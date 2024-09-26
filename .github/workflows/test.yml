@@ -69,3 +69,31 @@ jobs:
       run: |
         pip3 install idna
         pylyzer -c "import idna" || true
+    - name: typing-extensions
+      run: |
+        pip3 install typing-extensions
+        pylyzer -c "import typing_extensions" || true
+    - name: python-dateutil
+      run: |
+        pip3 install python-dateutil
+        pylyzer -c "import dateutil" || true
+    - name: packaging
+      run: |
+        pip3 install packaging
+        pylyzer -c "import packaging" || true
+    - name: six
+      run: |
+        pip3 install six
+        pylyzer -c "import six" || true
+    - name: s3transfer
+      run: |
+        pip3 install s3transfer
+        pylyzer -c "import s3transfer" || true
+    - name: pyyaml
+      run: |
+        pip3 install pyyaml
+        pylyzer -c "import yaml" || true
+    - name: cryptography
+      run: |
+        pip3 install cryptography
+        pylyzer -c "import cryptography" || true

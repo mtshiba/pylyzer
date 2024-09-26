@@ -409,7 +409,7 @@ impl ASTConverter {
                 name_info.defined_in = DefinedPlace::Known(cur_namespace);
                 name_info.defined_times += 1; // 0 -> 1
             }
-            if name_info.defined_block_id == cur_block_id {
+            if name_info.defined_block_id == cur_block_id || name_info.defined_times == 0 {
                 CanShadow::Yes
             } else {
                 CanShadow::No
@@ -1388,6 +1388,10 @@ impl ASTConverter {
                 );
                 method.call1(self.convert_expr(*subs.slice))
             }
+            // [start:] == [slice(start, None)]
+            // [:stop] == [slice(stop)]
+            // [start:stop] == [slice(start, stop)]
+            // [start:stop:step] == [slice(start, stop, step)]
             py_ast::Expr::Slice(slice) => {
                 let loc = slice.location();
                 let start = slice.lower.map(|ex| self.convert_expr(*ex));

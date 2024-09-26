@@ -9,6 +9,8 @@ use pylyzer_core::PythonAnalyzer;
 pub fn exec_analyzer(file_path: &'static str) -> Result<CompleteArtifact, IncompleteArtifact> {
     let cfg = ErgConfig {
         input: Input::file(PathBuf::from(file_path)),
+        effect_check: false,
+        ownership_check: false,
         ..Default::default()
     };
     let mut analyzer = PythonAnalyzer::new(cfg);
@@ -21,6 +23,7 @@ fn _expect(file_path: &'static str, warns: usize, errors: usize) -> Result<(), S
     match exec_analyzer(file_path) {
         Ok(artifact) => {
             if artifact.warns.len() != warns {
+                eprintln!("warns: {}", artifact.warns);
                 return Err(format!(
                     "Expected {warns} warnings, found {}",
                     artifact.warns.len()
@@ -33,12 +36,14 @@ fn _expect(file_path: &'static str, warns: usize, errors: usize) -> Result<(), S
         }
         Err(artifact) => {
             if artifact.warns.len() != warns {
+                eprintln!("warns: {}", artifact.warns);
                 return Err(format!(
                     "Expected {warns} warnings, found {}",
                     artifact.warns.len()
                 ));
             }
             if artifact.errors.len() != errors {
+                eprintln!("errors: {}", artifact.errors);
                 return Err(format!(
                     "Expected {errors} errors, found {}",
                     artifact.errors.len()
@@ -135,6 +140,11 @@ fn exec_collection() -> Result<(), String> {
 #[test]
 fn exec_call() -> Result<(), String> {
     expect("tests/call.py", 0, 6)
+}
+
+#[test]
+fn exec_decl() -> Result<(), String> {
+    expect("tests/decl.py", 0, 1)
 }
 
 #[test]
