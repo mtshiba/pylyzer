@@ -9,7 +9,7 @@ union_arr.append(1)
 union_arr.append("a") # OK
 union_arr.append(None) # ERR
 
-dic = {"a": 1}
+dic: dict[Literal["a", "b"], int] = {"a": 1}
 dic["b"] = 2
 _ = dic["a"]
 _ = dic["b"]

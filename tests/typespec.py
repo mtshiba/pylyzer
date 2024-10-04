@@ -9,6 +9,19 @@ o: Optional[int] = None # OK
 p: Optional[int] = "a" # ERR
 weekdays: Literal[1, 2, 3, 4, 5, 6, 7] = 1 # OK
 weekdays: Literal[1, 2, 3, 4, 5, 6, 7] = 8 # ERR
+_: dict[str, dict[str, Union[int, str]]] = {"a": {"b": 1}}
+_: dict[str, dict[str, list[int]]] = {"a": {"b": [1]}}
+_: dict[str, dict[str, dict[str, int]]] = {"a": {"b": {"c": 1}}}
+_: dict[str, dict[str, Optional[int]]] = {"a": {"b": 1}}
+_: dict[str, dict[str, Literal[1, 2]]] = {"a": {"b": 1}}
+_: dict[str, dict[str, Callable[[int], int]]] = {"a": {"b": abs}}
+_: dict[str, dict[str, Callable[[int], None]]] = {"a": {"b": print}}
+_: dict[str, dict[str, Opional[int]]] = {"a": {"b": 1}} # ERR
+_: dict[str, dict[str, Union[int, str]]] = {"a": {"b": None}} # ERR
+_: dict[str, dict[str, list[int]]] = {"a": {"b": ["c"]}} # ERR
+_: dict[str, dict[str, Callable[[int], int]]] = {"a": {"b": print}} # ERR
+_: dict[str, dict[str, Optional[int]]] = {"a": {"b": "c"}} # ERR
+_: dict[str, dict[str, Literal[1, 2]]] = {"a": {"b": 3}} # ERR
 
 def f(x: Union[int, str]) -> None:
     pass

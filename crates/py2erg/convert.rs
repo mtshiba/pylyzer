@@ -9,15 +9,16 @@ use erg_common::traits::{Locational, Stream};
 use erg_common::{fmt_vec, log, set};
 use erg_compiler::artifact::IncompleteArtifact;
 use erg_compiler::erg_parser::ast::{
-    Accessor, Args, BinOp, Block, ClassAttr, ClassAttrs, ClassDef, ConstAccessor, ConstArgs,
-    ConstAttribute, ConstDict, ConstExpr, ConstKeyValue, ConstPosArg, Decorator, Def, DefBody,
-    DefId, DefaultParamSignature, Dict, Dummy, Expr, Identifier, KeyValue, KwArg, Lambda,
-    LambdaSignature, List, ListComprehension, Literal, Methods, Module, NonDefaultParamSignature,
-    NormalDict, NormalList, NormalRecord, NormalSet, NormalTuple, ParamPattern, ParamTySpec,
-    Params, PosArg, PreDeclTypeSpec, ReDef, Record, RecordAttrs, Set, SetComprehension, Signature,
-    SubrSignature, SubrTypeSpec, Tuple, TupleTypeSpec, TypeAscription, TypeBoundSpec,
-    TypeBoundSpecs, TypeSpec, TypeSpecWithOp, UnaryOp, VarName, VarPattern, VarRecordAttr,
-    VarRecordAttrs, VarRecordPattern, VarSignature, VisModifierSpec,
+    Accessor, Args, BinOp, Block, ClassAttr, ClassAttrs, ClassDef, ConstAccessor, ConstApp,
+    ConstArgs, ConstAttribute, ConstBinOp, ConstBlock, ConstDict, ConstExpr, ConstKeyValue,
+    ConstLambda, ConstList, ConstListWithLength, ConstNormalSet, ConstPosArg, ConstSet, Decorator,
+    Def, DefBody, DefId, DefaultParamSignature, Dict, Dummy, Expr, Identifier, KeyValue, KwArg,
+    Lambda, LambdaSignature, List, ListComprehension, Literal, Methods, Module,
+    NonDefaultParamSignature, NormalDict, NormalList, NormalRecord, NormalSet, NormalTuple,
+    ParamPattern, ParamTySpec, Params, PosArg, PreDeclTypeSpec, ReDef, Record, RecordAttrs, Set,
+    SetComprehension, Signature, SubrSignature, SubrTypeSpec, Tuple, TupleTypeSpec, TypeAscription,
+    TypeBoundSpec, TypeBoundSpecs, TypeSpec, TypeSpecWithOp, UnaryOp, VarName, VarPattern,
+    VarRecordAttr, VarRecordAttrs, VarRecordPattern, VarSignature, VisModifierSpec,
 };
 use erg_compiler::erg_parser::desugar::Desugarer;
 use erg_compiler::erg_parser::token::{Token, TokenKind, COLON, DOT, EQUAL};
@@ -693,6 +694,152 @@ impl ASTConverter {
         ))
     }
 
+    #[allow(clippy::only_used_in_recursion)]
+    fn convert_const_expr(&self, expr: ConstExpr) -> ConstExpr {
+        match expr {
+            ConstExpr::UnaryOp(un) if un.op.is(TokenKind::Mutate) => *un.expr,
+            ConstExpr::App(app)
+                if app
+                    .attr_name
+                    .as_ref()
+                    .is_some_and(|n| n.inspect() == "__getitem__") =>
+            {
+                let obj = self.convert_const_expr(*app.obj);
+                let mut args = app.args.map(&mut |arg| self.convert_const_expr(arg));
+                if args.pos_args.is_empty() {
+                    return ConstExpr::App(ConstApp::new(obj, app.attr_name, args));
+                }
+                let mut args = match args.pos_args.remove(0).expr {
+                    ConstExpr::Tuple(tuple) => tuple.elems,
+                    other => {
+                        args.pos_args.insert(0, ConstPosArg::new(other));
+                        args
+                    }
+                };
+                match obj.local_name() {
+                    Some("Union") => {
+                        if args.pos_args.len() >= 2 {
+                            let first = args.pos_args.remove(0).expr;
+                            let or_op = Token::dummy(TokenKind::OrOp, "or");
+                            args.pos_args.into_iter().fold(first, |acc, expr| {
+                                ConstExpr::BinOp(ConstBinOp::new(or_op.clone(), acc, expr.expr))
+                            })
+                        } else if args.pos_args.len() == 1 {
+                            args.pos_args.remove(0).expr
+                        } else {
+                            ConstExpr::App(ConstApp::new(obj, app.attr_name, args))
+                        }
+                    }
+                    Some("GenericDict") => {
+                        if args.pos_args.len() == 2 {
+                            let key = args.pos_args.remove(0).expr;
+                            let value = args.pos_args.remove(0).expr;
+                            let key_value = ConstKeyValue::new(key, value);
+                            ConstExpr::Dict(ConstDict::new(
+                                Token::DUMMY,
+                                Token::DUMMY,
+                                vec![key_value],
+                            ))
+                        } else {
+                            ConstExpr::App(ConstApp::new(obj, app.attr_name, args))
+                        }
+                    }
+                    Some("GenericList") => {
+                        if args.pos_args.len() == 2 {
+                            let elem = args.pos_args.remove(0).expr;
+                            let len = args.pos_args.remove(0).expr;
+                            let l_brace = Token::dummy(TokenKind::LSqBr, "[");
+                            let r_brace = Token::dummy(TokenKind::RSqBr, "]");
+                            ConstExpr::List(ConstList::WithLength(ConstListWithLength::new(
+                                l_brace, r_brace, elem, len,
+                            )))
+                        } else {
+                            let obj = ConstExpr::Accessor(ConstAccessor::Local(
+                                Identifier::private("List".into()),
+                            ));
+                            ConstExpr::App(ConstApp::new(obj, None, args))
+                        }
+                    }
+                    Some("Optional") => {
+                        let arg = args.pos_args.remove(0).expr;
+                        let none = ConstExpr::Accessor(ConstAccessor::Local(Identifier::private(
+                            "NoneType".into(),
+                        )));
+                        let or_op = Token::dummy(TokenKind::OrOp, "or");
+                        ConstExpr::BinOp(ConstBinOp::new(or_op, arg, none))
+                    }
+                    Some("Literal") => {
+                        let set = ConstNormalSet::new(Token::DUMMY, Token::DUMMY, args);
+                        ConstExpr::Set(ConstSet::Normal(set))
+                    }
+                    Some("Callable") => {
+                        let params = match args.pos_args.remove(0).expr {
+                            ConstExpr::List(ConstList::Normal(list)) => list.elems,
+                            other => {
+                                args.pos_args.insert(0, ConstPosArg::new(other));
+                                args.clone()
+                            }
+                        };
+                        let non_defaults = params
+                            .pos_args
+                            .into_iter()
+                            .map(|param| {
+                                let expr = match param.expr.downgrade() {
+                                    Expr::Literal(lit) if lit.is(TokenKind::NoneLit) => {
+                                        Expr::Accessor(Accessor::Ident(Identifier::private(
+                                            "NoneType".into(),
+                                        )))
+                                    }
+                                    other => other,
+                                };
+                                let ty = Parser::expr_to_type_spec(expr.clone())
+                                    .unwrap_or(TypeSpec::mono(Identifier::private("Any".into())));
+                                let discard = Token::dummy(TokenKind::UBar, "_");
+                                let t_spec = TypeSpecWithOp::new(
+                                    Token::dummy(TokenKind::Colon, ":"),
+                                    ty,
+                                    expr,
+                                );
+                                NonDefaultParamSignature::new(
+                                    ParamPattern::Discard(discard),
+                                    Some(t_spec),
+                                )
+                            })
+                            .collect();
+                        let params = Params::new(non_defaults, None, vec![], None, None);
+                        let ret = match args.pos_args.remove(0).expr {
+                            ConstExpr::Lit(lit) if lit.is(TokenKind::NoneLit) => {
+                                ConstExpr::Accessor(ConstAccessor::Local(Identifier::private(
+                                    "NoneType".into(),
+                                )))
+                            }
+                            other => other,
+                        };
+                        let op = Token::dummy(TokenKind::ProcArrow, "=>");
+                        let body = ConstBlock::new(vec![ret]);
+                        let sig = LambdaSignature::new(params, None, TypeBoundSpecs::empty());
+                        ConstExpr::Lambda(ConstLambda::new(sig, op, body, DefId(0)))
+                    }
+                    _ => ConstExpr::App(ConstApp::new(obj, app.attr_name, args)),
+                }
+            }
+            _ => expr.map(&mut |expr| self.convert_const_expr(expr)),
+        }
+    }
+
+    fn convert_expr_to_const(&mut self, expr: py_ast::Expr) -> Option<ConstExpr> {
+        let expr = self.convert_expr(expr);
+        match Parser::validate_const_expr(expr) {
+            Ok(expr) => Some(self.convert_const_expr(expr)),
+            Err(err) => {
+                let err =
+                    CompileError::new(err.into(), self.cfg.input.clone(), self.cur_namespace());
+                self.errs.push(err);
+                None
+            }
+        }
+    }
+
     // TODO:
     fn convert_compound_type_spec(&mut self, name: String, args: py_ast::Expr) -> TypeSpec {
         match &name[..] {
@@ -731,19 +878,8 @@ impl ASTConverter {
                 };
                 let mut elems = vec![];
                 for elem in tuple.elts {
-                    let expr = self.convert_expr(elem);
-                    match Parser::validate_const_expr(expr) {
-                        Ok(expr) => {
-                            elems.push(ConstPosArg::new(expr));
-                        }
-                        Err(err) => {
-                            let err = CompileError::new(
-                                err.into(),
-                                self.cfg.input.clone(),
-                                self.cur_namespace(),
-                            );
-                            self.errs.push(err);
-                        }
+                    if let Some(expr) = self.convert_expr_to_const(elem) {
+                        elems.push(ConstPosArg::new(expr));
                     }
                 }
                 let elems = ConstArgs::new(elems, None, vec![], None, None);
@@ -789,16 +925,9 @@ impl ASTConverter {
             }
             "Iterable" | "Iterator" | "Collection" | "Container" | "Sequence"
             | "MutableSequence" => {
-                let elem_t = self.convert_expr(args);
-                let elem_t = match Parser::validate_const_expr(elem_t) {
-                    Ok(elem_t) => elem_t,
-                    Err(err) => {
-                        let err = CompileError::new(
-                            err.into(),
-                            self.cfg.input.clone(),
-                            self.cur_namespace(),
-                        );
-                        self.errs.push(err);
+                let elem_t = match self.convert_expr_to_const(args) {
+                    Some(elem_t) => elem_t,
+                    None => {
                         ConstExpr::Accessor(ConstAccessor::Local(Identifier::private("Obj".into())))
                     }
                 };
@@ -824,30 +953,16 @@ impl ASTConverter {
                     self.errs.push(err);
                     return Self::gen_dummy_type_spec(args.location());
                 };
-                let key_t = self.convert_expr(tuple.elts.remove(0));
-                let key_t = match Parser::validate_const_expr(key_t) {
-                    Ok(key_t) => key_t,
-                    Err(err) => {
-                        let err = CompileError::new(
-                            err.into(),
-                            self.cfg.input.clone(),
-                            self.cur_namespace(),
-                        );
-                        self.errs.push(err);
+                let key_t = match self.convert_expr_to_const(tuple.elts.remove(0)) {
+                    Some(key_t) => key_t,
+                    None => {
                         ConstExpr::Accessor(ConstAccessor::Local(Identifier::private("Obj".into())))
                     }
                 };
                 let key_t = ConstPosArg::new(key_t);
-                let value_t = self.convert_expr(tuple.elts.remove(0));
-                let value_t = match Parser::validate_const_expr(value_t) {
-                    Ok(value_t) => value_t,
-                    Err(err) => {
-                        let err = CompileError::new(
-                            err.into(),
-                            self.cfg.input.clone(),
-                            self.cur_namespace(),
-                        );
-                        self.errs.push(err);
+                let value_t = match self.convert_expr_to_const(tuple.elts.remove(0)) {
+                    Some(value_t) => value_t,
+                    None => {
                         ConstExpr::Accessor(ConstAccessor::Local(Identifier::private("Obj".into())))
                     }
                 };
@@ -864,16 +979,9 @@ impl ASTConverter {
                 let len = ConstExpr::Accessor(ConstAccessor::Local(
                     self.convert_ident("_".into(), args.location()),
                 ));
-                let elem_t = self.convert_expr(args);
-                let elem_t = match Parser::validate_const_expr(elem_t) {
-                    Ok(elem_t) => elem_t,
-                    Err(err) => {
-                        let err = CompileError::new(
-                            err.into(),
-                            self.cfg.input.clone(),
-                            self.cur_namespace(),
-                        );
-                        self.errs.push(err);
+                let elem_t = match self.convert_expr_to_const(args) {
+                    Some(elem_t) => elem_t,
+                    None => {
                         ConstExpr::Accessor(ConstAccessor::Local(Identifier::private("Obj".into())))
                     }
                 };
@@ -895,29 +1003,15 @@ impl ASTConverter {
                     return Self::gen_dummy_type_spec(args.location());
                 };
                 let (l_brace, r_brace) = Self::gen_enclosure_tokens(TokenKind::LBrace, tuple.range);
-                let key_t = self.convert_expr(tuple.elts.remove(0));
-                let key_t = match Parser::validate_const_expr(key_t) {
-                    Ok(key_t) => key_t,
-                    Err(err) => {
-                        let err = CompileError::new(
-                            err.into(),
-                            self.cfg.input.clone(),
-                            self.cur_namespace(),
-                        );
-                        self.errs.push(err);
+                let key_t = match self.convert_expr_to_const(tuple.elts.remove(0)) {
+                    Some(key_t) => key_t,
+                    None => {
                         ConstExpr::Accessor(ConstAccessor::Local(Identifier::private("Obj".into())))
                     }
                 };
-                let val_t = self.convert_expr(tuple.elts.remove(0));
-                let val_t = match Parser::validate_const_expr(val_t) {
-                    Ok(val_t) => val_t,
-                    Err(err) => {
-                        let err = CompileError::new(
-                            err.into(),
-                            self.cfg.input.clone(),
-                            self.cur_namespace(),
-                        );
-                        self.errs.push(err);
+                let val_t = match self.convert_expr_to_const(tuple.elts.remove(0)) {
+                    Some(val_t) => val_t,
+                    None => {
                         ConstExpr::Accessor(ConstAccessor::Local(Identifier::private("Obj".into())))
                     }
                 };

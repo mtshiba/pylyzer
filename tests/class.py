@@ -78,3 +78,23 @@ class G(DoesNotExist):  # ERR
 
 g = G()
 assert g.foo() == 1
+
+class Value:
+    value: object
+
+class H(Value):
+    value: int
+
+    def __init__(self, value):
+        self.value = value
+
+    def incremented(self):
+        return H(self.value + 1)
+
+class MyList(list):
+    @staticmethod
+    def try_new(lis) -> "MyList" | None:
+        if isinstance(lis, list):
+            return MyList(lis)
+        else:
+            return None
