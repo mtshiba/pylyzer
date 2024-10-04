@@ -1077,6 +1077,12 @@ impl ASTConverter {
             py_ast::Expr::Attribute(attr) => {
                 let namespace = Box::new(self.convert_expr(*attr.value));
                 let t = self.convert_ident(attr.attr.to_string(), attr_name_loc(&namespace));
+                if namespace
+                    .get_name()
+                    .is_some_and(|n| n == "typing" && t.inspect() == "Any")
+                {
+                    return TypeSpec::PreDeclTy(PreDeclTypeSpec::Mono(t));
+                }
                 let predecl = PreDeclTypeSpec::Attr { namespace, t };
                 TypeSpec::PreDeclTy(predecl)
             }

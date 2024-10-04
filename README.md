@@ -124,8 +124,9 @@ pylyzer converts Python ASTs to Erg ASTs and passes them to Erg's type checker. 
     * [x] `Optional`
     * [x] `Literal`
     * [x] `Callable`
-    * [ ] `TypedDict`
+    * [x] `Any`
     * [x] `TypeVar`
+    * [ ] `TypedDict`
     * [ ] `ClassVar`
     * [ ] `Generic`
     * [ ] `Protocol`
