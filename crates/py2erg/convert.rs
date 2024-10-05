@@ -11,9 +11,9 @@ use erg_compiler::artifact::IncompleteArtifact;
 use erg_compiler::erg_parser::ast::{
     Accessor, Args, BinOp, Block, ClassAttr, ClassAttrs, ClassDef, ConstAccessor, ConstApp,
     ConstArgs, ConstAttribute, ConstBinOp, ConstBlock, ConstDict, ConstExpr, ConstKeyValue,
-    ConstLambda, ConstList, ConstListWithLength, ConstNormalSet, ConstPosArg, ConstSet, Decorator,
-    Def, DefBody, DefId, DefaultParamSignature, Dict, Dummy, Expr, Identifier, KeyValue, KwArg,
-    Lambda, LambdaSignature, List, ListComprehension, Literal, Methods, Module,
+    ConstLambda, ConstList, ConstListWithLength, ConstNormalList, ConstNormalSet, ConstPosArg,
+    ConstSet, Decorator, Def, DefBody, DefId, DefaultParamSignature, Dict, Dummy, Expr, Identifier,
+    KeyValue, KwArg, Lambda, LambdaSignature, List, ListComprehension, Literal, Methods, Module,
     NonDefaultParamSignature, NormalDict, NormalList, NormalRecord, NormalSet, NormalTuple,
     ParamPattern, ParamTySpec, Params, PosArg, PreDeclTypeSpec, ReDef, Record, RecordAttrs, Set,
     SetComprehension, Signature, SubrSignature, SubrTypeSpec, Tuple, TupleTypeSpec, TypeAscription,
@@ -38,6 +38,24 @@ use rustpython_parser::Parse;
 
 use crate::ast_util::accessor_name;
 use crate::error::*;
+
+macro_rules! global_unary_collections {
+    () => {
+        "Collection" | "Container" | "Generator" | "Iterable" | "Iterator" | "Sequence" | "Set"
+    };
+}
+
+macro_rules! global_mutable_unary_collections {
+    () => {
+        "MutableSequence" | "MutableSet" | "MutableMapping"
+    };
+}
+
+macro_rules! global_binary_collections {
+    () => {
+        "Mapping"
+    };
+}
 
 pub const ARROW: Token = Token::dummy(TokenKind::FuncArrow, "->");
 
@@ -146,6 +164,19 @@ pub fn pyloc_to_ergloc(range: PySourceRange) -> erg_common::error::Location {
         range.start.column.to_zero_indexed(),
         range.end.unwrap().row.get(),
         range.end.unwrap().column.get(),
+    )
+}
+
+pub fn ergloc_to_pyloc(loc: erg_common::error::Location) -> PySourceRange {
+    PySourceRange::new(
+        PyLocation {
+            row: OneIndexed::from_zero_indexed(loc.ln_begin().unwrap_or(0)),
+            column: OneIndexed::from_zero_indexed(loc.col_begin().unwrap_or(0)),
+        },
+        PyLocation {
+            row: OneIndexed::from_zero_indexed(loc.ln_end().unwrap_or(0)),
+            column: OneIndexed::from_zero_indexed(loc.col_end().unwrap_or(0)),
+        },
     )
 }
 
@@ -743,7 +774,43 @@ impl ASTConverter {
     }
 
     fn convert_ident_type_spec(&mut self, name: String, loc: PyLocation) -> TypeSpec {
-        TypeSpec::mono(self.convert_ident(name, loc))
+        match &name[..] {
+            // Iterable[T] => Iterable(T), Iterable => Iterable(Obj)
+            global_unary_collections!() => TypeSpec::poly(
+                ConstExpr::Accessor(ConstAccessor::Local(Identifier::private("global".into())))
+                    .attr(Identifier::private(name.into())),
+                ConstArgs::single(ConstExpr::Accessor(ConstAccessor::Local(
+                    Identifier::private("Obj".into()),
+                ))),
+            ),
+            // MutableSequence[T] => Sequence!(T), MutableSequence => Sequence!(Obj)
+            global_mutable_unary_collections!() => TypeSpec::poly(
+                ConstExpr::Accessor(ConstAccessor::Local(Identifier::private("global".into())))
+                    .attr(Identifier::private(
+                        format!("{}!", name.trim_start_matches("Mutable")).into(),
+                    )),
+                ConstArgs::single(ConstExpr::Accessor(ConstAccessor::Local(
+                    Identifier::private("Obj".into()),
+                ))),
+            ),
+            // Mapping => Mapping(Obj, Obj)
+            global_binary_collections!() => TypeSpec::poly(
+                ConstExpr::Accessor(ConstAccessor::Local(Identifier::private("global".into())))
+                    .attr(Identifier::private(name.into())),
+                ConstArgs::pos_only(
+                    vec![
+                        ConstPosArg::new(ConstExpr::Accessor(ConstAccessor::Local(
+                            Identifier::private("Obj".into()),
+                        ))),
+                        ConstPosArg::new(ConstExpr::Accessor(ConstAccessor::Local(
+                            Identifier::private("Obj".into()),
+                        ))),
+                    ],
+                    None,
+                ),
+            ),
+            _ => TypeSpec::mono(self.convert_ident(name, loc)),
+        }
     }
 
     fn gen_dummy_type_spec(loc: PyLocation) -> TypeSpec {
@@ -791,7 +858,7 @@ impl ASTConverter {
                             ConstExpr::App(ConstApp::new(obj, app.attr_name, args))
                         }
                     }
-                    Some("GenericDict") => {
+                    Some("GenericDict" | "Dict") => {
                         if args.pos_args.len() == 2 {
                             let key = args.pos_args.remove(0).expr;
                             let value = args.pos_args.remove(0).expr;
@@ -805,7 +872,7 @@ impl ASTConverter {
                             ConstExpr::App(ConstApp::new(obj, app.attr_name, args))
                         }
                     }
-                    Some("GenericList") => {
+                    Some("GenericList" | "List") => {
                         if args.pos_args.len() == 2 {
                             let elem = args.pos_args.remove(0).expr;
                             let len = args.pos_args.remove(0).expr;
@@ -821,7 +888,7 @@ impl ASTConverter {
                             ConstExpr::App(ConstApp::new(obj, None, args))
                         }
                     }
-                    Some("GenericTuple") => {
+                    Some("GenericTuple" | "Tuple") => {
                         if args.pos_args.get(1).is_some_and(|arg| matches!(&arg.expr, ConstExpr::Lit(l) if l.is(TokenKind::EllipsisLit))) {
                             let ty = args.pos_args.remove(0).expr;
                             let obj = ConstExpr::Accessor(ConstAccessor::Local(
@@ -833,6 +900,10 @@ impl ASTConverter {
                             let obj = ConstExpr::Accessor(ConstAccessor::Local(
                                 Identifier::private("Tuple".into()),
                             ));
+                            let range = ergloc_to_pyloc(args.loc());
+                            let (l, r) = Self::gen_enclosure_tokens(TokenKind::LSqBr, range);
+                            let list = ConstList::Normal(ConstNormalList::new(l, r, args, None));
+                            let args = ConstArgs::single(ConstExpr::List(list));
                             ConstExpr::App(ConstApp::new(obj, None, args))
                         }
                     }
@@ -1162,10 +1233,19 @@ impl ASTConverter {
                 let namespace = Box::new(self.convert_expr(*attr.value));
                 let t = self.convert_ident(attr.attr.to_string(), attr_name_loc(&namespace));
                 if namespace
-                    .get_name()
-                    .is_some_and(|n| n == "typing" && t.inspect() == "Any")
+                    .full_name()
+                    .is_some_and(|n| n == "typing" || n == "collections.abc")
                 {
-                    return TypeSpec::PreDeclTy(PreDeclTypeSpec::Mono(t));
+                    match &t.inspect()[..] {
+                        global_unary_collections!()
+                        | global_mutable_unary_collections!()
+                        | global_binary_collections!() => {
+                            return self
+                                .convert_ident_type_spec(attr.attr.to_string(), attr.range.start)
+                        }
+                        "Any" => return TypeSpec::PreDeclTy(PreDeclTypeSpec::Mono(t)),
+                        _ => {}
+                    }
                 }
                 let predecl = PreDeclTypeSpec::Attr { namespace, t };
                 TypeSpec::PreDeclTy(predecl)
