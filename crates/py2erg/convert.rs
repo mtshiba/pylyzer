@@ -21,16 +21,20 @@ use erg_compiler::erg_parser::ast::{
     VarRecordAttr, VarRecordAttrs, VarRecordPattern, VarSignature, VisModifierSpec,
 };
 use erg_compiler::erg_parser::desugar::Desugarer;
-use erg_compiler::erg_parser::token::{Token, TokenKind, COLON, DOT, EQUAL};
+use erg_compiler::erg_parser::token::{Token, TokenKind, AS, COLON, DOT, EQUAL};
 use erg_compiler::erg_parser::Parser;
 use erg_compiler::error::{CompileError, CompileErrors};
+use rustpython_ast::located::LocatedMut;
+use rustpython_ast::source_code::RandomLocator;
 use rustpython_parser::ast::located::{
     self as py_ast, Alias, Arg, Arguments, BoolOp, CmpOp, ExprConstant, Keyword, Located,
     ModModule, Operator, Stmt, String, Suite, TypeParam, UnaryOp as UnOp,
 };
+use rustpython_parser::ast::Fold;
 use rustpython_parser::source_code::{
     OneIndexed, SourceLocation as PyLocation, SourceRange as PySourceRange,
 };
+use rustpython_parser::Parse;
 
 use crate::ast_util::accessor_name;
 use crate::error::*;
@@ -278,6 +282,61 @@ impl LocalContext {
     }
 }
 
+#[derive(Debug, Default)]
+pub struct CommentStorage {
+    comments: HashMap<u32, (String, Option<py_ast::Expr>)>,
+}
+
+impl fmt::Display for CommentStorage {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for (i, (comment, expr)) in &self.comments {
+            writeln!(f, "line {i}: \"{comment}\" (expr: {})", expr.is_some())?;
+        }
+        Ok(())
+    }
+}
+
+impl CommentStorage {
+    pub fn new() -> Self {
+        Self {
+            comments: HashMap::new(),
+        }
+    }
+
+    pub fn read(&mut self, code: &str) {
+        // NOTE: This locater is meaningless.
+        let mut locater = RandomLocator::new(code);
+        for (i, line) in code.lines().enumerate() {
+            let mut split = line.split('#');
+            let _code = split.next().unwrap();
+            if let Some(comment) = split.next() {
+                let comment = comment.to_string();
+                let trimmed = comment.trim_start();
+                let expr = if trimmed.starts_with("type:") {
+                    let typ = trimmed.trim_start_matches("type:").trim();
+                    let typ = if typ == "ignore" { "Any" } else { typ };
+                    rustpython_ast::Expr::parse(typ, "<module>")
+                        .ok()
+                        .and_then(|expr| locater.fold(expr).ok())
+                } else {
+                    None
+                };
+                self.comments.insert(i as u32, (comment, expr));
+            }
+        }
+    }
+
+    /// line: 0-origin
+    pub fn get_code(&self, line: u32) -> Option<&String> {
+        self.comments.get(&line).map(|(code, _)| code)
+    }
+
+    /// line: 0-origin
+    pub fn get_type(&self, line: u32) -> Option<&py_ast::Expr> {
+        self.comments.get(&line).and_then(|(_, ty)| ty.as_ref())
+    }
+}
+
 /// AST must be converted in the following order:
 ///
 /// Params -> Block -> Signature
@@ -306,6 +365,7 @@ impl LocalContext {
 pub struct ASTConverter {
     cfg: ErgConfig,
     shadowing: ShadowingMode,
+    comments: CommentStorage,
     block_id_counter: usize,
     block_ids: Vec<usize>,
     contexts: Vec<LocalContext>,
@@ -314,10 +374,11 @@ pub struct ASTConverter {
 }
 
 impl ASTConverter {
-    pub fn new(cfg: ErgConfig, shadowing: ShadowingMode) -> Self {
+    pub fn new(cfg: ErgConfig, shadowing: ShadowingMode, comments: CommentStorage) -> Self {
         Self {
             shadowing,
             cfg,
+            comments,
             block_id_counter: 0,
             block_ids: vec![0],
             contexts: vec![LocalContext::new("<module>".into())],
@@ -2148,17 +2209,36 @@ impl ASTConverter {
                             }
                             let can_shadow = self.register_name_info(&name.id, NameKind::Variable);
                             let ident = self.convert_ident(name.id.to_string(), name.location());
+                            let t_spec = expr
+                                .ln_end()
+                                .and_then(|i| {
+                                    i.checked_sub(1)
+                                        .and_then(|line| self.comments.get_type(line))
+                                })
+                                .cloned()
+                                .map(|mut expr| {
+                                    // The range of `expr` is not correct, so we need to change it
+                                    if let py_ast::Expr::Subscript(sub) = &mut expr {
+                                        sub.range = name.range;
+                                        *sub.slice.range_mut() = name.range;
+                                        *sub.value.range_mut() = name.range;
+                                    } else {
+                                        *expr.range_mut() = name.range;
+                                    }
+                                    let t_as_expr = self.convert_expr(expr.clone());
+                                    TypeSpecWithOp::new(AS, self.convert_type_spec(expr), t_as_expr)
+                                });
                             if can_shadow.is_yes() {
                                 let block = Block::new(vec![expr]);
                                 let body = DefBody::new(EQUAL, block, DefId(0));
                                 let sig = Signature::Var(VarSignature::new(
                                     VarPattern::Ident(ident),
-                                    None,
+                                    t_spec,
                                 ));
                                 let def = Def::new(sig, body);
                                 Expr::Def(def)
                             } else {
-                                let redef = ReDef::new(Accessor::Ident(ident), None, expr);
+                                let redef = ReDef::new(Accessor::Ident(ident), t_spec, expr);
                                 Expr::ReDef(redef)
                             }
                         }

@@ -18,7 +18,7 @@ use erg_compiler::error::{CompileError, CompileErrors};
 use erg_compiler::module::SharedCompilerResource;
 use erg_compiler::varinfo::VarInfo;
 use erg_compiler::GenericHIRBuilder;
-use py2erg::{dump_decl_package, ShadowingMode};
+use py2erg::{dump_decl_package, CommentStorage, ShadowingMode};
 use rustpython_ast::source_code::{RandomLocator, SourceRange};
 use rustpython_ast::{Fold, ModModule};
 use rustpython_parser::{Parse, ParseErrorType};
@@ -60,13 +60,15 @@ impl ASTBuildable for SimplePythonParser {
         IncompleteParseArtifact<AST, ParserRunnerErrors>,
     > {
         let filename = self.cfg.input.filename();
+        let mut comments = CommentStorage::new();
+        comments.read(&code);
         let py_program = self.parse_py_code(code)?;
         let shadowing = if cfg!(feature = "debug") {
             ShadowingMode::Visible
         } else {
             ShadowingMode::Invisible
         };
-        let converter = py2erg::ASTConverter::new(ErgConfig::default(), shadowing);
+        let converter = py2erg::ASTConverter::new(ErgConfig::default(), shadowing, comments);
         let IncompleteArtifact {
             object: Some(erg_module),
             errors,
@@ -261,6 +263,8 @@ impl PythonAnalyzer {
     ) -> Result<CompleteArtifact, IncompleteArtifact> {
         let filename = self.cfg.input.filename();
         let parser = SimplePythonParser::new(self.cfg.copy());
+        let mut comments = CommentStorage::new();
+        comments.read(&py_code);
         let py_program = parser
             .parse_py_code(py_code)
             .map_err(|iart| IncompleteArtifact::new(None, iart.errors.into(), iart.warns.into()))?;
@@ -269,7 +273,7 @@ impl PythonAnalyzer {
         } else {
             ShadowingMode::Invisible
         };
-        let converter = py2erg::ASTConverter::new(self.cfg.copy(), shadowing);
+        let converter = py2erg::ASTConverter::new(self.cfg.copy(), shadowing, comments);
         let IncompleteArtifact {
             object: Some(erg_module),
             errors,

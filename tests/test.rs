@@ -104,7 +104,7 @@ fn exec_warns() -> Result<(), String> {
 
 #[test]
 fn exec_typespec() -> Result<(), String> {
-    expect("tests/typespec.py", 0, 14)
+    expect("tests/typespec.py", 0, 15)
 }
 
 #[test]

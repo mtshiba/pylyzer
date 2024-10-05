@@ -52,3 +52,9 @@ def f(x: Union[int, str, None]):
 f(1)
 f("a")
 f(None)
+
+i1 = 1 # type: int
+# ERR
+i2 = 1 # type: str
+i3 = 1 # type: ignore
+i3 + "a" # OK
