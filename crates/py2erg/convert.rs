@@ -760,6 +760,21 @@ impl ASTConverter {
                             ConstExpr::App(ConstApp::new(obj, None, args))
                         }
                     }
+                    Some("GenericTuple") => {
+                        if args.pos_args.get(1).is_some_and(|arg| matches!(&arg.expr, ConstExpr::Lit(l) if l.is(TokenKind::EllipsisLit))) {
+                            let ty = args.pos_args.remove(0).expr;
+                            let obj = ConstExpr::Accessor(ConstAccessor::Local(
+                                Identifier::private("HomogenousTuple".into()),
+                            ));
+                            let args = ConstArgs::single(ty);
+                            ConstExpr::App(ConstApp::new(obj, None, args))
+                        } else {
+                            let obj = ConstExpr::Accessor(ConstAccessor::Local(
+                                Identifier::private("Tuple".into()),
+                            ));
+                            ConstExpr::App(ConstApp::new(obj, None, args))
+                        }
+                    }
                     Some("Optional") => {
                         let arg = args.pos_args.remove(0).expr;
                         let none = ConstExpr::Accessor(ConstAccessor::Local(Identifier::private(
@@ -975,10 +990,11 @@ impl ASTConverter {
                 ));
                 TypeSpec::poly(acc, ConstArgs::pos_only(vec![key_t, value_t], None))
             }
-            "list" => {
-                let len = ConstExpr::Accessor(ConstAccessor::Local(
-                    self.convert_ident("_".into(), args.location()),
-                ));
+            "List" | "list" => {
+                let len = ConstExpr::Accessor(ConstAccessor::Local(Identifier::private_with_loc(
+                    "_".into(),
+                    pyloc_to_ergloc(args.range()),
+                )));
                 let elem_t = match self.convert_expr_to_const(args) {
                     Some(elem_t) => elem_t,
                     None => {
@@ -998,7 +1014,7 @@ impl ASTConverter {
                     ConstArgs::new(vec![elem_t, len], None, vec![], None, None),
                 )
             }
-            "dict" => {
+            "Dict" | "dict" => {
                 let py_ast::Expr::Tuple(mut tuple) = args else {
                     return Self::gen_dummy_type_spec(args.location());
                 };
@@ -1028,16 +1044,23 @@ impl ASTConverter {
                 ));
                 TypeSpec::poly(acc, ConstArgs::new(vec![dict], None, vec![], None, None))
             }
-            "tuple" => {
-                let py_ast::Expr::Tuple(tuple) = args else {
+            "Tuple" | "tuple" => {
+                let py_ast::Expr::Tuple(mut tuple) = args else {
                     return Self::gen_dummy_type_spec(args.location());
                 };
-                let parens = Self::gen_enclosure_tokens(TokenKind::LParen, tuple.range);
+                // tuple[T, ...] == HomogenousTuple T
+                if tuple.elts.get(1).is_some_and(|ex| matches!(ex, py_ast::Expr::Constant(c) if matches!(c.value, py_ast::Constant::Ellipsis))) {
+                    let acc = ConstAccessor::local(Token::symbol("HomogenousTuple"));
+                    let ty = tuple.elts.remove(0);
+                    let args = ConstArgs::single(self.convert_expr_to_const(ty).unwrap());
+                    return TypeSpec::poly(acc, args);
+                }
                 let tys = tuple
                     .elts
                     .into_iter()
                     .map(|elem| self.convert_type_spec(elem))
                     .collect();
+                let parens = Self::gen_enclosure_tokens(TokenKind::LParen, tuple.range);
                 let tuple = TupleTypeSpec::new(Some(parens), tys);
                 TypeSpec::Tuple(tuple)
             }
@@ -1473,12 +1496,13 @@ impl ASTConverter {
                 Self::mutate_expr(dict)
             }
             py_ast::Expr::Tuple(tuple) => {
+                let (l, r) = Self::gen_enclosure_tokens(TokenKind::LParen, tuple.range);
                 let elements = tuple
                     .elts
                     .into_iter()
                     .map(|ex| PosArg::new(self.convert_expr(ex)))
                     .collect::<Vec<_>>();
-                let elems = Args::pos_only(elements, None);
+                let elems = Args::pos_only(elements, Some((l, r)));
                 Expr::Tuple(Tuple::Normal(NormalTuple::new(elems)))
             }
             py_ast::Expr::Subscript(subs) => {
