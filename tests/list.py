@@ -9,3 +9,7 @@ for i in range(3):
 # ERR
 for i in "abcd":
     print(l[i])
+
+lis = "a,b,c".split(",") if True is not None else []
+if "a" in lis:
+    lis.remove("a") # OK

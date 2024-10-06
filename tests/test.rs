@@ -113,6 +113,11 @@ fn exec_projection() -> Result<(), String> {
 }
 
 #[test]
+fn exec_pyi() -> Result<(), String> {
+    expect("tests/pyi.py", 0, 5)
+}
+
+#[test]
 fn exec_list() -> Result<(), String> {
     expect("tests/list.py", 0, 2)
 }

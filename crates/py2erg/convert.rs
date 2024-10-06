@@ -294,7 +294,8 @@ impl TypeVarInfo {
 
 #[derive(Debug)]
 pub struct LocalContext {
-    name: String,
+    pub name: String,
+    pub kind: BlockKind,
     /// Erg does not allow variables to be defined multiple times, so rename them using this
     names: HashMap<String, NameInfo>,
     type_vars: HashMap<String, TypeVarInfo>,
@@ -303,9 +304,10 @@ pub struct LocalContext {
 }
 
 impl LocalContext {
-    pub fn new(name: String) -> Self {
+    pub fn new(name: String, kind: BlockKind) -> Self {
         Self {
             name,
+            kind,
             names: HashMap::new(),
             type_vars: HashMap::new(),
             appeared_type_names: HashSet::new(),
@@ -368,6 +370,124 @@ impl CommentStorage {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct PyFuncTypeSpec {
+    type_params: Vec<py_ast::TypeParam>,
+    args: py_ast::Arguments,
+    returns: Option<py_ast::Expr>,
+}
+
+#[derive(Debug, Clone)]
+pub enum PyTypeSpec {
+    Var(py_ast::Expr),
+    Func(PyFuncTypeSpec),
+}
+
+#[derive(Debug, Default)]
+pub struct PyiTypeStorage {
+    decls: HashMap<String, PyTypeSpec>,
+    classes: HashMap<String, HashMap<String, PyTypeSpec>>,
+}
+
+impl fmt::Display for PyiTypeStorage {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for (name, t_spec) in &self.decls {
+            writeln!(f, "{name}: {t_spec:?}")?;
+        }
+        for (class, methods) in &self.classes {
+            writeln!(f, "class {class}:")?;
+            for (name, t_spec) in methods {
+                writeln!(f, "    {name}: {t_spec:?}")?;
+            }
+        }
+        Ok(())
+    }
+}
+
+impl PyiTypeStorage {
+    pub fn new() -> Self {
+        Self {
+            decls: HashMap::new(),
+            classes: HashMap::new(),
+        }
+    }
+
+    pub fn parse(&mut self, filename: &str) {
+        let Ok(code) = std::fs::read_to_string(filename) else {
+            return;
+        };
+        let Ok(py_program) = rustpython_ast::ModModule::parse(&code, filename) else {
+            return;
+        };
+        let mut locator = RandomLocator::new(&code);
+        let Ok(py_program) = locator.fold(py_program) else {
+            return;
+        };
+        for stmt in py_program.body {
+            match stmt {
+                py_ast::Stmt::AnnAssign(assign) => {
+                    let py_ast::Expr::Name(name) = *assign.target else {
+                        continue;
+                    };
+                    self.decls
+                        .insert(name.id.to_string(), PyTypeSpec::Var(*assign.annotation));
+                }
+                py_ast::Stmt::FunctionDef(def) => {
+                    let returns = def.returns.map(|anot| *anot);
+                    self.decls.insert(
+                        def.name.to_string(),
+                        PyTypeSpec::Func(PyFuncTypeSpec {
+                            type_params: def.type_params,
+                            args: *def.args,
+                            returns,
+                        }),
+                    );
+                }
+                py_ast::Stmt::ClassDef(class) => {
+                    let mut methods = HashMap::new();
+                    for stmt in class.body {
+                        match stmt {
+                            py_ast::Stmt::AnnAssign(assign) => {
+                                let py_ast::Expr::Name(name) = *assign.target else {
+                                    continue;
+                                };
+                                methods.insert(
+                                    name.id.to_string(),
+                                    PyTypeSpec::Var(*assign.annotation),
+                                );
+                            }
+                            py_ast::Stmt::FunctionDef(def) => {
+                                let returns = def.returns.map(|anot| *anot);
+                                methods.insert(
+                                    def.name.to_string(),
+                                    PyTypeSpec::Func(PyFuncTypeSpec {
+                                        type_params: def.type_params,
+                                        args: *def.args,
+                                        returns,
+                                    }),
+                                );
+                            }
+                            _ => {}
+                        }
+                    }
+                    self.classes.insert(class.name.to_string(), methods);
+                }
+                _ => {}
+            }
+        }
+    }
+
+    pub fn get_type(&self, name: &str) -> Option<&PyTypeSpec> {
+        self.decls.get(name)
+    }
+
+    pub fn get_class_member_type(&self, class: &str, name: &str) -> Option<&PyTypeSpec> {
+        self.classes
+            .get(class)
+            .and_then(|methods| methods.get(name))
+    }
+}
+
 /// AST must be converted in the following order:
 ///
 /// Params -> Block -> Signature
@@ -397,6 +517,7 @@ pub struct ASTConverter {
     cfg: ErgConfig,
     shadowing: ShadowingMode,
     comments: CommentStorage,
+    pyi_types: PyiTypeStorage,
     block_id_counter: usize,
     block_ids: Vec<usize>,
     contexts: Vec<LocalContext>,
@@ -406,13 +527,16 @@ pub struct ASTConverter {
 
 impl ASTConverter {
     pub fn new(cfg: ErgConfig, shadowing: ShadowingMode, comments: CommentStorage) -> Self {
+        let mut pyi_types = PyiTypeStorage::new();
+        pyi_types.parse(&cfg.input.path().with_extension("pyi").to_string_lossy());
         Self {
             shadowing,
+            pyi_types,
             cfg,
             comments,
             block_id_counter: 0,
             block_ids: vec![0],
-            contexts: vec![LocalContext::new("<module>".into())],
+            contexts: vec![LocalContext::new("<module>".into(), BlockKind::Module)],
             warns: CompileErrors::empty(),
             errs: CompileErrors::empty(),
         }
@@ -461,8 +585,8 @@ impl ASTConverter {
             .insert(name, info);
     }
 
-    fn grow(&mut self, namespace: String) {
-        self.contexts.push(LocalContext::new(namespace));
+    fn grow(&mut self, namespace: String, kind: BlockKind) {
+        self.contexts.push(LocalContext::new(namespace, kind));
     }
 
     fn pop(&mut self) {
@@ -485,6 +609,10 @@ impl ASTConverter {
     // baz
     fn cur_name(&self) -> &str {
         &self.contexts.last().unwrap().name
+    }
+
+    fn parent_name(&self) -> &str {
+        &self.contexts[self.contexts.len().saturating_sub(2)].name
     }
 
     fn cur_appeared_type_names(&self) -> &HashSet<String> {
@@ -603,10 +731,32 @@ impl ASTConverter {
         ParamPattern::VarName(ident.name)
     }
 
+    fn get_cur_scope_t_spec(&self) -> Option<&PyTypeSpec> {
+        if self.contexts.len() == 2 {
+            let func_name = self.cur_name();
+            self.pyi_types.get_type(func_name)
+        } else {
+            let class = self.parent_name();
+            let func_name = self.cur_name();
+            self.pyi_types.get_class_member_type(class, func_name)
+        }
+    }
+
     fn convert_nd_param(&mut self, param: Arg) -> NonDefaultParamSignature {
         let pat = self.convert_param_pattern(param.arg.to_string(), param.location());
         let t_spec = param
             .annotation
+            .or_else(|| {
+                let PyTypeSpec::Func(func) = self.get_cur_scope_t_spec()? else {
+                    return None;
+                };
+                func.args
+                    .args
+                    .iter()
+                    .chain(&func.args.kwonlyargs)
+                    .find(|arg| arg.def.arg == param.arg)
+                    .and_then(|arg| arg.def.annotation.clone())
+            })
             .map(|anot| {
                 (
                     self.convert_type_spec(*anot.clone()),
@@ -1537,7 +1687,7 @@ impl ASTConverter {
                 Expr::BinOp(BinOp::new(op, lhs, rhs))
             }
             py_ast::Expr::Lambda(lambda) => {
-                self.grow("<lambda>".to_string());
+                self.grow("<lambda>".to_string(), BlockKind::Function);
                 let params = self.convert_params(*lambda.args);
                 let body = vec![self.convert_expr(*lambda.body)];
                 self.pop();
@@ -2100,19 +2250,39 @@ impl ASTConverter {
                 column: loc.column.saturating_add(4),
             };
             let ident = self.convert_ident(name, func_name_loc);
-            self.grow(ident.inspect().to_string());
+            self.grow(ident.inspect().to_string(), BlockKind::Function);
             let params = self.convert_params(params);
-            let return_t = returns.map(|ret| {
-                let t_spec = self.convert_type_spec(ret.clone());
-                let colon = Token::new(
-                    TokenKind::Colon,
-                    ":",
-                    t_spec.ln_begin().unwrap_or(0),
-                    t_spec.col_begin().unwrap_or(0),
-                );
-                TypeSpecWithOp::new(colon, t_spec, self.convert_expr(ret))
-            });
-            let bounds = self.get_type_bounds(func_def.type_params);
+            let return_t = returns
+                .or_else(|| {
+                    let PyTypeSpec::Func(func) = self.get_cur_scope_t_spec()? else {
+                        return None;
+                    };
+                    func.returns.clone()
+                })
+                .map(|ret| {
+                    let t_spec = self.convert_type_spec(ret.clone());
+                    let colon = Token::new(
+                        TokenKind::Colon,
+                        ":",
+                        t_spec.ln_begin().unwrap_or(0),
+                        t_spec.col_begin().unwrap_or(0),
+                    );
+                    TypeSpecWithOp::new(colon, t_spec, self.convert_expr(ret))
+                });
+            let type_params = if !func_def.type_params.is_empty() {
+                func_def.type_params
+            } else {
+                self.get_cur_scope_t_spec()
+                    .and_then(|ty| {
+                        if let PyTypeSpec::Func(func) = ty {
+                            (!func.type_params.is_empty()).then(|| func.type_params.clone())
+                        } else {
+                            None
+                        }
+                    })
+                    .unwrap_or(func_def.type_params)
+            };
+            let bounds = self.get_type_bounds(type_params);
             let sig = Signature::Subr(SubrSignature::new(decos, ident, bounds, params, return_t));
             let block = self.convert_block(func_def.body, BlockKind::Function);
             let body = DefBody::new(EQUAL, block, DefId(0));
@@ -2157,7 +2327,7 @@ impl ASTConverter {
         };
         let ident = self.convert_ident(name, class_name_loc);
         let sig = Signature::Var(VarSignature::new(VarPattern::Ident(ident.clone()), None));
-        self.grow(ident.inspect().to_string());
+        self.grow(ident.inspect().to_string(), BlockKind::Class);
         let (base_type, methods) = self.extract_method_list(ident, class_def.body, inherit);
         let classdef = if inherit {
             // TODO: multiple inheritance
@@ -2194,6 +2364,47 @@ impl ASTConverter {
         };
         self.pop();
         Expr::ClassDef(classdef)
+    }
+
+    fn get_t_spec(&self, name: &str) -> Option<&PyTypeSpec> {
+        if self.contexts.len() == 1 {
+            self.pyi_types.get_type(name)
+        } else {
+            let class = self.cur_name();
+            self.pyi_types.get_class_member_type(class, name)
+        }
+    }
+
+    fn get_assign_t_spec(
+        &mut self,
+        name: &py_ast::ExprName,
+        expr: &Expr,
+    ) -> Option<TypeSpecWithOp> {
+        expr.ln_end()
+            .and_then(|i| {
+                i.checked_sub(1)
+                    .and_then(|line| self.comments.get_type(line))
+            })
+            .cloned()
+            .or_else(|| {
+                let type_spec = self.get_t_spec(&name.id)?;
+                let PyTypeSpec::Var(expr) = type_spec else {
+                    return None;
+                };
+                Some(expr.clone())
+            })
+            .map(|mut expr| {
+                // The range of `expr` is not correct, so we need to change it
+                if let py_ast::Expr::Subscript(sub) = &mut expr {
+                    sub.range = name.range;
+                    *sub.slice.range_mut() = name.range;
+                    *sub.value.range_mut() = name.range;
+                } else {
+                    *expr.range_mut() = name.range;
+                }
+                let t_as_expr = self.convert_expr(expr.clone());
+                TypeSpecWithOp::new(AS, self.convert_type_spec(expr), t_as_expr)
+            })
     }
 
     fn convert_statement(&mut self, stmt: Stmt, dont_call_return: bool) -> Expr {
@@ -2289,25 +2500,7 @@ impl ASTConverter {
                             }
                             let can_shadow = self.register_name_info(&name.id, NameKind::Variable);
                             let ident = self.convert_ident(name.id.to_string(), name.location());
-                            let t_spec = expr
-                                .ln_end()
-                                .and_then(|i| {
-                                    i.checked_sub(1)
-                                        .and_then(|line| self.comments.get_type(line))
-                                })
-                                .cloned()
-                                .map(|mut expr| {
-                                    // The range of `expr` is not correct, so we need to change it
-                                    if let py_ast::Expr::Subscript(sub) = &mut expr {
-                                        sub.range = name.range;
-                                        *sub.slice.range_mut() = name.range;
-                                        *sub.value.range_mut() = name.range;
-                                    } else {
-                                        *expr.range_mut() = name.range;
-                                    }
-                                    let t_as_expr = self.convert_expr(expr.clone());
-                                    TypeSpecWithOp::new(AS, self.convert_type_spec(expr), t_as_expr)
-                                });
+                            let t_spec = self.get_assign_t_spec(&name, &expr);
                             if can_shadow.is_yes() {
                                 let block = Block::new(vec![expr]);
                                 let body = DefBody::new(EQUAL, block, DefId(0));

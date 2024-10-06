@@ -96,6 +96,7 @@ pylyzer converts Python ASTs to Erg ASTs and passes them to Erg's type checker. 
     * [x] operator
     * [x] function/method
     * [x] class
+    * [ ] `async/await`
 * [x] type inference
     * [x] variable
     * [x] operator
@@ -145,7 +146,7 @@ pylyzer converts Python ASTs to Erg ASTs and passes them to Erg's type checker. 
     * [ ] others
 * [x] type assertion (`typing.cast`)
 * [x] type narrowing (`is`, `isinstance`)
-* [ ] `pyi` (stub) files support
+* [x] `pyi` (stub) files support
 * [ ] glob pattern file check
 * [x] type comment (`# type: ...`)
 
