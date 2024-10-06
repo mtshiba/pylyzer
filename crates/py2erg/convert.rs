@@ -101,6 +101,7 @@ pub enum BlockKind {
     Try,
     With,
     Function,
+    AsyncFunction,
     Class,
     Module,
 }
@@ -110,7 +111,7 @@ impl BlockKind {
         matches!(self, Self::If)
     }
     pub const fn is_function(&self) -> bool {
-        matches!(self, Self::Function)
+        matches!(self, Self::Function | Self::AsyncFunction)
     }
 }
 
@@ -443,6 +444,17 @@ impl PyiTypeStorage {
                         }),
                     );
                 }
+                py_ast::Stmt::AsyncFunctionDef(def) => {
+                    let returns = def.returns.map(|anot| *anot);
+                    self.decls.insert(
+                        def.name.to_string(),
+                        PyTypeSpec::Func(PyFuncTypeSpec {
+                            type_params: def.type_params,
+                            args: *def.args,
+                            returns,
+                        }),
+                    );
+                }
                 py_ast::Stmt::ClassDef(class) => {
                     let mut methods = HashMap::new();
                     for stmt in class.body {
@@ -457,6 +469,17 @@ impl PyiTypeStorage {
                                 );
                             }
                             py_ast::Stmt::FunctionDef(def) => {
+                                let returns = def.returns.map(|anot| *anot);
+                                methods.insert(
+                                    def.name.to_string(),
+                                    PyTypeSpec::Func(PyFuncTypeSpec {
+                                        type_params: def.type_params,
+                                        args: *def.args,
+                                        returns,
+                                    }),
+                                );
+                            }
+                            py_ast::Stmt::AsyncFunctionDef(def) => {
                                 let returns = def.returns.map(|anot| *anot);
                                 methods.insert(
                                     def.name.to_string(),
@@ -2219,7 +2242,7 @@ impl ASTConverter {
         bounds
     }
 
-    fn convert_funcdef(&mut self, func_def: py_ast::StmtFunctionDef) -> Expr {
+    fn convert_funcdef(&mut self, func_def: py_ast::StmtFunctionDef, is_async: bool) -> Expr {
         let name = func_def.name.to_string();
         let params = *func_def.args;
         let returns = func_def.returns.map(|x| *x);
@@ -2250,7 +2273,12 @@ impl ASTConverter {
                 column: loc.column.saturating_add(4),
             };
             let ident = self.convert_ident(name, func_name_loc);
-            self.grow(ident.inspect().to_string(), BlockKind::Function);
+            let kind = if is_async {
+                BlockKind::AsyncFunction
+            } else {
+                BlockKind::Function
+            };
+            self.grow(ident.inspect().to_string(), kind);
             let params = self.convert_params(params);
             let return_t = returns
                 .or_else(|| {
@@ -2654,9 +2682,40 @@ impl ASTConverter {
                     }
                 }
             }
-            py_ast::Stmt::FunctionDef(func_def) => self.convert_funcdef(func_def),
+            py_ast::Stmt::FunctionDef(func_def) => self.convert_funcdef(func_def, false),
+            py_ast::Stmt::AsyncFunctionDef(func_def) => {
+                let py_ast::StmtAsyncFunctionDef {
+                    name,
+                    args,
+                    body,
+                    decorator_list,
+                    returns,
+                    type_params,
+                    range,
+                    type_comment,
+                } = func_def;
+                let func_def = py_ast::StmtFunctionDef {
+                    name,
+                    args,
+                    body,
+                    decorator_list,
+                    returns,
+                    type_params,
+                    range,
+                    type_comment,
+                };
+                self.convert_funcdef(func_def, true)
+            }
             py_ast::Stmt::ClassDef(class_def) => self.convert_classdef(class_def),
             py_ast::Stmt::For(for_) => {
+                let loc = for_.location();
+                let iter = self.convert_expr(*for_.iter);
+                let block = self.convert_for_body(Some(*for_.target), for_.body);
+                let for_ident = self.convert_ident("for".to_string(), loc);
+                let for_acc = Expr::Accessor(Accessor::Ident(for_ident));
+                for_acc.call2(iter, Expr::Lambda(block))
+            }
+            py_ast::Stmt::AsyncFor(for_) => {
                 let loc = for_.location();
                 let iter = self.convert_expr(*for_.iter);
                 let block = self.convert_for_body(Some(*for_.target), for_.body);
@@ -2794,6 +2853,15 @@ impl ASTConverter {
                 Expr::Dummy(Dummy::new(None, dummy))
             }
             py_ast::Stmt::With(mut with) => {
+                let loc = with.location();
+                let item = with.items.remove(0);
+                let context_expr = self.convert_expr(item.context_expr);
+                let body = self.convert_for_body(item.optional_vars.map(|x| *x), with.body);
+                let with_ident = self.convert_ident("with".to_string(), loc);
+                let with_acc = Expr::Accessor(Accessor::Ident(with_ident));
+                with_acc.call2(context_expr, Expr::Lambda(body))
+            }
+            py_ast::Stmt::AsyncWith(mut with) => {
                 let loc = with.location();
                 let item = with.items.remove(0);
                 let context_expr = self.convert_expr(item.context_expr);
