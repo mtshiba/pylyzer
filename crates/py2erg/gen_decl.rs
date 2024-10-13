@@ -127,7 +127,7 @@ impl DeclFileGenerator {
                 let decl = format!(".{class_name}: ClassType");
                 self.code += &decl;
                 self.code.push('\n');
-                if let GenTypeObj::Subclass(class) = &def.obj {
+                if let GenTypeObj::Subclass(class) = def.obj.as_ref() {
                     let sup = class
                         .sup
                         .as_ref()

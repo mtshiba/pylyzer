@@ -3,6 +3,7 @@ use std::path::Path;
 
 use erg_common::config::ErgConfig;
 use erg_common::dict::Dict as HashMap;
+use erg_common::error::Location as ErgLocation;
 use erg_common::fresh::FRESH_GEN;
 use erg_common::set::Set as HashSet;
 use erg_common::traits::{Locational, Stream};
@@ -140,6 +141,17 @@ fn escape_name(name: String) -> String {
     }
 }
 
+fn quoted_symbol(sym: &str, lineno: u32, col_begin: u32) -> Token {
+    let col_end = col_begin + sym.chars().count() as u32;
+    Token {
+        kind: TokenKind::StrLit,
+        content: format!("\"{sym}\"").into(),
+        lineno,
+        col_begin,
+        col_end,
+    }
+}
+
 fn op_to_token(op: Operator) -> Token {
     let (kind, cont) = match op {
         Operator::Add => (TokenKind::Plus, "+"),
@@ -164,7 +176,7 @@ pub fn pyloc_to_ergloc(range: PySourceRange) -> erg_common::error::Location {
         range.start.row.get(),
         range.start.column.to_zero_indexed(),
         range.end.unwrap().row.get(),
-        range.end.unwrap().column.get(),
+        range.end.unwrap().column.to_zero_indexed(),
     )
 }
 
@@ -726,7 +738,7 @@ impl ASTConverter {
             loc.row.get(),
             loc.column.to_zero_indexed(),
         );
-        Identifier::new(VisModifierSpec::Public(dot), name)
+        Identifier::new(VisModifierSpec::Public(dot.loc()), name)
     }
 
     // TODO: module member mangling
@@ -744,7 +756,7 @@ impl ASTConverter {
             loc.row.get(),
             loc.column.to_zero_indexed(),
         );
-        Identifier::new(VisModifierSpec::Public(dot), name)
+        Identifier::new(VisModifierSpec::Public(dot.loc()), name)
     }
 
     // Duplicate param names will result in an error at the parser. So we don't need to check it here.
@@ -849,9 +861,10 @@ impl ASTConverter {
 
     fn param_pattern_to_var(pat: ParamPattern) -> VarPattern {
         match pat {
-            ParamPattern::VarName(name) => {
-                VarPattern::Ident(Identifier::new(VisModifierSpec::Public(DOT), name))
-            }
+            ParamPattern::VarName(name) => VarPattern::Ident(Identifier::new(
+                VisModifierSpec::Public(ErgLocation::Unknown),
+                name,
+            )),
             ParamPattern::Discard(token) => VarPattern::Discard(token),
             other => todo!("{other}"),
         }
@@ -887,7 +900,7 @@ impl ASTConverter {
                 let tmp = FRESH_GEN.fresh_varname();
                 let tmp_name = VarName::from_str_and_line(tmp, expr.location().row.get());
                 let tmp_expr = Expr::Accessor(Accessor::Ident(Identifier::new(
-                    VisModifierSpec::Public(DOT),
+                    VisModifierSpec::Public(ErgLocation::Unknown),
                     tmp_name.clone(),
                 )));
                 let mut block = vec![];
@@ -991,7 +1004,7 @@ impl ASTConverter {
             TokenKind::UBar,
             "_",
             loc.row.get(),
-            loc.column.get() - 1,
+            loc.column.to_zero_indexed(),
         ))
     }
 
@@ -1365,8 +1378,8 @@ impl ASTConverter {
                     .into_iter()
                     .map(|elem| self.convert_type_spec(elem))
                     .collect();
-                let parens = Self::gen_enclosure_tokens(TokenKind::LParen, tuple.range);
-                let tuple = TupleTypeSpec::new(Some(parens), tys);
+                let (l, r) = Self::gen_enclosure_tokens(TokenKind::LParen, tuple.range);
+                let tuple = TupleTypeSpec::new(Some((l.loc(), r.loc())), tys);
                 TypeSpec::Tuple(tuple)
             }
             _ => Self::gen_dummy_type_spec(args.location()),
@@ -1527,14 +1540,18 @@ impl ASTConverter {
             }
             py_ast::Constant::Complex { real: _, imag: _ } => Expr::Dummy(Dummy::new(None, vec![])),
             py_ast::Constant::Str(value) => {
+                let kind = if const_
+                    .range
+                    .end
+                    .is_some_and(|end| end.row != const_.range.start.row)
+                {
+                    TokenKind::DocComment
+                } else {
+                    TokenKind::StrLit
+                };
                 let value = format!("\"{value}\"");
                 // column - 2 because of the quotes
-                let token = Token::new(
-                    TokenKind::StrLit,
-                    value,
-                    loc.row.get(),
-                    loc.column.to_zero_indexed(),
-                );
+                let token = Token::new(kind, value, loc.row.get(), loc.column.to_zero_indexed());
                 Expr::Literal(Literal::new(token))
             }
             py_ast::Constant::Bool(b) => {
@@ -1646,7 +1663,7 @@ impl ASTConverter {
                             .and_then(|last| last.col_end())
                             .unwrap_or(function.col_end().unwrap_or(0) + 1)
                     },
-                    |loc| loc.row.get(),
+                    |loc| loc.column.to_zero_indexed().saturating_sub(1),
                 );
                 let paren = {
                     let lp = Token::new(
@@ -1656,7 +1673,7 @@ impl ASTConverter {
                         function.col_end().unwrap_or(0),
                     );
                     let rp = Token::new(TokenKind::RParen, ")", loc.row.get(), last_col);
-                    (lp, rp)
+                    (lp.loc(), rp.loc())
                 };
                 let args = Args::new(pos_args, var_args, kw_args, kw_var, Some(paren));
                 function.call_expr(args)
@@ -1816,7 +1833,7 @@ impl ASTConverter {
                     .into_iter()
                     .map(|ex| PosArg::new(self.convert_expr(ex)))
                     .collect::<Vec<_>>();
-                let elems = Args::pos_only(elements, Some((l, r)));
+                let elems = Args::pos_only(elements, Some((l.loc(), r.loc())));
                 Expr::Tuple(Tuple::Normal(NormalTuple::new(elems)))
             }
             py_ast::Expr::Subscript(subs) => {
@@ -2021,7 +2038,7 @@ impl ASTConverter {
             *base_type = Some(Expr::Record(record));
         }
         let call_ident = Identifier::new(
-            VisModifierSpec::Public(DOT),
+            VisModifierSpec::Public(ErgLocation::Unknown),
             VarName::from_static("__call__"),
         );
         let class_ident = Identifier::public_with_line(
@@ -2046,8 +2063,10 @@ impl ASTConverter {
             params,
             Some(class_spec),
         ));
-        let unreachable_acc =
-            Identifier::new(VisModifierSpec::Public(DOT), VarName::from_static("exit"));
+        let unreachable_acc = Identifier::new(
+            VisModifierSpec::Public(ErgLocation::Unknown),
+            VarName::from_static("exit"),
+        );
         let body = Expr::Accessor(Accessor::Ident(unreachable_acc)).call_expr(Args::empty());
         let body = DefBody::new(EQUAL, Block::new(vec![body]), DefId(0));
         let def = Def::new(sig, body);
@@ -2056,7 +2075,7 @@ impl ASTConverter {
 
     fn gen_default_init(&self, line: usize) -> Def {
         let call_ident = Identifier::new(
-            VisModifierSpec::Public(DOT),
+            VisModifierSpec::Public(ErgLocation::Unknown),
             VarName::from_static("__call__"),
         );
         let params = Params::empty();
@@ -2071,8 +2090,10 @@ impl ASTConverter {
             params,
             Some(class_spec),
         ));
-        let unreachable_acc =
-            Identifier::new(VisModifierSpec::Public(DOT), VarName::from_static("exit"));
+        let unreachable_acc = Identifier::new(
+            VisModifierSpec::Public(ErgLocation::Unknown),
+            VarName::from_static("exit"),
+        );
         let body = Expr::Accessor(Accessor::Ident(unreachable_acc)).call_expr(Args::empty());
         let body = DefBody::new(EQUAL, Block::new(vec![body]), DefId(0));
         Def::new(sig, body)
@@ -2172,7 +2193,7 @@ impl ASTConverter {
             DefId(self.block_id_counter),
             class,
             class_as_expr,
-            VisModifierSpec::Public(DOT),
+            VisModifierSpec::Public(ErgLocation::Unknown),
             attrs,
         );
         (base_type, vec![methods])
@@ -2556,7 +2577,10 @@ impl ASTConverter {
                             let tmp = FRESH_GEN.fresh_varname();
                             let tmp_name =
                                 VarName::from_str_and_line(tmp, tuple.location().row.get());
-                            let tmp_ident = Identifier::new(VisModifierSpec::Public(DOT), tmp_name);
+                            let tmp_ident = Identifier::new(
+                                VisModifierSpec::Public(ErgLocation::Unknown),
+                                tmp_name,
+                            );
                             let tmp_expr = Expr::Accessor(Accessor::Ident(tmp_ident.clone()));
                             let sig = Signature::Var(VarSignature::new(
                                 VarPattern::Ident(tmp_ident),
@@ -2792,29 +2816,28 @@ impl ASTConverter {
                 assert_acc.call_expr(args)
             }
             py_ast::Stmt::Import(import) => {
-                let loc = import.location();
+                let import_loc = import.location();
                 let mut imports = vec![];
                 for name in import.names {
                     let import_acc = Expr::Accessor(Accessor::Ident(
-                        self.convert_ident("__import__".to_string(), loc),
+                        self.convert_ident("__import__".to_string(), import_loc),
                     ));
-                    let cont = if name.asname.is_some() {
-                        format!("\"{}\"", name.name.replace('.', "/"))
+                    let sym = if name.asname.is_some() {
+                        name.name.replace('.', "/")
                     } else {
-                        format!("\"{}\"", name.name.split('.').next().unwrap())
+                        name.name.split('.').next().unwrap().to_string()
                     };
-                    let mod_name = Expr::Literal(Literal::new(Token::new(
-                        TokenKind::StrLit,
-                        cont,
+                    let mod_name = Expr::Literal(Literal::new(quoted_symbol(
+                        &sym,
                         name.location().row.get(),
-                        name.location().column.get() - 1,
+                        name.location().column.to_zero_indexed(),
                     )));
                     let call = import_acc.call1(mod_name);
-                    let loc = name.location();
+                    let name_loc = name.location();
                     let def = if let Some(alias) = name.asname {
                         self.register_name_info(&alias, NameKind::Variable);
                         let var = VarSignature::new(
-                            VarPattern::Ident(self.convert_ident(alias.to_string(), loc)),
+                            VarPattern::Ident(self.convert_ident(alias.to_string(), name_loc)),
                             None,
                         );
                         Def::new(
@@ -2841,7 +2864,8 @@ impl ASTConverter {
             }
             // from module import foo, bar
             py_ast::Stmt::ImportFrom(import_from) => {
-                let loc = import_from.location();
+                let mut loc = import_from.location();
+                loc.column = loc.column.saturating_add(5);
                 self.convert_from_import(import_from.module, import_from.names, loc)
             }
             py_ast::Stmt::Try(try_) => {
@@ -2881,14 +2905,9 @@ impl ASTConverter {
         let import_acc = Expr::Accessor(Accessor::Ident(
             self.convert_ident("__import__".to_string(), location),
         ));
-        let cont = if module == "." {
-            "\"__init__\"".to_string()
-        } else {
-            format!("\"{module}\"")
-        };
-        let mod_name = Expr::Literal(Literal::new(Token::new(
-            TokenKind::StrLit,
-            cont,
+        let sym = if module == "." { "__init__" } else { &module };
+        let mod_name = Expr::Literal(Literal::new(quoted_symbol(
+            sym,
             location.row.get(),
             location.column.to_zero_indexed(),
         )));
@@ -2935,14 +2954,9 @@ impl ASTConverter {
             .map(|s| s.replace('.', "/"))
             .unwrap_or_else(|| ".".to_string());
         let module_path = Path::new(&module);
-        let cont = if module == "." {
-            "\"__init__\"".to_string()
-        } else {
-            format!("\"{module}\"")
-        };
-        let mod_name = Expr::Literal(Literal::new(Token::new(
-            TokenKind::StrLit,
-            cont,
+        let sym = if module == "." { "__init__" } else { &module };
+        let mod_name = Expr::Literal(Literal::new(quoted_symbol(
+            sym,
             location.row.get(),
             location.column.to_zero_indexed(),
         )));
@@ -2952,6 +2966,10 @@ impl ASTConverter {
         if names.len() == 1 && names[0].name.as_str() == "*" {
             return self.convert_glob_import(location, module);
         }
+        let names_range = PySourceRange {
+            start: names[0].location(),
+            end: names[names.len() - 1].end_location(),
+        };
         for name in names {
             let name_path = self
                 .cfg
@@ -2975,10 +2993,9 @@ impl ASTConverter {
                 }
                 let mod_name = path.file_name().unwrap();
                 if name.name.as_str() == mod_name.to_string_lossy().trim_end_matches(".py") {
-                    let cont = format!("\"{module}/{}\"", name.name);
-                    let mod_name = Expr::Literal(Literal::new(Token::new(
-                        TokenKind::StrLit,
-                        cont,
+                    let sym = format!("{module}/{}", name.name);
+                    let mod_name = Expr::Literal(Literal::new(quoted_symbol(
+                        &sym,
                         location.row.get(),
                         location.column.to_zero_indexed(),
                     )));
@@ -2998,7 +3015,8 @@ impl ASTConverter {
         }
         let no_import = imports.is_empty();
         let attrs = VarRecordAttrs::new(imports);
-        let pat = VarRecordPattern::new(Token::DUMMY, attrs, Token::DUMMY);
+        let braces = pyloc_to_ergloc(names_range);
+        let pat = VarRecordPattern::new(braces, attrs);
         let var = VarSignature::new(VarPattern::Record(pat), None);
         let def = Expr::Def(Def::new(
             Signature::Var(var),

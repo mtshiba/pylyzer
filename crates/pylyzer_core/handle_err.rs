@@ -1,6 +1,6 @@
 use erg_common::error::ErrorKind;
 use erg_common::log;
-use erg_common::style::remove_style;
+use erg_common::style::{remove_style, StyledStr};
 // use erg_common::style::{remove_style, StyledString, Color};
 use erg_compiler::context::ModuleContext;
 use erg_compiler::error::{CompileError, CompileErrors};
@@ -13,11 +13,18 @@ pub(crate) fn filter_errors(ctx: &ModuleContext, errors: CompileErrors) -> Compi
 }
 
 fn handle_name_error(error: CompileError) -> Option<CompileError> {
-    if error.core.main_message.contains("is already declared")
-        || error
-            .core
-            .main_message
-            .contains("cannot be assigned more than once")
+    let main = &error.core.main_message;
+    if main.contains("is already declared")
+        || main.contains("cannot be assigned more than once")
+        || {
+            main.contains(" is not defined") && {
+                let name = StyledStr::destyle(main.trim_end_matches(" is not defined"));
+                error
+                    .core
+                    .get_hint()
+                    .is_some_and(|hint| hint.contains(name))
+            }
+        }
     {
         None
     } else {
