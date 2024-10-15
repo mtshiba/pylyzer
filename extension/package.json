@@ -3,7 +3,7 @@
 	"displayName": "pylyzer",
 	"description": "A fast Python static code analyzer & language server for VSCode",
 	"publisher": "pylyzer",
-	"version": "0.1.8",
+	"version": "0.1.9",
 	"engines": {
 		"vscode": "^1.70.0"
 	},
@@ -31,7 +31,7 @@
 			{
 				"id": "python",
 				"aliases": ["Python", "python"],
-				"extensions": [".py"]
+				"extensions": [".py", ".pyi"]
 			}
 		],
 		"configuration": {
@@ -48,10 +48,45 @@
 					"default": false,
 					"markdownDescription": "Enable inlay hints (this feature is unstable)"
 				},
+				"pylyzer.semanticTokens": {
+					"type": "boolean",
+					"default": false,
+					"markdownDescription": "Enable semantic tokens (this feature is unstable)"
+				},
+				"pylyzer.hover": {
+					"type": "boolean",
+					"default": true,
+					"markdownDescription": "Enable hover"
+				},
+				"pylyzer.completion": {
+					"type": "boolean",
+					"default": true,
+					"markdownDescription": "Enable completion"
+				},
 				"pylyzer.smartCompletion": {
 					"type": "boolean",
 					"default": true,
 					"markdownDescription": "Enable smart completion (see [ELS features](https://github.com/erg-lang/erg/blob/main/crates/els/doc/features.md))"
+				},
+				"pylyzer.signatureHelp": {
+					"type": "boolean",
+					"default": true,
+					"markdownDescription": "Enable signature help"
+				},
+				"pylyzer.documentLink": {
+					"type": "boolean",
+					"default": true,
+					"markdownDescription": "Enable document link"
+				},
+				"pylyzer.codeAction": {
+					"type": "boolean",
+					"default": true,
+					"markdownDescription": "Enable code action"
+				},
+				"pylyzer.codeLens": {
+					"type": "boolean",
+					"default": true,
+					"markdownDescription": "Enable code lens"
 				}
 			}
 		}

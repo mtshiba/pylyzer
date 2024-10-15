@@ -12,9 +12,14 @@ async function startLanguageClient(context: ExtensionContext) {
 		})();
 		const enableDiagnostics = workspace.getConfiguration("pylyzer").get<boolean>("diagnostics", true);
 		const enableInlayHints = workspace.getConfiguration("pylyzer").get<boolean>("inlayHints", false);
-		const enableSemanticTokens = workspace.getConfiguration("pylyzer").get<boolean>("semanticTokens", true);
+		const enableSemanticTokens = workspace.getConfiguration("pylyzer").get<boolean>("semanticTokens", false);
 		const enableHover = workspace.getConfiguration("pylyzer").get<boolean>("hover", true);
+		const enableCompletion = workspace.getConfiguration("pylyzer").get<boolean>("completion", true);
 		const smartCompletion = workspace.getConfiguration("pylyzer").get<boolean>("smartCompletion", true);
+		const enableSignatureHelp = workspace.getConfiguration("pylyzer").get<boolean>("signatureHelp", true);
+		const enableDocumentLink = workspace.getConfiguration("pylyzer").get<boolean>("documentLink", true);
+		const enableCodeAction = workspace.getConfiguration("pylyzer").get<boolean>("codeAction", true);
+		const enableCodeLens = workspace.getConfiguration("pylyzer").get<boolean>("codeLens", true);
 		/* optional features */
 		const checkOnType = workspace.getConfiguration("pylyzer").get<boolean>("checkOnType", false);
 		const args = ["--server"];
@@ -35,9 +40,29 @@ async function startLanguageClient(context: ExtensionContext) {
 			args.push("--disable");
 			args.push("hover");
 		}
+		if (!enableCompletion) {
+			args.push("--disable");
+			args.push("completion");
+		}
 		if (!smartCompletion) {
 			args.push("--disable");
 			args.push("smartCompletion");
+		}
+		if (!enableSignatureHelp) {
+			args.push("--disable");
+			args.push("signatureHelp");
+		}
+		if (!enableDocumentLink) {
+			args.push("--disable");
+			args.push("documentLink");
+		}
+		if (!enableCodeAction) {
+			args.push("--disable");
+			args.push("codeAction");
+		}
+		if (!enableCodeLens) {
+			args.push("--disable");
+			args.push("codeLens");
 		}
 		if (checkOnType) {
 			args.push("--enable");
