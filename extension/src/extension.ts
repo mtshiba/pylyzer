@@ -1,5 +1,6 @@
 import { type ExtensionContext, commands, window, workspace } from "vscode";
 import { LanguageClient, type LanguageClientOptions, type ServerOptions } from "vscode-languageclient/node";
+import fs from "node:fs";
 import { showReferences } from "./commands";
 
 let client: LanguageClient | undefined;
@@ -7,6 +8,11 @@ let client: LanguageClient | undefined;
 async function startLanguageClient(context: ExtensionContext) {
 	try {
 		const executablePath = (() => {
+			const fp = workspace.workspaceFolders?.at(0)?.uri.fsPath;
+			const venvExecutablePath = `${fp}/.venv/bin/pylyzer`;
+			if (fs.existsSync(venvExecutablePath)) {
+				return venvExecutablePath;
+			}
 			const executablePath = workspace.getConfiguration("pylyzer").get<string>("executablePath", "");
 			return executablePath === "" ? "pylyzer" : executablePath;
 		})();
