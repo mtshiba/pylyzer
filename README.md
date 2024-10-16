@@ -149,6 +149,11 @@ pylyzer converts Python ASTs to Erg ASTs and passes them to Erg's type checker. 
 * [x] `pyi` (stub) files support
 * [ ] glob pattern file check
 * [x] type comment (`# type: ...`)
+* [x] virtual environment support
+* [x] package manager support
+    * [x] `pip`
+    * [x] `poetry`
+    * [x] `uv`
 
 ## Join us!
 

@@ -43,3 +43,8 @@ Default (disableable) features are:
 * rename
 * semanticTokens
 * signatureHelp
+* documentLink
+
+## --verbose
+
+Print process information verbosely.
