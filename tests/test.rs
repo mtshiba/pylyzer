@@ -6,6 +6,7 @@ use erg_common::spawn::exec_new_thread;
 use erg_compiler::artifact::{CompleteArtifact, IncompleteArtifact};
 use pylyzer_core::PythonAnalyzer;
 
+#[allow(clippy::result_large_err)]
 pub fn exec_analyzer(file_path: &'static str) -> Result<CompleteArtifact, IncompleteArtifact> {
     let cfg = ErgConfig {
         input: Input::file(PathBuf::from(file_path)),

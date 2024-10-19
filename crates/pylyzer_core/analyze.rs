@@ -224,6 +224,7 @@ impl PythonAnalyzer {
         New::new(cfg)
     }
 
+    #[allow(clippy::result_large_err)]
     fn check(
         &mut self,
         erg_ast: AST,
@@ -256,6 +257,7 @@ impl PythonAnalyzer {
         }
     }
 
+    #[allow(clippy::result_large_err)]
     pub fn analyze(
         &mut self,
         py_code: String,

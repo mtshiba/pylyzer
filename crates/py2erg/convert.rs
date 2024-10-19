@@ -436,9 +436,7 @@ impl PyiTypeStorage {
             return;
         };
         let mut locator = RandomLocator::new(&code);
-        let Ok(py_program) = locator.fold(py_program) else {
-            return;
-        };
+        let Ok(py_program) = locator.fold(py_program);
         for stmt in py_program.body {
             match stmt {
                 py_ast::Stmt::AnnAssign(assign) => {
