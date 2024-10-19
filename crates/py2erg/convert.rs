@@ -114,6 +114,9 @@ impl BlockKind {
     pub const fn is_function(&self) -> bool {
         matches!(self, Self::Function | Self::AsyncFunction)
     }
+    pub const fn makes_scope(&self) -> bool {
+        matches!(self, Self::Function | Self::AsyncFunction | Self::Class)
+    }
 }
 
 /// Variables are automatically rewritten with `py_compat`,
@@ -554,6 +557,7 @@ pub struct ASTConverter {
     comments: CommentStorage,
     pyi_types: PyiTypeStorage,
     block_id_counter: usize,
+    /// block != scope (if block doesn't make a scope, for example)
     block_ids: Vec<usize>,
     contexts: Vec<LocalContext>,
     warns: CompileErrors,
@@ -628,6 +632,10 @@ impl ASTConverter {
         self.contexts.pop();
     }
 
+    fn cur_block_kind(&self) -> BlockKind {
+        self.contexts.last().unwrap().kind
+    }
+
     fn cur_block_id(&self) -> usize {
         *self.block_ids.last().unwrap()
     }
@@ -657,6 +665,7 @@ impl ASTConverter {
     fn register_name_info(&mut self, name: &str, kind: NameKind) -> CanShadow {
         let cur_namespace = self.cur_namespace();
         let cur_block_id = self.cur_block_id();
+        let cur_block_kind = self.cur_block_kind();
         if let Some(name_info) = self.get_mut_name(name) {
             if name_info.defined_in == cur_namespace && name_info.defined_block_id == cur_block_id {
                 name_info.defined_times += 1;
@@ -665,7 +674,10 @@ impl ASTConverter {
                 name_info.defined_in = DefinedPlace::Known(cur_namespace);
                 name_info.defined_times += 1; // 0 -> 1
             }
-            if name_info.defined_block_id == cur_block_id || name_info.defined_times == 0 {
+            if cur_block_kind.makes_scope()
+                || name_info.defined_block_id == cur_block_id
+                || name_info.defined_times == 0
+            {
                 CanShadow::Yes
             } else {
                 CanShadow::No

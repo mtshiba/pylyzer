@@ -78,6 +78,11 @@ fn exec_import() -> Result<(), String> {
 }
 
 #[test]
+fn exec_dict() -> Result<(), String> {
+    expect("tests/dict.py", 0, 2)
+}
+
+#[test]
 fn exec_export() -> Result<(), String> {
     expect("tests/export.py", 0, 0)
 }
