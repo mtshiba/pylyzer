@@ -160,7 +160,7 @@ fn exec_decl() -> Result<(), String> {
 
 #[test]
 fn exec_shadowing() -> Result<(), String> {
-    expect("tests/shadowing.py", 0, 3)
+    expect("tests/shadowing.py", 0, 4)
 }
 
 #[test]

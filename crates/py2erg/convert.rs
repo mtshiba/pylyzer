@@ -61,18 +61,10 @@ macro_rules! global_binary_collections {
 pub const ARROW: Token = Token::dummy(TokenKind::FuncArrow, "->");
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum CanShadow {
-    Yes,
-    No,
-}
-
-impl CanShadow {
-    pub const fn is_yes(&self) -> bool {
-        matches!(self, Self::Yes)
-    }
-    pub const fn is_no(&self) -> bool {
-        matches!(self, Self::No)
-    }
+pub enum RenameKind {
+    Let,
+    Phi,
+    Redef,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -97,6 +89,10 @@ impl NameKind {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum BlockKind {
     If,
+    /// else, except, finally
+    Else {
+        if_block_id: usize,
+    },
     For,
     While,
     Try,
@@ -116,6 +112,15 @@ impl BlockKind {
     }
     pub const fn makes_scope(&self) -> bool {
         matches!(self, Self::Function | Self::AsyncFunction | Self::Class)
+    }
+    pub const fn is_else(&self) -> bool {
+        matches!(self, Self::Else { .. })
+    }
+    pub const fn if_block_id(&self) -> Option<usize> {
+        match self {
+            Self::Else { if_block_id } => Some(*if_block_id),
+            _ => None,
+        }
     }
 }
 
@@ -306,6 +311,12 @@ impl TypeVarInfo {
             bound,
         }
     }
+}
+
+#[derive(Debug)]
+pub struct BlockInfo {
+    pub id: usize,
+    pub kind: BlockKind,
 }
 
 #[derive(Debug)]
@@ -556,7 +567,7 @@ pub struct ASTConverter {
     pyi_types: PyiTypeStorage,
     block_id_counter: usize,
     /// block != scope (if block doesn't make a scope, for example)
-    block_ids: Vec<usize>,
+    blocks: Vec<BlockInfo>,
     contexts: Vec<LocalContext>,
     warns: CompileErrors,
     errs: CompileErrors,
@@ -572,7 +583,10 @@ impl ASTConverter {
             cfg,
             comments,
             block_id_counter: 0,
-            block_ids: vec![0],
+            blocks: vec![BlockInfo {
+                id: 0,
+                kind: BlockKind::Module,
+            }],
             contexts: vec![LocalContext::new("<module>".into(), BlockKind::Module)],
             warns: CompileErrors::empty(),
             errs: CompileErrors::empty(),
@@ -631,11 +645,11 @@ impl ASTConverter {
     }
 
     fn cur_block_kind(&self) -> BlockKind {
-        self.contexts.last().unwrap().kind
+        self.blocks.last().unwrap().kind
     }
 
     fn cur_block_id(&self) -> usize {
-        *self.block_ids.last().unwrap()
+        self.blocks.last().unwrap().id
     }
 
     /// foo.bar.baz
@@ -660,7 +674,7 @@ impl ASTConverter {
         &self.contexts.last().unwrap().appeared_type_names
     }
 
-    fn register_name_info(&mut self, name: &str, kind: NameKind) -> CanShadow {
+    fn register_name_info(&mut self, name: &str, kind: NameKind) -> RenameKind {
         let cur_namespace = self.cur_namespace();
         let cur_block_id = self.cur_block_id();
         let cur_block_kind = self.cur_block_kind();
@@ -672,13 +686,18 @@ impl ASTConverter {
                 name_info.defined_in = DefinedPlace::Known(cur_namespace);
                 name_info.defined_times += 1; // 0 -> 1
             }
-            if cur_block_kind.makes_scope()
+            if cur_block_kind
+                .if_block_id()
+                .is_some_and(|id| id == name_info.defined_block_id)
+            {
+                RenameKind::Phi
+            } else if cur_block_kind.makes_scope()
                 || name_info.defined_block_id == cur_block_id
                 || name_info.defined_times == 0
             {
-                CanShadow::Yes
+                RenameKind::Let
             } else {
-                CanShadow::No
+                RenameKind::Redef
             }
         } else {
             // In Erg, classes can only be defined in uppercase
@@ -691,7 +710,7 @@ impl ASTConverter {
             let defined_in = DefinedPlace::Known(self.cur_namespace());
             let info = NameInfo::new(rename, defined_in, self.cur_block_id(), 1);
             self.define_name(String::from(name), info);
-            CanShadow::Yes
+            RenameKind::Let
         }
     }
 
@@ -957,12 +976,15 @@ impl ASTConverter {
         let (param, block) = self.convert_opt_expr_to_param(lhs);
         let params = Params::new(vec![param], None, vec![], None, None);
         self.block_id_counter += 1;
-        self.block_ids.push(self.block_id_counter);
+        self.blocks.push(BlockInfo {
+            id: self.block_id_counter,
+            kind: BlockKind::For,
+        });
         let body = body
             .into_iter()
             .map(|stmt| self.convert_statement(stmt, true))
             .collect::<Vec<_>>();
-        self.block_ids.pop();
+        self.blocks.pop();
         let body = block.into_iter().chain(body).collect();
         let sig = LambdaSignature::new(params, None, TypeBoundSpecs::empty());
         let op = Token::from_str(TokenKind::FuncArrow, "->");
@@ -1926,12 +1948,15 @@ impl ASTConverter {
         let mut new_block = Vec::new();
         let len = block.len();
         self.block_id_counter += 1;
-        self.block_ids.push(self.block_id_counter);
+        self.blocks.push(BlockInfo {
+            id: self.block_id_counter,
+            kind,
+        });
         for (i, stmt) in block.into_iter().enumerate() {
             let is_last = i == len - 1;
             new_block.push(self.convert_statement(stmt, is_last && kind.is_function()));
         }
-        self.block_ids.pop();
+        self.blocks.pop();
         Block::new(new_block)
     }
 
@@ -2483,17 +2508,38 @@ impl ASTConverter {
                 match *ann_assign.target {
                     py_ast::Expr::Name(name) => {
                         if let Some(value) = ann_assign.value {
-                            let block = Block::new(vec![self.convert_expr(*value)]);
-                            let body = DefBody::new(EQUAL, block, DefId(0));
+                            let expr = self.convert_expr(*value);
                             // must register after convert_expr because value may be contain name (e.g. i = i + 1)
-                            self.register_name_info(name.id.as_str(), NameKind::Variable);
+                            let rename =
+                                self.register_name_info(name.id.as_str(), NameKind::Variable);
                             let ident = self.convert_ident(name.id.to_string(), name.location());
-                            let sig = Signature::Var(VarSignature::new(
-                                VarPattern::Ident(ident),
-                                Some(t_spec),
-                            ));
-                            let def = Def::new(sig, body);
-                            Expr::Def(def)
+                            match rename {
+                                RenameKind::Let => {
+                                    let block = Block::new(vec![expr]);
+                                    let body = DefBody::new(EQUAL, block, DefId(0));
+                                    let sig = Signature::Var(VarSignature::new(
+                                        VarPattern::Ident(ident),
+                                        Some(t_spec),
+                                    ));
+                                    let def = Def::new(sig, body);
+                                    Expr::Def(def)
+                                }
+                                RenameKind::Phi => {
+                                    let block = Block::new(vec![expr]);
+                                    let body = DefBody::new(EQUAL, block, DefId(0));
+                                    let sig = Signature::Var(VarSignature::new(
+                                        VarPattern::Phi(ident),
+                                        Some(t_spec),
+                                    ));
+                                    let def = Def::new(sig, body);
+                                    Expr::Def(def)
+                                }
+                                RenameKind::Redef => {
+                                    let redef =
+                                        ReDef::new(Accessor::Ident(ident), Some(t_spec), expr);
+                                    Expr::ReDef(redef)
+                                }
+                            }
                         } else {
                             // no registration because it's just a type ascription
                             let ident = self.convert_ident(name.id.to_string(), name.location());
@@ -2557,21 +2603,34 @@ impl ASTConverter {
                                     self.define_type_var(name.id.to_string(), info);
                                 }
                             }
-                            let can_shadow = self.register_name_info(&name.id, NameKind::Variable);
+                            let rename = self.register_name_info(&name.id, NameKind::Variable);
                             let ident = self.convert_ident(name.id.to_string(), name.location());
                             let t_spec = self.get_assign_t_spec(&name, &expr);
-                            if can_shadow.is_yes() {
-                                let block = Block::new(vec![expr]);
-                                let body = DefBody::new(EQUAL, block, DefId(0));
-                                let sig = Signature::Var(VarSignature::new(
-                                    VarPattern::Ident(ident),
-                                    t_spec,
-                                ));
-                                let def = Def::new(sig, body);
-                                Expr::Def(def)
-                            } else {
-                                let redef = ReDef::new(Accessor::Ident(ident), t_spec, expr);
-                                Expr::ReDef(redef)
+                            match rename {
+                                RenameKind::Let => {
+                                    let block = Block::new(vec![expr]);
+                                    let body = DefBody::new(EQUAL, block, DefId(0));
+                                    let sig = Signature::Var(VarSignature::new(
+                                        VarPattern::Ident(ident),
+                                        t_spec,
+                                    ));
+                                    let def = Def::new(sig, body);
+                                    Expr::Def(def)
+                                }
+                                RenameKind::Phi => {
+                                    let block = Block::new(vec![expr]);
+                                    let body = DefBody::new(EQUAL, block, DefId(0));
+                                    let sig = Signature::Var(VarSignature::new(
+                                        VarPattern::Phi(ident),
+                                        t_spec,
+                                    ));
+                                    let def = Def::new(sig, body);
+                                    Expr::Def(def)
+                                }
+                                RenameKind::Redef => {
+                                    let redef = ReDef::new(Accessor::Ident(ident), t_spec, expr);
+                                    Expr::ReDef(redef)
+                                }
                             }
                         }
                         py_ast::Expr::Attribute(attr) => {
@@ -2654,15 +2713,32 @@ impl ASTConverter {
                             py_ast::Expr::Name(name) => {
                                 let body =
                                     DefBody::new(EQUAL, Block::new(vec![value.clone()]), DefId(0));
-                                self.register_name_info(&name.id, NameKind::Variable);
+                                let rename = self.register_name_info(&name.id, NameKind::Variable);
                                 let ident =
                                     self.convert_ident(name.id.to_string(), name.location());
-                                let sig = Signature::Var(VarSignature::new(
-                                    VarPattern::Ident(ident),
-                                    None,
-                                ));
-                                let def = Expr::Def(Def::new(sig, body));
-                                defs.push(def);
+                                match rename {
+                                    RenameKind::Let => {
+                                        let sig = Signature::Var(VarSignature::new(
+                                            VarPattern::Ident(ident),
+                                            None,
+                                        ));
+                                        let def = Def::new(sig, body);
+                                        defs.push(Expr::Def(def));
+                                    }
+                                    RenameKind::Phi => {
+                                        let sig = Signature::Var(VarSignature::new(
+                                            VarPattern::Phi(ident),
+                                            None,
+                                        ));
+                                        let def = Def::new(sig, body);
+                                        defs.push(Expr::Def(def));
+                                    }
+                                    RenameKind::Redef => {
+                                        let redef =
+                                            ReDef::new(Accessor::Ident(ident), None, value.clone());
+                                        defs.push(Expr::ReDef(redef));
+                                    }
+                                }
                             }
                             _other => {
                                 defs.push(Expr::Dummy(Dummy::new(None, vec![])));
@@ -2770,6 +2846,7 @@ impl ASTConverter {
             }
             py_ast::Stmt::If(if_) => {
                 let loc = if_.location();
+                let if_block_id = self.block_id_counter + 1;
                 let block = self.convert_block(if_.body, BlockKind::If);
                 let params = Params::empty();
                 let sig = LambdaSignature::new(params.clone(), None, TypeBoundSpecs::empty());
@@ -2778,7 +2855,8 @@ impl ASTConverter {
                 let if_ident = self.convert_ident("if".to_string(), loc);
                 let if_acc = Expr::Accessor(Accessor::Ident(if_ident));
                 if !if_.orelse.is_empty() {
-                    let else_block = self.convert_block(if_.orelse, BlockKind::If);
+                    let else_block =
+                        self.convert_block(if_.orelse, BlockKind::Else { if_block_id });
                     let sig = LambdaSignature::new(params, None, TypeBoundSpecs::empty());
                     let else_body = Lambda::new(sig, Token::DUMMY, else_block, DefId(0));
                     let args = Args::pos_only(
@@ -2879,10 +2957,11 @@ impl ASTConverter {
                 self.convert_from_import(import_from.module, import_from.names, loc)
             }
             py_ast::Stmt::Try(try_) => {
+                let if_block_id = self.block_id_counter + 1;
                 let chunks = self.convert_block(try_.body, BlockKind::Try).into_iter();
                 let dummy = chunks
-                    .chain(self.convert_block(try_.orelse, BlockKind::Try))
-                    .chain(self.convert_block(try_.finalbody, BlockKind::Try))
+                    .chain(self.convert_block(try_.orelse, BlockKind::Else { if_block_id }))
+                    .chain(self.convert_block(try_.finalbody, BlockKind::Else { if_block_id }))
                     .collect();
                 Expr::Dummy(Dummy::new(None, dummy))
             }
