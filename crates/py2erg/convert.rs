@@ -2450,6 +2450,33 @@ impl ASTConverter {
         Expr::ClassDef(classdef)
     }
 
+    fn convert_for(&mut self, for_: py_ast::StmtFor) -> Expr {
+        let loc = for_.location();
+        let iter = self.convert_expr(*for_.iter);
+        let if_block_id = self.block_id_counter + 1;
+        let block = self.convert_for_body(Some(*for_.target), for_.body);
+        let for_ident = self.convert_ident("for".to_string(), loc);
+        let for_acc = Expr::Accessor(Accessor::Ident(for_ident));
+        if for_.orelse.is_empty() {
+            for_acc.call2(iter, Expr::Lambda(block))
+        } else {
+            let else_block = self.convert_block(for_.orelse, BlockKind::Else { if_block_id });
+            let params = Params::empty();
+            let sig = LambdaSignature::new(params, None, TypeBoundSpecs::empty());
+            let op = Token::from_str(TokenKind::FuncArrow, "->");
+            let else_block = Lambda::new(sig, op, else_block, DefId(0));
+            let args = Args::pos_only(
+                vec![
+                    PosArg::new(iter),
+                    PosArg::new(Expr::Lambda(block)),
+                    PosArg::new(Expr::Lambda(else_block)),
+                ],
+                None,
+            );
+            for_acc.call_expr(args)
+        }
+    }
+
     fn get_t_spec(&self, name: &str) -> Option<&PyTypeSpec> {
         if self.contexts.len() == 1 {
             self.pyi_types.get_type(name)
@@ -2817,32 +2844,55 @@ impl ASTConverter {
                 self.convert_funcdef(func_def, true)
             }
             py_ast::Stmt::ClassDef(class_def) => self.convert_classdef(class_def),
-            py_ast::Stmt::For(for_) => {
-                let loc = for_.location();
-                let iter = self.convert_expr(*for_.iter);
-                let block = self.convert_for_body(Some(*for_.target), for_.body);
-                let for_ident = self.convert_ident("for".to_string(), loc);
-                let for_acc = Expr::Accessor(Accessor::Ident(for_ident));
-                for_acc.call2(iter, Expr::Lambda(block))
-            }
+            py_ast::Stmt::For(for_) => self.convert_for(for_),
             py_ast::Stmt::AsyncFor(for_) => {
-                let loc = for_.location();
-                let iter = self.convert_expr(*for_.iter);
-                let block = self.convert_for_body(Some(*for_.target), for_.body);
-                let for_ident = self.convert_ident("for".to_string(), loc);
-                let for_acc = Expr::Accessor(Accessor::Ident(for_ident));
-                for_acc.call2(iter, Expr::Lambda(block))
+                let py_ast::StmtAsyncFor {
+                    target,
+                    iter,
+                    body,
+                    orelse,
+                    range,
+                    type_comment,
+                } = for_;
+                let for_ = py_ast::StmtFor {
+                    target,
+                    iter,
+                    body,
+                    orelse,
+                    range,
+                    type_comment,
+                };
+                self.convert_for(for_)
             }
             py_ast::Stmt::While(while_) => {
                 let loc = while_.location();
                 let test = self.convert_expr(*while_.test);
                 let params = Params::empty();
                 let empty_sig = LambdaSignature::new(params, None, TypeBoundSpecs::empty());
+                let if_block_id = self.block_id_counter + 1;
                 let block = self.convert_block(while_.body, BlockKind::While);
                 let body = Lambda::new(empty_sig, Token::DUMMY, block, DefId(0));
                 let while_ident = self.convert_ident("while".to_string(), loc);
                 let while_acc = Expr::Accessor(Accessor::Ident(while_ident));
-                while_acc.call2(test, Expr::Lambda(body))
+                if while_.orelse.is_empty() {
+                    while_acc.call2(test, Expr::Lambda(body))
+                } else {
+                    let else_block =
+                        self.convert_block(while_.orelse, BlockKind::Else { if_block_id });
+                    let params = Params::empty();
+                    let sig = LambdaSignature::new(params, None, TypeBoundSpecs::empty());
+                    let op = Token::from_str(TokenKind::FuncArrow, "->");
+                    let else_body = Lambda::new(sig, op, else_block, DefId(0));
+                    let args = Args::pos_only(
+                        vec![
+                            PosArg::new(test),
+                            PosArg::new(Expr::Lambda(body)),
+                            PosArg::new(Expr::Lambda(else_body)),
+                        ],
+                        None,
+                    );
+                    while_acc.call_expr(args)
+                }
             }
             py_ast::Stmt::If(if_) => {
                 let loc = if_.location();
@@ -2958,8 +3008,41 @@ impl ASTConverter {
             }
             py_ast::Stmt::Try(try_) => {
                 let if_block_id = self.block_id_counter + 1;
-                let chunks = self.convert_block(try_.body, BlockKind::Try).into_iter();
+                let mut chunks = self.convert_block(try_.body, BlockKind::Try);
+                for py_ast::ExceptHandler::ExceptHandler(handler) in try_.handlers {
+                    let mut block =
+                        self.convert_block(handler.body, BlockKind::Else { if_block_id });
+                    if let Some(name) = handler.name {
+                        let ident = self.convert_ident(name.to_string(), handler.range.start);
+                        let t_spec = if let Some(type_) = handler.type_ {
+                            let t_spec = self.convert_type_spec(*type_.clone());
+                            let as_expr = self.convert_expr(*type_.clone());
+                            let as_op = Token::new(
+                                TokenKind::As,
+                                "as",
+                                t_spec.ln_begin().unwrap_or(0),
+                                t_spec.col_begin().unwrap_or(0),
+                            );
+                            let t_spec = TypeSpecWithOp::new(as_op, t_spec, as_expr);
+                            Some(t_spec)
+                        } else {
+                            None
+                        };
+                        let var = VarSignature::new(VarPattern::Ident(ident), t_spec);
+                        let unreachable_acc = Identifier::new(
+                            VisModifierSpec::Public(ErgLocation::Unknown),
+                            VarName::from_static("exit"),
+                        );
+                        let body = Expr::Accessor(Accessor::Ident(unreachable_acc))
+                            .call_expr(Args::empty());
+                        let body = DefBody::new(EQUAL, Block::new(vec![body]), DefId(0));
+                        let def = Def::new(Signature::Var(var), body);
+                        block.insert(0, Expr::Def(def));
+                    }
+                    chunks.extend(block);
+                }
                 let dummy = chunks
+                    .into_iter()
                     .chain(self.convert_block(try_.orelse, BlockKind::Else { if_block_id }))
                     .chain(self.convert_block(try_.finalbody, BlockKind::Else { if_block_id }))
                     .collect();
