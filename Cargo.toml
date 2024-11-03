@@ -24,9 +24,9 @@ edition = "2021"
 repository = "https://github.com/mtshiba/pylyzer"
 
 [workspace.dependencies]
-erg_common = { version = "0.6.47-nightly.4", features = ["py_compat", "els"] }
-erg_compiler = { version = "0.6.47-nightly.4", features = ["py_compat", "els"] }
-els = { version = "0.1.59-nightly.4", features = ["py_compat"] }
+erg_common = { version = "0.6.47", features = ["py_compat", "els"] }
+erg_compiler = { version = "0.6.47", features = ["py_compat", "els"] }
+els = { version = "0.1.59", features = ["py_compat"] }
 # rustpython-parser = { version = "0.3.0", features = ["all-nodes-with-ranges", "location"] }
 # rustpython-ast = { version = "0.3.0", features = ["all-nodes-with-ranges", "location"] }
 rustpython-parser = { git = "https://github.com/RustPython/Parser", version = "0.4.0", features = ["all-nodes-with-ranges", "location"] }
@@ -53,3 +53,7 @@ els = { workspace = true }
 
 [dev-dependencies]
 erg_compiler = { workspace = true }
+
+[profile.opt-with-dbg]
+inherits = "release"
+debug = true
