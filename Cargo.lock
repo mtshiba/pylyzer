@@ -3,12 +3,6 @@
 version = 3
 
 [[package]]
-name = "Inflector"
-version = "0.11.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fe438c63458706e03479442743baae6c88256498e6431708f6dfc520a26515d3"
-
-[[package]]
 name = "addr2line"
 version = "0.24.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -145,9 +139,9 @@ checksum = "60b1af1c220855b6ceac025d3f6ecdd2b7c4894bfe9cd9bda4fbb4bc7c0d4cf0"
 
 [[package]]
 name = "els"
-version = "0.1.59"
+version = "0.1.60-nightly.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a72ba538ebca5cfce27cde11b0c4e4ac27206d34bbdb426b3bac6ef96354c9ab"
+checksum = "91526cd54184ae2ddea4124e87a00dca78fff3780de423dcc0b089d8ed0f31e1"
 dependencies = [
  "erg_common",
  "erg_compiler",
@@ -161,9 +155,9 @@ dependencies = [
 
 [[package]]
 name = "erg_common"
-version = "0.6.47"
+version = "0.6.48-nightly.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "830e5c44c97cace33c933c4e46bcfbe2f5abc2476c3ac00746aa94a175304a26"
+checksum = "dc5e16917f93caa5866a8f628d8d4c82c72c7bde70bb1cae1969f1f5d0521f9a"
 dependencies = [
  "backtrace-on-stack-overflow",
  "erg_proc_macros",
@@ -174,9 +168,9 @@ dependencies = [
 
 [[package]]
 name = "erg_compiler"
-version = "0.6.47"
+version = "0.6.48-nightly.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "50bb3b936120c69c9e47a4be820b6e0d559de7c298718a36902804cb3460b635"
+checksum = "446393772e60305fbbce5d331aad109037e4ee7c098f8431c6431c2fab200548"
 dependencies = [
  "erg_common",
  "erg_parser",
@@ -184,9 +178,9 @@ dependencies = [
 
 [[package]]
 name = "erg_parser"
-version = "0.6.47"
+version = "0.6.48-nightly.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "708f8051aa0ad784fd592bb16c6c7bdc5ad9a2978f1762912008f4a78efb9474"
+checksum = "5e00edb38b9576bace8b914c65d5c4511055feb2de41527449bae6471bd05017"
 dependencies = [
  "erg_common",
  "erg_proc_macros",
@@ -195,9 +189,9 @@ dependencies = [
 
 [[package]]
 name = "erg_proc_macros"
-version = "0.6.47"
+version = "0.6.48-nightly.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0285995d39066b011fbd44e509d1500c14e10b8f26898a53147858ce296f2148"
+checksum = "3f51df19e941a11864b34dc9cbf7c94b36a8641def3bdb041de873dad566b9f7"
 dependencies = [
  "quote",
  "syn 1.0.109",
@@ -248,6 +242,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "heck"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2304e00983f87ffb38b55b444b5e3b60a884b5d30c0fca7d82fe33449bbe55ea"
+
+[[package]]
 name = "idna"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -259,11 +259,11 @@ dependencies = [
 
 [[package]]
 name = "is-macro"
-version = "0.3.6"
+version = "0.3.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2069faacbe981460232f880d26bf3c7634e322d49053aa48c27e3ae642f728f1"
+checksum = "1d57a3e447e24c22647738e4607f1df1e0ec6f72e16182c4cd199f647cdfb0e4"
 dependencies = [
- "Inflector",
+ "heck",
  "proc-macro2",
  "quote",
  "syn 2.0.87",
@@ -563,7 +563,7 @@ dependencies = [
 
 [[package]]
 name = "py2erg"
-version = "0.0.68"
+version = "0.0.69"
 dependencies = [
  "erg_common",
  "erg_compiler",
@@ -573,7 +573,7 @@ dependencies = [
 
 [[package]]
 name = "pylyzer"
-version = "0.0.68"
+version = "0.0.69"
 dependencies = [
  "els",
  "erg_common",
@@ -583,7 +583,7 @@ dependencies = [
 
 [[package]]
 name = "pylyzer_core"
-version = "0.0.68"
+version = "0.0.69"
 dependencies = [
  "erg_common",
  "erg_compiler",
@@ -594,7 +594,7 @@ dependencies = [
 
 [[package]]
 name = "pylyzer_wasm"
-version = "0.0.68"
+version = "0.0.69"
 dependencies = [
  "erg_common",
  "erg_compiler",

@@ -17,16 +17,16 @@ members = [
 ]
 
 [workspace.package]
-version = "0.0.68"
+version = "0.0.69"
 authors = ["Shunsuke Shibayama <sbym1346@gmail.com>"]
 license = "MIT OR Apache-2.0"
 edition = "2021"
 repository = "https://github.com/mtshiba/pylyzer"
 
 [workspace.dependencies]
-erg_common = { version = "0.6.47", features = ["py_compat", "els"] }
-erg_compiler = { version = "0.6.47", features = ["py_compat", "els"] }
-els = { version = "0.1.59", features = ["py_compat"] }
+erg_common = { version = "0.6.48-nightly.0", features = ["py_compat", "els"] }
+erg_compiler = { version = "0.6.48-nightly.0", features = ["py_compat", "els"] }
+els = { version = "0.1.60-nightly.0", features = ["py_compat"] }
 # rustpython-parser = { version = "0.3.0", features = ["all-nodes-with-ranges", "location"] }
 # rustpython-ast = { version = "0.3.0", features = ["all-nodes-with-ranges", "location"] }
 rustpython-parser = { git = "https://github.com/RustPython/Parser", version = "0.4.0", features = ["all-nodes-with-ranges", "location"] }
@@ -47,7 +47,7 @@ experimental = ["erg_common/experimental", "els/experimental", "pylyzer_core/exp
 parallel = ["erg_common/parallel", "pylyzer_core/parallel"]
 
 [dependencies]
-pylyzer_core = { version = "0.0.68", path = "./crates/pylyzer_core" }
+pylyzer_core = { version = "0.0.69", path = "./crates/pylyzer_core" }
 erg_common = { workspace = true }
 els = { workspace = true }
 
