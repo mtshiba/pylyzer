@@ -4,6 +4,10 @@
 
 Launch as a language server.
 
+## --clear-cache
+
+Clear the cache files.
+
 ## --dump-decl
 
 Dump a type declarations file (d.er) after type checking.

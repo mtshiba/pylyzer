@@ -6,6 +6,8 @@ use erg_common::config::{ErgConfig, ErgMode};
 use erg_common::io::Input;
 use erg_common::switch_lang;
 
+use crate::copy::clear_cache;
+
 fn command_message() -> &'static str {
     switch_lang!(
         "japanese" =>
@@ -21,6 +23,7 @@ OPTIONS
     --version/-V                         バージョンを表示
     --verbose 0|1|2                      冗長性レベルを指定
     --server                             Language Serverを起動
+    --clear-cache                        キャッシュをクリア
     --code/-c cmd                        文字列をプログラムに渡す
     --dump-decl                          型宣言ファイルを出力
     --disable                            指定した機能を無効化",
@@ -38,6 +41,7 @@ OPTIONS
     --version/-V                         显示版本
     --verbose 0|1|2                      指定细致程度
     --server                             启动 Language Server
+    --clear-cache                        清除缓存
     --code/-c cmd                        作为字符串传入程序
     --dump-decl                          输出类型声明文件
     --disable                            禁用指定功能",
@@ -55,6 +59,7 @@ OPTIONS
     --version/-V                         顯示版本
     --verbose 0|1|2                      指定細緻程度
     --server                             啟動 Language Server
+    --clear-cache                        清除快取
     --code/-c cmd                        作為字串傳入程式
     --dump-decl                          輸出類型宣告檔案
     --disable                            禁用指定功能",
@@ -72,6 +77,7 @@ OPTIONS
     --version/-V                         show version
     --verbose 0|1|2                      verbosity level
     --server                             start the Language Server
+    --clear-cache                        clear cache
     --code/-c cmd                        program passed in as string
     --dump-decl                          output type declaration file
     --disable                            disable specified features",
@@ -123,6 +129,10 @@ pub(crate) fn parse_args() -> ErgConfig {
             }
             "-V" | "--version" => {
                 println!("pylyzer {}", env!("CARGO_PKG_VERSION"));
+                std::process::exit(0);
+            }
+            "--clear-cache" => {
+                clear_cache();
                 std::process::exit(0);
             }
             other if other.starts_with('-') => {

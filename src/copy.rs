@@ -1,4 +1,4 @@
-use std::fs::{copy, create_dir_all, read_dir};
+use std::fs::{copy, create_dir_all, read_dir, remove_file, DirEntry};
 use std::path::Path;
 
 use erg_common::env::{erg_path, python_site_packages};
@@ -31,6 +31,53 @@ pub(crate) fn copy_dot_erg() {
         if site_packages.join(".erg").exists() {
             println!("Copying site-package/.erg to {}", erg_path().display());
             copy_dir(site_packages.join(".erg"), erg_path()).expect("Failed to copy .erg");
+        }
+    }
+}
+
+pub(crate) fn clear_cache() {
+    for dir in read_dir(".").expect("Failed to read dir") {
+        let Ok(dir) = dir else {
+            continue;
+        };
+        rec_clear_cache(dir);
+    }
+    for site_packages in python_site_packages() {
+        for pkg in site_packages
+            .read_dir()
+            .expect("Failed to read site-packages")
+        {
+            let Ok(pkg) = pkg else {
+                continue;
+            };
+            rec_clear_cache(pkg);
+        }
+    }
+}
+
+fn rec_clear_cache(pkg: DirEntry) {
+    if pkg.file_type().expect("Failed to get file type").is_dir() {
+        let cache = if pkg.path().ends_with("__pycache__") {
+            pkg.path()
+        } else {
+            pkg.path().join("__pycache__")
+        };
+        if cache.exists() {
+            for cache_file in cache.read_dir().expect("Failed to read cache") {
+                let Ok(cache_file) = cache_file else {
+                    continue;
+                };
+                if cache_file.file_name().to_string_lossy().ends_with(".d.er") {
+                    println!("Removing cache file {}", cache_file.path().display());
+                    remove_file(cache_file.path()).expect("Failed to remove cache file");
+                }
+            }
+        }
+        for entry in pkg.path().read_dir().expect("Failed to read dir") {
+            let Ok(entry) = entry else {
+                continue;
+            };
+            rec_clear_cache(entry);
         }
     }
 }
