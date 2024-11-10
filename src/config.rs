@@ -135,6 +135,19 @@ pub(crate) fn parse_args() -> ErgConfig {
                 clear_cache();
                 std::process::exit(0);
             }
+            "--no-infer-fn-type" => {
+                cfg.no_infer_fn_type = true;
+            }
+            "--fast-error-report" => {
+                cfg.fast_error_report = true;
+            }
+            "--hurry" => {
+                cfg.no_infer_fn_type = true;
+                cfg.fast_error_report = true;
+            }
+            "--do-not-show-ext-errors" => {
+                cfg.do_not_show_ext_errors = true;
+            }
             other if other.starts_with('-') => {
                 println!(
                     "\

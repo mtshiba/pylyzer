@@ -52,3 +52,19 @@ Default (disableable) features are:
 ## --verbose
 
 Print process information verbosely.
+
+## --no-infer-fn-type
+
+When a function type is not specified, no type inference is performed and the function type is assumed to be `Any`.
+
+## --fast-error-report
+
+Simplify error reporting by eliminating to search for similar variables when a variable does not exist.
+
+## --hurry
+
+Enable `--no-infer-fn-type` and `--fast-error-report`.
+
+## --do-not-show-ext-errors
+
+Do not show errors from external libraries.

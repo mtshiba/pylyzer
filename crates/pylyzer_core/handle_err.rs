@@ -1,3 +1,5 @@
+use std::path::{Path, PathBuf};
+
 use erg_common::error::ErrorKind;
 use erg_common::log;
 use erg_common::style::{remove_style, StyledStr};
@@ -5,10 +7,26 @@ use erg_common::style::{remove_style, StyledStr};
 use erg_compiler::context::ModuleContext;
 use erg_compiler::error::{CompileError, CompileErrors};
 
+fn project_root(path: &Path) -> Option<PathBuf> {
+    let mut parent = path.to_path_buf();
+    while parent.pop() {
+        if parent.join("pyproject.toml").exists() || parent.join(".git").exists() {
+            let path = if parent == Path::new("") {
+                PathBuf::from(".")
+            } else {
+                parent
+            };
+            return path.canonicalize().ok();
+        }
+    }
+    None
+}
+
 pub(crate) fn filter_errors(ctx: &ModuleContext, errors: CompileErrors) -> CompileErrors {
+    let root = project_root(ctx.get_top_cfg().input.path());
     errors
         .into_iter()
-        .filter_map(|error| filter_error(ctx, error))
+        .filter_map(|error| filter_error(root.as_deref(), ctx, error))
         .collect()
 }
 
@@ -32,7 +50,23 @@ fn handle_name_error(error: CompileError) -> Option<CompileError> {
     }
 }
 
-fn filter_error(_ctx: &ModuleContext, mut error: CompileError) -> Option<CompileError> {
+fn filter_error(
+    root: Option<&Path>,
+    ctx: &ModuleContext,
+    mut error: CompileError,
+) -> Option<CompileError> {
+    if ctx.get_top_cfg().do_not_show_ext_errors
+        && error.input.path() != Path::new("<string>")
+        && root.is_some_and(|root| {
+            error
+                .input
+                .path()
+                .canonicalize()
+                .is_ok_and(|path| !path.starts_with(root))
+        })
+    {
+        return None;
+    }
     match error.core.kind {
         ErrorKind::FeatureError => {
             log!(err "this error is ignored:");
