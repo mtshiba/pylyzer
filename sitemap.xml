@@ -2,32 +2,32 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://mtshiba.github.io/pylyzer/</loc>
-         <lastmod>2024-10-16</lastmod>
+         <lastmod>2024-11-10</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://mtshiba.github.io/pylyzer/editor/</loc>
-         <lastmod>2024-10-16</lastmod>
+         <lastmod>2024-11-10</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://mtshiba.github.io/pylyzer/errors/errors/</loc>
-         <lastmod>2024-10-16</lastmod>
+         <lastmod>2024-11-10</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://mtshiba.github.io/pylyzer/errors/warns/</loc>
-         <lastmod>2024-10-16</lastmod>
+         <lastmod>2024-11-10</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://mtshiba.github.io/pylyzer/options/options/</loc>
-         <lastmod>2024-10-16</lastmod>
+         <lastmod>2024-11-10</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://mtshiba.github.io/pylyzer/options/pyproject/</loc>
-         <lastmod>2024-10-16</lastmod>
+         <lastmod>2024-11-10</lastmod>
          <changefreq>daily</changefreq>
     </url>
 </urlset>

@@ -471,6 +471,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#-clear-cache" class="md-nav__link">
+    <span class="md-ellipsis">
+      --clear-cache
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#-dump-decl" class="md-nav__link">
     <span class="md-ellipsis">
       --dump-decl
@@ -501,6 +510,42 @@
   <a href="#-verbose" class="md-nav__link">
     <span class="md-ellipsis">
       --verbose
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#-no-infer-fn-type" class="md-nav__link">
+    <span class="md-ellipsis">
+      --no-infer-fn-type
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#-fast-error-report" class="md-nav__link">
+    <span class="md-ellipsis">
+      --fast-error-report
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#-hurry" class="md-nav__link">
+    <span class="md-ellipsis">
+      --hurry
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#-do-not-show-ext-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      --do-not-show-ext-errors
     </span>
   </a>
   
@@ -564,6 +609,8 @@
 <h1 id="command-line-options">command line options<a class="headerlink" href="#command-line-options" title="Permanent link">#</a></h1>
 <h2 id="-server">--server<a class="headerlink" href="#-server" title="Permanent link">#</a></h2>
 <p>Launch as a language server.</p>
+<h2 id="-clear-cache">--clear-cache<a class="headerlink" href="#-clear-cache" title="Permanent link">#</a></h2>
+<p>Clear the cache files.</p>
 <h2 id="-dump-decl">--dump-decl<a class="headerlink" href="#-dump-decl" title="Permanent link">#</a></h2>
 <p>Dump a type declarations file (d.er) after type checking.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>$<span class="w"> </span>pylyzer<span class="w"> </span>--dump-decl<span class="w"> </span>test.py
@@ -598,6 +645,14 @@ Default (disableable) features are:</p>
 </ul>
 <h2 id="-verbose">--verbose<a class="headerlink" href="#-verbose" title="Permanent link">#</a></h2>
 <p>Print process information verbosely.</p>
+<h2 id="-no-infer-fn-type">--no-infer-fn-type<a class="headerlink" href="#-no-infer-fn-type" title="Permanent link">#</a></h2>
+<p>When a function type is not specified, no type inference is performed and the function type is assumed to be <code>Any</code>.</p>
+<h2 id="-fast-error-report">--fast-error-report<a class="headerlink" href="#-fast-error-report" title="Permanent link">#</a></h2>
+<p>Simplify error reporting by eliminating to search for similar variables when a variable does not exist.</p>
+<h2 id="-hurry">--hurry<a class="headerlink" href="#-hurry" title="Permanent link">#</a></h2>
+<p>Enable <code>--no-infer-fn-type</code> and <code>--fast-error-report</code>.</p>
+<h2 id="-do-not-show-ext-errors">--do-not-show-ext-errors<a class="headerlink" href="#-do-not-show-ext-errors" title="Permanent link">#</a></h2>
+<p>Do not show errors from external libraries.</p>
 
 
 
