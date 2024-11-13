@@ -62,7 +62,7 @@ fn filter_error(
                 .input
                 .path()
                 .canonicalize()
-                .is_ok_and(|path| !path.starts_with(root))
+                .is_ok_and(|path| path.starts_with(root.join(".venv")) || !path.starts_with(root))
         })
     {
         return None;
