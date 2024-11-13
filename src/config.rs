@@ -1,12 +1,35 @@
 use std::env;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
 use erg_common::config::{ErgConfig, ErgMode};
 use erg_common::io::Input;
+use erg_common::pathutil::project_entry_file_of;
 use erg_common::switch_lang;
 
 use crate::copy::clear_cache;
+
+fn entry_file() -> Option<PathBuf> {
+    project_entry_file_of(&env::current_dir().ok()?).or_else(|| {
+        let mut opt_path = None;
+        for ent in Path::new(".").read_dir().ok()? {
+            let ent = ent.ok()?;
+            if ent.file_type().ok()?.is_file() {
+                let path = ent.path();
+                if path.file_name().is_some_and(|name| name == "__init__.py") {
+                    return Some(path);
+                } else if path.extension().map_or(false, |ext| ext == "py") {
+                    if opt_path.is_some() {
+                        return None;
+                    } else {
+                        opt_path = Some(path);
+                    }
+                }
+            }
+        }
+        opt_path
+    })
+}
 
 fn command_message() -> &'static str {
     switch_lang!(
@@ -172,6 +195,14 @@ For more information try `pylyzer --help`"
                 }
                 break;
             }
+        }
+    }
+    if cfg.input.is_repl() {
+        if let Some(entry) = entry_file() {
+            cfg.input = Input::file(entry);
+        } else {
+            eprintln!("No entry file found in the current project");
+            std::process::exit(1);
         }
     }
     cfg.runtime_args = runtime_args.into();
