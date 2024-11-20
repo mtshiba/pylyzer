@@ -93,9 +93,9 @@ checksum = "1fd0f2584146f6f2ef48085050886acf353beff7305ebd1ae69500e27c67f64b"
 
 [[package]]
 name = "cc"
-version = "1.1.37"
+version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "40545c26d092346d8a8dab71ee48e7685a7a9cba76e634790c215b41a4a7b4cf"
+checksum = "1aeb932158bd710538c73702db6945cb68a8fb08c519e6e12706b94263b36db8"
 dependencies = [
  "shlex",
 ]
@@ -150,9 +150,9 @@ checksum = "60b1af1c220855b6ceac025d3f6ecdd2b7c4894bfe9cd9bda4fbb4bc7c0d4cf0"
 
 [[package]]
 name = "els"
-version = "0.1.60-nightly.1"
+version = "0.1.60"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "89c30c054c5e833e623d0673f81696e19e58269c66a7a134785e00c0534979b6"
+checksum = "78418ae3cdd741d77775e0078f2626a761b4afd2214d7ed270f43aa101b46412"
 dependencies = [
  "erg_common",
  "erg_compiler",
@@ -166,9 +166,9 @@ dependencies = [
 
 [[package]]
 name = "erg_common"
-version = "0.6.48-nightly.1"
+version = "0.6.48"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b194a638b1a921dfe528d62aa8a027f822142a3898f28d65c965bdacf50a2de1"
+checksum = "ea7ac15f139e672f591b5392958b98987fe77453afc6ee79525adb7ff31cbe6a"
 dependencies = [
  "backtrace-on-stack-overflow",
  "erg_proc_macros",
@@ -179,9 +179,9 @@ dependencies = [
 
 [[package]]
 name = "erg_compiler"
-version = "0.6.48-nightly.1"
+version = "0.6.48"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9d437395714e82c213db0366bab94b314f8f0fac5eaeb8297580df1e0b004fa1"
+checksum = "ab4a89100c9a6240e554afbe74b353c62bba0f127bff1607d126f9e8f53b881e"
 dependencies = [
  "erg_common",
  "erg_parser",
@@ -189,9 +189,9 @@ dependencies = [
 
 [[package]]
 name = "erg_parser"
-version = "0.6.48-nightly.1"
+version = "0.6.48"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d27a6c9659043cf12bcfc8066f34193438e19633ecc1161bfe5e36df12d2aa4a"
+checksum = "78f2e75bcd6c2d39b907ca2c88b078955a7d04f3ec0205ff479ada9de33340f9"
 dependencies = [
  "erg_common",
  "erg_proc_macros",
@@ -200,9 +200,9 @@ dependencies = [
 
 [[package]]
 name = "erg_proc_macros"
-version = "0.6.48-nightly.1"
+version = "0.6.48"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "52070b88941a145aecc724ff8dd57742f6e36cbb422311db5858dccf7c84efed"
+checksum = "41d6d9e83be7db9434ae658c8cc5203f68a774d7595082920aeb8a3482afc1ef"
 dependencies = [
  "quote",
  "syn 1.0.109",
@@ -709,7 +709,7 @@ dependencies = [
 
 [[package]]
 name = "py2erg"
-version = "0.0.70"
+version = "0.0.71"
 dependencies = [
  "erg_common",
  "erg_compiler",
@@ -719,7 +719,7 @@ dependencies = [
 
 [[package]]
 name = "pylyzer"
-version = "0.0.70"
+version = "0.0.71"
 dependencies = [
  "els",
  "erg_common",
@@ -729,7 +729,7 @@ dependencies = [
 
 [[package]]
 name = "pylyzer_core"
-version = "0.0.70"
+version = "0.0.71"
 dependencies = [
  "erg_common",
  "erg_compiler",
@@ -740,7 +740,7 @@ dependencies = [
 
 [[package]]
 name = "pylyzer_wasm"
-version = "0.0.70"
+version = "0.0.71"
 dependencies = [
  "erg_common",
  "erg_compiler",
@@ -890,18 +890,18 @@ checksum = "61697e0a1c7e512e84a621326239844a24d8207b4669b41bc18b32ea5cbf988b"
 
 [[package]]
 name = "serde"
-version = "1.0.214"
+version = "1.0.215"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f55c3193aca71c12ad7890f1785d2b73e1b9f63a0bbc353c08ef26fe03fc56b5"
+checksum = "6513c1ad0b11a9376da888e3e0baa0077f1aed55c17f50e7b2397136129fb88f"
 dependencies = [
  "serde_derive",
 ]
 
 [[package]]
 name = "serde_derive"
-version = "1.0.214"
+version = "1.0.215"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "de523f781f095e28fa605cdce0f8307e451cc0fd14e2eb4cd2e98a355b147766"
+checksum = "ad1e866f866923f252f05c889987993144fb74e722403468a4ebd70c3cd756c0"
 dependencies = [
  "proc-macro2",
  "quote",
