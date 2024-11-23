@@ -3163,7 +3163,7 @@ impl ASTConverter {
                 if path.ends_with("__init__.py") {
                     path.pop();
                 }
-                let mod_name = path.file_name().unwrap();
+                let mod_name = path.file_name().unwrap_or_default();
                 if name.name.as_str() == mod_name.to_string_lossy().trim_end_matches(".py") {
                     let sym = format!("{module}/{}", name.name);
                     let mod_name = Expr::Literal(Literal::new(quoted_symbol(

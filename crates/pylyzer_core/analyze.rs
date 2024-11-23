@@ -100,7 +100,7 @@ impl SimplePythonParser {
             // let mut locator = LinearLocator::new(&py_code);
             let err = locator.locate_error::<_, ParseErrorType>(err);
             let msg = err.to_string();
-            let loc = err.location.unwrap();
+            let loc = err.location.unwrap_or_default();
             let core = ErrorCore::new(
                 vec![],
                 msg,
