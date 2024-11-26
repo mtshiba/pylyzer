@@ -197,7 +197,7 @@ For more information try `pylyzer --help`"
             }
         }
     }
-    if cfg.input.is_repl() {
+    if !cfg.mode.is_language_server() && cfg.input.is_repl() {
         if let Some(entry) = entry_file() {
             cfg.input = Input::file(entry);
         } else {
