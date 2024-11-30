@@ -63,6 +63,7 @@ impl DeclFileGenerator {
     fn escape_type(&self, typ: String) -> String {
         typ.replace('%', "Type_")
             .replace("<module>", "")
+            .replace('/', ".")
             .trim_start_matches(self.filename.trim_end_matches(".d.er"))
             .trim_start_matches(&self.namespace)
             .to_string()
@@ -70,7 +71,15 @@ impl DeclFileGenerator {
 
     // e.g. `x: foo.Bar` => `foo = pyimport "foo"; x: foo.Bar`
     fn prepare_using_type(&mut self, typ: &Type) {
-        let namespace = Str::rc(typ.namespace().split('.').next().unwrap());
+        let namespace = Str::rc(
+            typ.namespace()
+                .split('/')
+                .next()
+                .unwrap()
+                .split('.')
+                .next()
+                .unwrap(),
+        );
         if namespace != self.namespace
             && !namespace.is_empty()
             && self.imported.insert(namespace.clone())
