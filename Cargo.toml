@@ -17,7 +17,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.0.72"
+version = "0.0.73"
 authors = ["Shunsuke Shibayama <sbym1346@gmail.com>"]
 license = "MIT OR Apache-2.0"
 edition = "2021"
@@ -47,7 +47,7 @@ experimental = ["erg_common/experimental", "els/experimental", "pylyzer_core/exp
 parallel = ["erg_common/parallel", "pylyzer_core/parallel"]
 
 [dependencies]
-pylyzer_core = { version = "0.0.72", path = "./crates/pylyzer_core" }
+pylyzer_core = { version = "0.0.73", path = "./crates/pylyzer_core" }
 erg_common = { workspace = true }
 els = { workspace = true }
 
