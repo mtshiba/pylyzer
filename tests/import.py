@@ -2,6 +2,7 @@ import export
 import foo
 from . import foo
 from foo import bar, Bar
+from foo.bar import Baz
 from foo import baz
 import random
 from random import randint as rdi
@@ -30,6 +31,12 @@ assert d.y == 2
 
 assert foo.i == 0
 assert Bar().f() == 1
+assert Bar.CONST == "foo.bar"
+assert Baz.CONST == "foo.baz"
+
+from foo.baz import Bar
+
+assert Bar.CONST == "foo.baz.bar"
 
 from glob import glob
 print(glob("*"))
