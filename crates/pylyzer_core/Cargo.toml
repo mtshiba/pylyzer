@@ -20,7 +20,7 @@ erg_common = { workspace = true }
 erg_compiler = { workspace = true }
 rustpython-parser = { workspace = true }
 rustpython-ast = { workspace = true }
-py2erg = { version = "0.0.73", path = "../py2erg" }
+py2erg = { version = "0.0.74", path = "../py2erg" }
 
 [lib]
 path = "lib.rs"
