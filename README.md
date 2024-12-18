@@ -33,6 +33,32 @@ Make sure that `cargo`/`rustc` is up-to-date, as pylyzer may be written with the
 
 ### [GitHub Releases](https://github.com/mtshiba/pylyzer/releases/latest)
 
+## How to use
+
+### Check a single file
+
+```sh
+pylyzer file.py
+```
+
+### Check an entire package
+
+If you don't specify a file path, pylyzer will automatically search for the entry point.
+
+```sh
+pylyzer
+```
+
+### Start the language server
+
+This option is used when an LSP-aware editor requires arguments to start pylyzer.
+
+```sh
+pylyzer --server
+```
+
+For other options, check [the manual](https://mtshiba.github.io/pylyzer/options/options/).
+
 ## What is the advantage over pylint, pyright, pytype, etc.?
 
 * Performance 🌟
