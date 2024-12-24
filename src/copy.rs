@@ -63,7 +63,10 @@ fn rec_clear_cache(pkg: DirEntry) {
             pkg.path().join("__pycache__")
         };
         if cache.exists() {
-            for cache_file in cache.read_dir().expect("Failed to read cache") {
+            let Ok(dir) = cache.read_dir() else {
+                return;
+            };
+            for cache_file in dir {
                 let Ok(cache_file) = cache_file else {
                     continue;
                 };
@@ -73,7 +76,10 @@ fn rec_clear_cache(pkg: DirEntry) {
                 }
             }
         }
-        for entry in pkg.path().read_dir().expect("Failed to read dir") {
+        let Ok(dir) = pkg.path().read_dir() else {
+            return;
+        };
+        for entry in dir {
             let Ok(entry) = entry else {
                 continue;
             };
