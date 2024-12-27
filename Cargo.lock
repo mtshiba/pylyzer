@@ -150,9 +150,9 @@ checksum = "60b1af1c220855b6ceac025d3f6ecdd2b7c4894bfe9cd9bda4fbb4bc7c0d4cf0"
 
 [[package]]
 name = "els"
-version = "0.1.61"
+version = "0.1.62"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "be76108fd7329b2130fcc168b00fddf5b7ae44ef4fa91d2246a146d28304d7ac"
+checksum = "98d4bb4cbce0f519100ba0d6aa5541aa69aa00b0f61bdb862c81124f9cf38cea"
 dependencies = [
  "erg_common",
  "erg_compiler",
@@ -166,9 +166,9 @@ dependencies = [
 
 [[package]]
 name = "erg_common"
-version = "0.6.49"
+version = "0.6.50"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a6b12918165bc24a49d35897b6b4535360a0dec5b0641d9c1849fe0345875cc1"
+checksum = "15fcd8b1d8d47238d1488f7a05a8131b77b89adb54c867327b83db272a919344"
 dependencies = [
  "backtrace-on-stack-overflow",
  "erg_proc_macros",
@@ -179,9 +179,9 @@ dependencies = [
 
 [[package]]
 name = "erg_compiler"
-version = "0.6.49"
+version = "0.6.50"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "212f2c20609d69579e8f0d860fcad6a6c0aa6434b84a92f24336da339725df52"
+checksum = "4a5b708d63c430435aac418e0822ef435b6b26c5338e5795130cce308f319505"
 dependencies = [
  "erg_common",
  "erg_parser",
@@ -189,9 +189,9 @@ dependencies = [
 
 [[package]]
 name = "erg_parser"
-version = "0.6.49"
+version = "0.6.50"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6ae50e2439a5922d664a9a43cd116b4c30eac39b25724ef5af25c719a30b8234"
+checksum = "6b79c7b5789c93deeeb21cbe9d4e0c62db60712a187a1c260210079d3750b4be"
 dependencies = [
  "erg_common",
  "erg_proc_macros",
@@ -200,9 +200,9 @@ dependencies = [
 
 [[package]]
 name = "erg_proc_macros"
-version = "0.6.49"
+version = "0.6.50"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8e2799a04d59d8dfd8f4d8a0a495354203d4efb5f48fe2f8effc521e80026714"
+checksum = "99659bb992c4e9da4af751d63fa126034025ffe79e07bfdbf013d9e165e768fc"
 dependencies = [
  "quote",
  "syn 1.0.109",

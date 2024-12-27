@@ -60,6 +60,11 @@ pub fn expect(file_path: &'static str, warns: usize, errors: usize) -> Result<()
 }
 
 #[test]
+fn exec_abc() -> Result<(), String> {
+    expect("tests/abc.py", 0, 0)
+}
+
+#[test]
 fn exec_test() -> Result<(), String> {
     expect("tests/test.py", 0, 11)
 }

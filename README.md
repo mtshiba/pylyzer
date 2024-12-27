@@ -123,6 +123,7 @@ pylyzer converts Python ASTs to Erg ASTs and passes them to Erg's type checker. 
     * [x] function/method
     * [x] class
     * [ ] `async/await`
+    * [ ] user-defined abstract class
 * [x] type inference
     * [x] variable
     * [x] operator
@@ -165,10 +166,13 @@ pylyzer converts Python ASTs to Erg ASTs and passes them to Erg's type checker. 
     * [x] type narrowing
     * [ ] others
 * [ ] `collections.abc`
+    * [x] `Collection`
+    * [x] `Container`
+    * [x] `Generator`
     * [x] `Iterable`
     * [x] `Iterator`
-    * [x] `Mapping`
-    * [x] `Sequence`
+    * [x] `Mapping`, `MutableMapping`
+    * [x] `Sequence`, `MutableSequence`
     * [ ] others
 * [x] type assertion (`typing.cast`)
 * [x] type narrowing (`is`, `isinstance`)

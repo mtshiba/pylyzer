@@ -17,9 +17,10 @@ use erg_compiler::erg_parser::ast::{
     KeyValue, KwArg, Lambda, LambdaSignature, List, ListComprehension, Literal, Methods, Module,
     NonDefaultParamSignature, NormalDict, NormalList, NormalRecord, NormalSet, NormalTuple,
     ParamPattern, ParamTySpec, Params, PosArg, PreDeclTypeSpec, ReDef, Record, RecordAttrs, Set,
-    SetComprehension, Signature, SubrSignature, SubrTypeSpec, Tuple, TupleTypeSpec, TypeAscription,
-    TypeBoundSpec, TypeBoundSpecs, TypeSpec, TypeSpecWithOp, UnaryOp, VarName, VarPattern,
-    VarRecordAttr, VarRecordAttrs, VarRecordPattern, VarSignature, VisModifierSpec,
+    SetComprehension, Signature, SubrSignature, SubrTypeSpec, Tuple, TupleTypeSpec, TypeAppArgs,
+    TypeAppArgsKind, TypeAscription, TypeBoundSpec, TypeBoundSpecs, TypeSpec, TypeSpecWithOp,
+    UnaryOp, VarName, VarPattern, VarRecordAttr, VarRecordAttrs, VarRecordPattern, VarSignature,
+    VisModifierSpec,
 };
 use erg_compiler::erg_parser::desugar::Desugarer;
 use erg_compiler::erg_parser::token::{Token, TokenKind, AS, COLON, DOT, EQUAL};
@@ -991,43 +992,54 @@ impl ASTConverter {
         Lambda::new(sig, op, Block::new(body), DefId(0))
     }
 
-    fn convert_ident_type_spec(&mut self, name: String, loc: PyLocation) -> TypeSpec {
+    fn convert_ident_type_spec(&mut self, name: String, range: PySourceRange) -> TypeSpec {
+        let loc = pyloc_to_ergloc(range);
         match &name[..] {
             // Iterable[T] => Iterable(T), Iterable => Iterable(Obj)
             global_unary_collections!() => TypeSpec::poly(
-                ConstExpr::Accessor(ConstAccessor::Local(Identifier::private("global".into())))
-                    .attr(Identifier::private(name.into())),
+                ConstExpr::Accessor(ConstAccessor::Local(Identifier::private_with_loc(
+                    "global".into(),
+                    loc,
+                )))
+                .attr(Identifier::private_with_loc(name.into(), loc)),
                 ConstArgs::single(ConstExpr::Accessor(ConstAccessor::Local(
-                    Identifier::private("Obj".into()),
+                    Identifier::private_with_loc("Obj".into(), loc),
                 ))),
             ),
             // MutableSequence[T] => Sequence!(T), MutableSequence => Sequence!(Obj)
             global_mutable_unary_collections!() => TypeSpec::poly(
-                ConstExpr::Accessor(ConstAccessor::Local(Identifier::private("global".into())))
-                    .attr(Identifier::private(
-                        format!("{}!", name.trim_start_matches("Mutable")).into(),
-                    )),
+                ConstExpr::Accessor(ConstAccessor::Local(Identifier::private_with_loc(
+                    "global".into(),
+                    loc,
+                )))
+                .attr(Identifier::private_with_loc(
+                    format!("{}!", name.trim_start_matches("Mutable")).into(),
+                    loc,
+                )),
                 ConstArgs::single(ConstExpr::Accessor(ConstAccessor::Local(
-                    Identifier::private("Obj".into()),
+                    Identifier::private_with_loc("Obj".into(), loc),
                 ))),
             ),
             // Mapping => Mapping(Obj, Obj)
             global_binary_collections!() => TypeSpec::poly(
-                ConstExpr::Accessor(ConstAccessor::Local(Identifier::private("global".into())))
-                    .attr(Identifier::private(name.into())),
+                ConstExpr::Accessor(ConstAccessor::Local(Identifier::private_with_loc(
+                    "global".into(),
+                    loc,
+                )))
+                .attr(Identifier::private_with_loc(name.into(), loc)),
                 ConstArgs::pos_only(
                     vec![
                         ConstPosArg::new(ConstExpr::Accessor(ConstAccessor::Local(
-                            Identifier::private("Obj".into()),
+                            Identifier::private_with_loc("Obj".into(), loc),
                         ))),
                         ConstPosArg::new(ConstExpr::Accessor(ConstAccessor::Local(
-                            Identifier::private("Obj".into()),
+                            Identifier::private_with_loc("Obj".into(), loc),
                         ))),
                     ],
                     None,
                 ),
             ),
-            _ => TypeSpec::mono(self.convert_ident(name, loc)),
+            _ => TypeSpec::mono(self.convert_ident(name, range.start)),
         }
     }
 
@@ -1427,13 +1439,13 @@ impl ASTConverter {
                     .unwrap()
                     .appeared_type_names
                     .insert(name.id.to_string());
-                self.convert_ident_type_spec(name.id.to_string(), name.location())
+                self.convert_ident_type_spec(name.id.to_string(), name.range)
             }
             py_ast::Expr::Constant(cons) => {
                 if cons.value.is_none() {
-                    self.convert_ident_type_spec("NoneType".into(), cons.location())
+                    self.convert_ident_type_spec("NoneType".into(), cons.range)
                 } else if let Some(name) = cons.value.as_str() {
-                    self.convert_ident_type_spec(name.into(), cons.location())
+                    self.convert_ident_type_spec(name.into(), cons.range)
                 } else {
                     let err = CompileError::syntax_error(
                         self.cfg.input.clone(),
@@ -1458,8 +1470,7 @@ impl ASTConverter {
                         global_unary_collections!()
                         | global_mutable_unary_collections!()
                         | global_binary_collections!() => {
-                            return self
-                                .convert_ident_type_spec(attr.attr.to_string(), attr.range.start)
+                            return self.convert_ident_type_spec(attr.attr.to_string(), attr.range)
                         }
                         "Any" => return TypeSpec::PreDeclTy(PreDeclTypeSpec::Mono(t)),
                         _ => {}
@@ -2218,9 +2229,19 @@ impl ASTConverter {
         &mut self,
         ident: Identifier,
         body: Vec<py_ast::Stmt>,
-        inherit: bool,
+        base: Option<py_ast::Expr>,
     ) -> (Option<Expr>, Vec<Methods>) {
-        let class = TypeSpec::mono(ident.clone());
+        let inherit = base.is_some();
+        let class = if let Some(base) = base {
+            let base_spec = self.convert_type_spec(base.clone());
+            let expr = self.convert_expr(base);
+            let loc = expr.loc();
+            let base = TypeSpecWithOp::new(COLON, base_spec, expr);
+            let args = TypeAppArgs::new(loc, TypeAppArgsKind::SubtypeOf(Box::new(base)), loc);
+            TypeSpec::type_app(TypeSpec::mono(ident.clone()), args)
+        } else {
+            TypeSpec::mono(ident.clone())
+        };
         let class_as_expr = Expr::Accessor(Accessor::Ident(ident));
         let (base_type, attrs) = self.extract_method(body, inherit);
         self.block_id_counter += 1;
@@ -2398,12 +2419,13 @@ impl ASTConverter {
             .into_iter()
             .map(|deco| self.convert_expr(deco))
             .collect::<Vec<_>>();
+        let inherit = class_def.bases.first().cloned();
+        let is_inherit = inherit.is_some();
         let mut bases = class_def
             .bases
             .into_iter()
             .map(|base| self.convert_expr(base))
             .collect::<Vec<_>>();
-        let inherit = !bases.is_empty();
         self.register_name_info(&name, NameKind::Class);
         let class_name_loc = PyLocation {
             row: loc.row,
@@ -2413,7 +2435,7 @@ impl ASTConverter {
         let sig = Signature::Var(VarSignature::new(VarPattern::Ident(ident.clone()), None));
         self.grow(ident.inspect().to_string(), BlockKind::Class);
         let (base_type, methods) = self.extract_method_list(ident, class_def.body, inherit);
-        let classdef = if inherit {
+        let classdef = if is_inherit {
             // TODO: multiple inheritance
             let pos_args = vec![PosArg::new(bases.remove(0))];
             let mut args = Args::pos_only(pos_args, None);
