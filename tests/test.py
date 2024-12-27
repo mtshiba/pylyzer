@@ -44,3 +44,6 @@ assert j == 2
 with open("test.py") as f:
     for line in f.readlines():
         print("line: " + line)
+
+print(x := 1)
+print(x)

@@ -10,17 +10,17 @@ use erg_common::traits::{Locational, Stream};
 use erg_common::{fmt_vec, log, set};
 use erg_compiler::artifact::IncompleteArtifact;
 use erg_compiler::erg_parser::ast::{
-    Accessor, Args, BinOp, Block, ClassAttr, ClassAttrs, ClassDef, ConstAccessor, ConstApp,
-    ConstArgs, ConstAttribute, ConstBinOp, ConstBlock, ConstDict, ConstExpr, ConstKeyValue,
-    ConstLambda, ConstList, ConstListWithLength, ConstNormalList, ConstNormalSet, ConstPosArg,
-    ConstSet, Decorator, Def, DefBody, DefId, DefaultParamSignature, Dict, Dummy, Expr, Identifier,
-    KeyValue, KwArg, Lambda, LambdaSignature, List, ListComprehension, Literal, Methods, Module,
-    NonDefaultParamSignature, NormalDict, NormalList, NormalRecord, NormalSet, NormalTuple,
-    ParamPattern, ParamTySpec, Params, PosArg, PreDeclTypeSpec, ReDef, Record, RecordAttrs, Set,
-    SetComprehension, Signature, SubrSignature, SubrTypeSpec, Tuple, TupleTypeSpec, TypeAppArgs,
-    TypeAppArgsKind, TypeAscription, TypeBoundSpec, TypeBoundSpecs, TypeSpec, TypeSpecWithOp,
-    UnaryOp, VarName, VarPattern, VarRecordAttr, VarRecordAttrs, VarRecordPattern, VarSignature,
-    VisModifierSpec,
+    Accessor, Args, BinOp, Block, ClassAttr, ClassAttrs, ClassDef, Compound, ConstAccessor,
+    ConstApp, ConstArgs, ConstAttribute, ConstBinOp, ConstBlock, ConstDict, ConstExpr,
+    ConstKeyValue, ConstLambda, ConstList, ConstListWithLength, ConstNormalList, ConstNormalSet,
+    ConstPosArg, ConstSet, Decorator, Def, DefBody, DefId, DefaultParamSignature, Dict, Dummy,
+    Expr, Identifier, KeyValue, KwArg, Lambda, LambdaSignature, List, ListComprehension, Literal,
+    Methods, Module, NonDefaultParamSignature, NormalDict, NormalList, NormalRecord, NormalSet,
+    NormalTuple, ParamPattern, ParamTySpec, Params, PosArg, PreDeclTypeSpec, ReDef, Record,
+    RecordAttrs, Set, SetComprehension, Signature, SubrSignature, SubrTypeSpec, Tuple,
+    TupleTypeSpec, TypeAppArgs, TypeAppArgsKind, TypeAscription, TypeBoundSpec, TypeBoundSpecs,
+    TypeSpec, TypeSpecWithOp, UnaryOp, VarName, VarPattern, VarRecordAttr, VarRecordAttrs,
+    VarRecordPattern, VarSignature, VisModifierSpec,
 };
 use erg_compiler::erg_parser::desugar::Desugarer;
 use erg_compiler::erg_parser::token::{Token, TokenKind, AS, COLON, DOT, EQUAL};
@@ -1947,6 +1947,29 @@ impl ASTConverter {
                 let expr = self.convert_expr(*form.value);
                 let stringify = self.convert_ident("str".to_string(), loc);
                 stringify.call1(expr).into()
+            }
+            py_ast::Expr::NamedExpr(named) => {
+                let loc = named.location();
+                let target = self.convert_expr(*named.target);
+                let target_pat = match &target {
+                    Expr::Accessor(Accessor::Ident(ident)) => VarPattern::Ident(ident.clone()),
+                    _ => {
+                        log!(err "unimplemented: {:?}", target);
+                        VarPattern::Ident(Identifier::private("_".into()))
+                    }
+                };
+                let value = self.convert_expr(*named.value);
+                let assign = Token::new(
+                    TokenKind::Assign,
+                    "=",
+                    loc.row.get(),
+                    loc.column.to_zero_indexed(),
+                );
+                let def = Def::new(
+                    Signature::Var(VarSignature::new(target_pat, None)),
+                    DefBody::new(assign, Block::new(vec![value]), DefId(0)),
+                );
+                Expr::Compound(Compound::new(vec![Expr::Def(def), target]))
             }
             _other => {
                 log!(err "unimplemented: {:?}", _other);
