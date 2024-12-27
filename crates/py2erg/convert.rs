@@ -1886,6 +1886,7 @@ impl ASTConverter {
                 );
                 method.call1(self.convert_expr(*subs.slice))
             }
+            // [:] == [slice(None)]
             // [start:] == [slice(start, None)]
             // [:stop] == [slice(stop)]
             // [start:stop] == [slice(start, stop)]
@@ -1904,6 +1905,14 @@ impl ASTConverter {
                 }
                 if let Some(step) = step {
                     args.push_pos(PosArg::new(step));
+                }
+                if args.is_empty() {
+                    args.push_pos(PosArg::new(Expr::Literal(Literal::new(Token::new(
+                        TokenKind::NoneLit,
+                        "None",
+                        loc.row.get(),
+                        loc.column.to_zero_indexed(),
+                    )))));
                 }
                 let slice = self.convert_ident("slice".to_string(), loc);
                 slice.call(args).into()
