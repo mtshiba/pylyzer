@@ -174,6 +174,11 @@ fn exec_typevar() -> Result<(), String> {
 }
 
 #[test]
+fn exec_type_spec() -> Result<(), String> {
+    expect("tests/err/type_spec.py", 0, 6)
+}
+
+#[test]
 fn exec_union() -> Result<(), String> {
     expect("tests/union.py", 0, 0)
 }
