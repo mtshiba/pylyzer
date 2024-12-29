@@ -37,10 +37,11 @@ fn handle_name_error(error: CompileError) -> Option<CompileError> {
         || {
             main.contains(" is not defined") && {
                 let name = StyledStr::destyle(main.trim_end_matches(" is not defined"));
-                error
-                    .core
-                    .get_hint()
-                    .is_some_and(|hint| hint.contains(name))
+                name == "Any"
+                    || error
+                        .core
+                        .get_hint()
+                        .is_some_and(|hint| hint.contains(name))
             }
         }
     {

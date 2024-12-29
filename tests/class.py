@@ -98,3 +98,10 @@ class MyList(list):
             return MyList(lis)
         else:
             return None
+
+class Implicit:
+    def __init__(self):
+        self.foo = False
+
+    def set_foo(self):
+        self.foo = True

@@ -1,5 +1,5 @@
 def imaginary(x):
-    x.imag
+    return x.imag
 
 assert imaginary(1) == 0
 assert imaginary(1.0) <= 0.0
@@ -8,7 +8,7 @@ print(imaginary("a")) # ERR
 class C:
     def method(self, x): return x
 def call_method(obj, x):
-    obj.method(x)
+    return obj.method(x)
 
 c = C()
 assert call_method(c, 1) == 1

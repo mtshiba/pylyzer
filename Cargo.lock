@@ -150,9 +150,9 @@ checksum = "60b1af1c220855b6ceac025d3f6ecdd2b7c4894bfe9cd9bda4fbb4bc7c0d4cf0"
 
 [[package]]
 name = "els"
-version = "0.1.62"
+version = "0.1.63-nightly.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "98d4bb4cbce0f519100ba0d6aa5541aa69aa00b0f61bdb862c81124f9cf38cea"
+checksum = "99d2ae54e13d256ec9a09554249ccc498c31022836c76bc5dc1b11b072f0a753"
 dependencies = [
  "erg_common",
  "erg_compiler",
@@ -166,9 +166,9 @@ dependencies = [
 
 [[package]]
 name = "erg_common"
-version = "0.6.50"
+version = "0.6.51-nightly.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "15fcd8b1d8d47238d1488f7a05a8131b77b89adb54c867327b83db272a919344"
+checksum = "abc654d256215d0d1b2ccb5d1e80c9188148dd59714d0a642f5738bf0271197a"
 dependencies = [
  "backtrace-on-stack-overflow",
  "erg_proc_macros",
@@ -179,9 +179,9 @@ dependencies = [
 
 [[package]]
 name = "erg_compiler"
-version = "0.6.50"
+version = "0.6.51-nightly.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4a5b708d63c430435aac418e0822ef435b6b26c5338e5795130cce308f319505"
+checksum = "223b817462901cfef987f38c21a18f9637f7f796dbe58a3b51a1e09489fd25be"
 dependencies = [
  "erg_common",
  "erg_parser",
@@ -189,9 +189,9 @@ dependencies = [
 
 [[package]]
 name = "erg_parser"
-version = "0.6.50"
+version = "0.6.51-nightly.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6b79c7b5789c93deeeb21cbe9d4e0c62db60712a187a1c260210079d3750b4be"
+checksum = "13d9eaf0b3076b05cb7290be98de5c1cbd73ab7a72b090f67d5911e03d062501"
 dependencies = [
  "erg_common",
  "erg_proc_macros",
@@ -200,9 +200,9 @@ dependencies = [
 
 [[package]]
 name = "erg_proc_macros"
-version = "0.6.50"
+version = "0.6.51-nightly.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "99659bb992c4e9da4af751d63fa126034025ffe79e07bfdbf013d9e165e768fc"
+checksum = "e3d2e883cddea276b76add108da8d16276d9d6962a0079561515e701121a3e1a"
 dependencies = [
  "quote",
  "syn 1.0.109",

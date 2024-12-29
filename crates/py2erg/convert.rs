@@ -321,6 +321,19 @@ pub struct BlockInfo {
 }
 
 #[derive(Debug)]
+pub enum ReturnKind {
+    None,
+    Return,
+    Yield,
+}
+
+impl ReturnKind {
+    pub const fn is_none(&self) -> bool {
+        matches!(self, Self::None)
+    }
+}
+
+#[derive(Debug)]
 pub struct LocalContext {
     pub name: String,
     pub kind: BlockKind,
@@ -329,6 +342,7 @@ pub struct LocalContext {
     type_vars: HashMap<String, TypeVarInfo>,
     // e.g. def id(x: T) -> T: ... => appeared_types = {T}
     appeared_type_names: HashSet<String>,
+    return_kind: ReturnKind,
 }
 
 impl LocalContext {
@@ -339,6 +353,7 @@ impl LocalContext {
             names: HashMap::new(),
             type_vars: HashMap::new(),
             appeared_type_names: HashSet::new(),
+            return_kind: ReturnKind::None,
         }
     }
 }
@@ -665,6 +680,14 @@ impl ASTConverter {
     // baz
     fn cur_name(&self) -> &str {
         &self.contexts.last().unwrap().name
+    }
+
+    fn cur_context(&self) -> &LocalContext {
+        self.contexts.last().unwrap()
+    }
+
+    fn cur_context_mut(&mut self) -> &mut LocalContext {
+        self.contexts.last_mut().unwrap()
     }
 
     fn parent_name(&self) -> &str {
@@ -2033,6 +2056,11 @@ impl ASTConverter {
                 );
                 Expr::Compound(Compound::new(vec![Expr::Def(def), target]))
             }
+            py_ast::Expr::Yield(_) => {
+                self.cur_context_mut().return_kind = ReturnKind::Yield;
+                log!(err "unimplemented: {:?}", expr);
+                Expr::Dummy(Dummy::new(None, vec![]))
+            }
             _other => {
                 log!(err "unimplemented: {:?}", _other);
                 Expr::Dummy(Dummy::new(None, vec![]))
@@ -2087,7 +2115,7 @@ impl ASTConverter {
     //     self.y = y
     //     self.z = z
     // ↓
-    // requirement : {x: Int, y: Int, z: Never}
+    // requirement : {x: Int, y: Int, z: Any}
     // returns     : .__call__(x: Int, y: Int, z: Obj): Self = .unreachable()
     fn extract_init(&mut self, base_type: &mut Option<Expr>, init_def: Def) -> Option<Def> {
         self.check_init_sig(&init_def.sig)?;
@@ -2134,9 +2162,8 @@ impl ASTConverter {
                         } else if let Some(typ) = redef.t_spec.map(|t_spec| t_spec.t_spec_as_expr) {
                             *typ
                         } else {
-                            Expr::from(Accessor::Ident(Identifier::public_with_line(
-                                DOT,
-                                "Never".into(),
+                            Expr::from(Accessor::Ident(Identifier::private_with_line(
+                                "Any".into(),
                                 attr.obj.ln_begin().unwrap_or(0),
                             )))
                         };
@@ -2473,8 +2500,22 @@ impl ASTConverter {
                     .unwrap_or(func_def.type_params)
             };
             let bounds = self.get_type_bounds(type_params);
-            let sig = Signature::Subr(SubrSignature::new(decos, ident, bounds, params, return_t));
+            let mut sig =
+                Signature::Subr(SubrSignature::new(decos, ident, bounds, params, return_t));
             let block = self.convert_block(func_def.body, BlockKind::Function);
+            if self.cur_context().return_kind.is_none() {
+                let Signature::Subr(subr) = &mut sig else {
+                    unreachable!()
+                };
+                if subr.return_t_spec.is_none() {
+                    let none = TypeSpecWithOp::new(
+                        Token::dummy(TokenKind::Colon, ":"),
+                        TypeSpec::mono(Identifier::private("NoneType".into())),
+                        Expr::static_local("NoneType"),
+                    );
+                    subr.return_t_spec = Some(Box::new(none));
+                }
+            }
             let body = DefBody::new(EQUAL, block, DefId(0));
             let def = Def::new(sig, body);
             self.pop();
@@ -3030,6 +3071,7 @@ impl ASTConverter {
                 }
             }
             py_ast::Stmt::Return(return_) => {
+                self.cur_context_mut().return_kind = ReturnKind::Return;
                 let loc = return_.location();
                 let value = return_
                     .value
