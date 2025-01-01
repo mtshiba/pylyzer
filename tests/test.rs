@@ -129,6 +129,16 @@ fn exec_projection() -> Result<(), String> {
 }
 
 #[test]
+fn exec_property() -> Result<(), String> {
+    expect("tests/property.py", 0, 0)
+}
+
+#[test]
+fn exec_property_err() -> Result<(), String> {
+    expect("tests/err/property.py", 0, 1)
+}
+
+#[test]
 fn exec_pyi() -> Result<(), String> {
     expect("tests/pyi.py", 0, 5)
 }

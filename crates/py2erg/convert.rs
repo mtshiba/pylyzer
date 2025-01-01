@@ -2261,10 +2261,12 @@ impl ASTConverter {
         &mut self,
         body: Vec<py_ast::Stmt>,
         inherit: bool,
+        class_name: Expr,
     ) -> (Option<Expr>, ClassAttrs) {
         let mut base_type = None;
         let mut attrs = vec![];
         let mut init_is_defined = false;
+        let mut call_params_len = None;
         for stmt in body {
             match self.convert_statement(stmt, true) {
                 Expr::Def(mut def) => {
@@ -2274,12 +2276,55 @@ impl ASTConverter {
                                 .insert(Decorator(Expr::static_local("Override")));
                         }
                     }
-                    if def
+                    if def.sig.decorators().is_some_and(|decos| {
+                        decos.iter().any(|deco| {
+                            deco.expr()
+                                .get_name()
+                                .is_some_and(|name| name == "property")
+                        })
+                    }) {
+                        // class Foo:
+                        //     @property
+                        //     def foo(self): ...
+                        // ↓
+                        // class Foo:
+                        //     def foo_(self): ...
+                        //     foo = Foo(*[]).foo_()
+                        let mut args = Args::empty();
+                        if call_params_len.as_ref().is_some_and(|&len| len >= 1) {
+                            args.set_var_args(PosArg::new(Expr::List(List::Normal(
+                                NormalList::new(
+                                    Token::dummy(TokenKind::LSqBr, "["),
+                                    Token::dummy(TokenKind::RSqBr, "]"),
+                                    Args::empty(),
+                                ),
+                            ))));
+                        }
+                        let instance = class_name.clone().call(args);
+                        let name = def.sig.ident().unwrap().clone();
+                        def.sig
+                            .ident_mut()
+                            .unwrap()
+                            .name
+                            .rename(format!("{} ", name.inspect()).into());
+                        let escaped = def.sig.ident().unwrap().clone();
+                        let call = Expr::Call(instance).method_call_expr(escaped, Args::empty());
+                        let t_spec = def.sig.t_spec_op_mut().cloned();
+                        let sig =
+                            Signature::Var(VarSignature::new(VarPattern::Ident(name), t_spec));
+                        let var_def =
+                            Def::new(sig, DefBody::new(EQUAL, Block::new(vec![call]), DefId(0)));
+                        attrs.push(ClassAttr::Def(def));
+                        attrs.push(ClassAttr::Def(var_def));
+                    } else if def
                         .sig
                         .ident()
                         .is_some_and(|id| &id.inspect()[..] == "__init__")
                     {
                         if let Some(call_def) = self.extract_init(&mut base_type, def) {
+                            if let Some(params) = call_def.sig.params() {
+                                call_params_len = Some(params.len());
+                            }
                             attrs.insert(0, ClassAttr::Def(call_def));
                             init_is_defined = true;
                         }
@@ -2355,7 +2400,7 @@ impl ASTConverter {
             TypeSpec::mono(ident.clone())
         };
         let class_as_expr = Expr::Accessor(Accessor::Ident(ident));
-        let (base_type, attrs) = self.extract_method(body, inherit);
+        let (base_type, attrs) = self.extract_method(body, inherit, class_as_expr.clone());
         self.block_id_counter += 1;
         let methods = Methods::new(
             DefId(self.block_id_counter),
