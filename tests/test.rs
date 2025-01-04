@@ -165,7 +165,7 @@ fn exec_casting() -> Result<(), String> {
 
 #[test]
 fn exec_collection() -> Result<(), String> {
-    expect("tests/collection.py", 0, 4)
+    expect("tests/collection.py", 0, 5)
 }
 
 #[test]

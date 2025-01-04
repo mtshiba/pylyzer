@@ -102,7 +102,7 @@ impl DeclFileGenerator {
                 let typ = self.escape_type(ref_t.replace_failure().to_string_unabbreviated());
                 // Erg can automatically import nested modules
                 // `import http.client` => `http = pyimport "http"`
-                let decl = if ref_t.is_py_module() {
+                let decl = if ref_t.is_py_module() && ref_t.typarams()[0].is_str_value() {
                     name = name.split('.').next().unwrap().to_string();
                     let full_path_str = ref_t.typarams()[0].to_string_unabbreviated();
                     let mod_name = mod_name(Path::new(full_path_str.trim_matches('"')));

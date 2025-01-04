@@ -13,14 +13,14 @@ use erg_compiler::erg_parser::ast::{
     Accessor, Args, BinOp, Block, ClassAttr, ClassAttrs, ClassDef, Compound, ConstAccessor,
     ConstApp, ConstArgs, ConstAttribute, ConstBinOp, ConstBlock, ConstDict, ConstExpr,
     ConstKeyValue, ConstLambda, ConstList, ConstListWithLength, ConstNormalList, ConstNormalSet,
-    ConstPosArg, ConstSet, Decorator, Def, DefBody, DefId, DefaultParamSignature, Dict, Dummy,
-    Expr, Identifier, KeyValue, KwArg, Lambda, LambdaSignature, List, ListComprehension, Literal,
-    Methods, Module, NonDefaultParamSignature, NormalDict, NormalList, NormalRecord, NormalSet,
-    NormalTuple, ParamPattern, ParamTySpec, Params, PosArg, PreDeclTypeSpec, ReDef, Record,
-    RecordAttrs, Set, SetComprehension, Signature, SubrSignature, SubrTypeSpec, Tuple,
-    TupleTypeSpec, TypeAppArgs, TypeAppArgsKind, TypeAscription, TypeBoundSpec, TypeBoundSpecs,
-    TypeSpec, TypeSpecWithOp, UnaryOp, VarName, VarPattern, VarRecordAttr, VarRecordAttrs,
-    VarRecordPattern, VarSignature, VisModifierSpec,
+    ConstPosArg, ConstSet, Decorator, Def, DefBody, DefId, DefaultParamSignature, Dict,
+    DictComprehension, Dummy, Expr, Identifier, KeyValue, KwArg, Lambda, LambdaSignature, List,
+    ListComprehension, Literal, Methods, Module, NonDefaultParamSignature, NormalDict, NormalList,
+    NormalRecord, NormalSet, NormalTuple, ParamPattern, ParamTySpec, Params, PosArg,
+    PreDeclTypeSpec, ReDef, Record, RecordAttrs, Set, SetComprehension, Signature, SubrSignature,
+    SubrTypeSpec, Tuple, TupleTypeSpec, TypeAppArgs, TypeAppArgsKind, TypeAscription,
+    TypeBoundSpec, TypeBoundSpecs, TypeSpec, TypeSpecWithOp, UnaryOp, VarName, VarPattern,
+    VarRecordAttr, VarRecordAttrs, VarRecordPattern, VarSignature, VisModifierSpec,
 };
 use erg_compiler::erg_parser::desugar::Desugarer;
 use erg_compiler::erg_parser::token::{Token, TokenKind, AS, COLON, DOT, EQUAL};
@@ -1017,48 +1017,50 @@ impl ASTConverter {
 
     fn convert_ident_type_spec(&mut self, name: String, range: PySourceRange) -> TypeSpec {
         let loc = pyloc_to_ergloc(range);
+        let global = ConstExpr::Accessor(ConstAccessor::Local(Identifier::private_with_loc(
+            "global".into(),
+            loc,
+        )));
+        let obj = ConstExpr::Accessor(ConstAccessor::Local(Identifier::private_with_loc(
+            "Obj".into(),
+            loc,
+        )));
         match &name[..] {
+            "dict" => {
+                let kv = ConstKeyValue::new(obj.clone(), obj.clone());
+                let (l, r) = Self::gen_enclosure_tokens(TokenKind::LSqBr, range);
+                let dict = ConstDict::new(l, r, vec![kv]);
+                TypeSpec::poly(
+                    global.attr(Identifier::private_with_loc("Dict!".into(), loc)),
+                    ConstArgs::single(ConstExpr::Dict(dict)),
+                )
+            }
+            "set" => TypeSpec::poly(
+                global.attr(Identifier::private_with_loc("Set!".into(), loc)),
+                ConstArgs::single(obj),
+            ),
+            "tuple" => TypeSpec::poly(
+                global.attr(Identifier::private_with_loc("HomogenousTuple".into(), loc)),
+                ConstArgs::single(obj),
+            ),
             // Iterable[T] => Iterable(T), Iterable => Iterable(Obj)
             global_unary_collections!() => TypeSpec::poly(
-                ConstExpr::Accessor(ConstAccessor::Local(Identifier::private_with_loc(
-                    "global".into(),
-                    loc,
-                )))
-                .attr(Identifier::private_with_loc(name.into(), loc)),
-                ConstArgs::single(ConstExpr::Accessor(ConstAccessor::Local(
-                    Identifier::private_with_loc("Obj".into(), loc),
-                ))),
+                global.attr(Identifier::private_with_loc(name.into(), loc)),
+                ConstArgs::single(obj),
             ),
             // MutableSequence[T] => Sequence!(T), MutableSequence => Sequence!(Obj)
             global_mutable_unary_collections!() => TypeSpec::poly(
-                ConstExpr::Accessor(ConstAccessor::Local(Identifier::private_with_loc(
-                    "global".into(),
-                    loc,
-                )))
-                .attr(Identifier::private_with_loc(
+                global.attr(Identifier::private_with_loc(
                     format!("{}!", name.trim_start_matches("Mutable")).into(),
                     loc,
                 )),
-                ConstArgs::single(ConstExpr::Accessor(ConstAccessor::Local(
-                    Identifier::private_with_loc("Obj".into(), loc),
-                ))),
+                ConstArgs::single(obj),
             ),
             // Mapping => Mapping(Obj, Obj)
             global_binary_collections!() => TypeSpec::poly(
-                ConstExpr::Accessor(ConstAccessor::Local(Identifier::private_with_loc(
-                    "global".into(),
-                    loc,
-                )))
-                .attr(Identifier::private_with_loc(name.into(), loc)),
+                global.attr(Identifier::private_with_loc(name.into(), loc)),
                 ConstArgs::pos_only(
-                    vec![
-                        ConstPosArg::new(ConstExpr::Accessor(ConstAccessor::Local(
-                            Identifier::private_with_loc("Obj".into(), loc),
-                        ))),
-                        ConstPosArg::new(ConstExpr::Accessor(ConstAccessor::Local(
-                            Identifier::private_with_loc("Obj".into(), loc),
-                        ))),
-                    ],
+                    vec![ConstPosArg::new(obj.clone()), ConstPosArg::new(obj)],
                     None,
                 ),
             ),
@@ -1502,6 +1504,22 @@ impl ASTConverter {
                 let tuple = TupleTypeSpec::new(Some((l.loc(), r.loc())), tys);
                 TypeSpec::Tuple(tuple)
             }
+            "Set" | "set" => {
+                let elem_t = match self.convert_expr_to_const(args) {
+                    Some(elem_t) => elem_t,
+                    None => {
+                        ConstExpr::Accessor(ConstAccessor::Local(Identifier::private("Obj".into())))
+                    }
+                };
+                let elem_t = ConstPosArg::new(elem_t);
+                let global =
+                    ConstExpr::Accessor(ConstAccessor::Local(Identifier::private("global".into())));
+                let acc = ConstAccessor::Attr(ConstAttribute::new(
+                    global,
+                    Identifier::private("Set!".into()),
+                ));
+                TypeSpec::poly(acc, ConstArgs::pos_only(vec![elem_t], None))
+            }
             _ => Self::gen_dummy_type_spec(args.location()),
         }
     }
@@ -1899,8 +1917,8 @@ impl ASTConverter {
                     .map(|ex| PosArg::new(self.convert_expr(ex)))
                     .collect::<Vec<_>>();
                 let elems = Args::pos_only(elements, None);
-                Expr::Set(Set::Normal(NormalSet::new(l_brace, r_brace, elems)))
-                // Self::mutate_expr(set)
+                let set = Expr::Set(Set::Normal(NormalSet::new(l_brace, r_brace, elems)));
+                Self::mutate_expr(set)
             }
             py_ast::Expr::SetComp(comp) => {
                 let (l_brace, r_brace) = Self::gen_enclosure_tokens(TokenKind::LBrace, comp.range);
@@ -1919,14 +1937,14 @@ impl ASTConverter {
                     .next()
                     .map(|ex| self.convert_expr(ex));
                 let generators = vec![(ident, iter)];
-                Expr::Set(Set::Comprehension(SetComprehension::new(
+                let set = Expr::Set(Set::Comprehension(SetComprehension::new(
                     l_brace,
                     r_brace,
                     Some(layout),
                     generators,
                     guard,
-                )))
-                // Self::mutate_expr(set)
+                )));
+                Self::mutate_expr(set)
             }
             py_ast::Expr::Dict(dict) => {
                 let (l_brace, r_brace) = Self::gen_enclosure_tokens(TokenKind::LBrace, dict.range);
@@ -1943,6 +1961,30 @@ impl ASTConverter {
                     })
                     .collect::<Vec<_>>();
                 let dict = Expr::Dict(Dict::Normal(NormalDict::new(l_brace, r_brace, kvs)));
+                Self::mutate_expr(dict)
+            }
+            py_ast::Expr::DictComp(comp) => {
+                let (l_brace, r_brace) = Self::gen_enclosure_tokens(TokenKind::LBrace, comp.range);
+                let key = self.convert_expr(*comp.key);
+                let value = self.convert_expr(*comp.value);
+                let kv = KeyValue::new(key, value);
+                let generator = comp.generators.into_iter().next().unwrap();
+                let target = self.convert_expr(generator.target);
+                let Expr::Accessor(Accessor::Ident(ident)) = target else {
+                    log!(err "unimplemented: {target}");
+                    let loc = pyloc_to_ergloc(comp.range);
+                    return Expr::Dummy(Dummy::new(Some(loc), vec![]));
+                };
+                let iter = self.convert_expr(generator.iter);
+                let guard = generator
+                    .ifs
+                    .into_iter()
+                    .next()
+                    .map(|ex| self.convert_expr(ex));
+                let generators = vec![(ident, iter)];
+                let dict = Expr::Dict(Dict::Comprehension(DictComprehension::new(
+                    l_brace, r_brace, kv, generators, guard,
+                )));
                 Self::mutate_expr(dict)
             }
             py_ast::Expr::Tuple(tuple) => {
