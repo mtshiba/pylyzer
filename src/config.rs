@@ -18,7 +18,7 @@ fn entry_file() -> Option<PathBuf> {
                 let path = ent.path();
                 if path.file_name().is_some_and(|name| name == "__init__.py") {
                     return Some(path);
-                } else if path.extension().map_or(false, |ext| ext == "py") {
+                } else if path.extension().is_some_and(|ext| ext == "py") {
                     if opt_path.is_some() {
                         return None;
                     } else {

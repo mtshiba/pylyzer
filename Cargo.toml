@@ -24,9 +24,9 @@ edition = "2021"
 repository = "https://github.com/mtshiba/pylyzer"
 
 [workspace.dependencies]
-erg_common = { version = "0.6.51-nightly.3", features = ["py_compat", "els"] }
-erg_compiler = { version = "0.6.51-nightly.3", features = ["py_compat", "els"] }
-els = { version = "0.1.63-nightly.3", features = ["py_compat"] }
+erg_common = { version = "0.6.51", features = ["py_compat", "els"] }
+erg_compiler = { version = "0.6.51", features = ["py_compat", "els"] }
+els = { version = "0.1.63", features = ["py_compat"] }
 # rustpython-parser = { version = "0.3.0", features = ["all-nodes-with-ranges", "location"] }
 # rustpython-ast = { version = "0.3.0", features = ["all-nodes-with-ranges", "location"] }
 rustpython-parser = { git = "https://github.com/RustPython/Parser", version = "0.4.0", features = ["all-nodes-with-ranges", "location"] }
@@ -45,6 +45,9 @@ pretty = ["erg_common/pretty", "pylyzer_core/pretty"]
 backtrace = ["erg_common/backtrace", "els/backtrace", "pylyzer_core/backtrace"]
 experimental = ["erg_common/experimental", "els/experimental", "pylyzer_core/experimental", "parallel"]
 parallel = ["erg_common/parallel", "pylyzer_core/parallel"]
+japanese = ["erg_common/japanese", "els/japanese"]
+simplified_chinese = ["erg_common/simplified_chinese", "els/simplified_chinese"]
+traditional_chinese = ["erg_common/traditional_chinese", "els/traditional_chinese"]
 
 [dependencies]
 pylyzer_core = { version = "0.0.76", path = "./crates/pylyzer_core" }

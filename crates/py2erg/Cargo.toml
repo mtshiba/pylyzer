@@ -11,6 +11,9 @@ repository.workspace = true
 
 [features]
 debug = ["erg_compiler/debug", "erg_common/debug"]
+japanese = ["erg_compiler/japanese", "erg_common/japanese"]
+simplified_chinese = ["erg_compiler/simplified_chinese", "erg_common/simplified_chinese"]
+traditional_chinese = ["erg_compiler/traditional_chinese", "erg_common/traditional_chinese"]
 
 [dependencies]
 rustpython-parser = { workspace = true }
