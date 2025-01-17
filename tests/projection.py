@@ -1,18 +1,26 @@
 def imaginary(x):
     return x.imag
 
+def imaginary2(x):
+    return imaginary(x)
+
 assert imaginary(1) == 0
 assert imaginary(1.0) <= 0.0
+assert imaginary2(1) == 0
+assert imaginary2(1.0) <= 0.0
 print(imaginary("a")) # ERR
 
 class C:
     def method(self, x): return x
 def call_method(obj, x):
     return obj.method(x)
+def call_method2(obj, x):
+    return call_method(obj, x)
 
 c = C()
 assert call_method(c, 1) == 1
 assert call_method(c, 1) == "a" # ERR
+assert call_method2(c, 1) == 1
 print(call_method(1, 1)) # ERR
 print(call_method(c)) # ERR
 
