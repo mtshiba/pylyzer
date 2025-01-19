@@ -7,6 +7,7 @@ use erg_common::set::Set;
 use erg_common::traits::LimitedDisplay;
 use erg_common::{log, Str};
 use erg_compiler::build_package::{CheckStatus, PylyzerStatus};
+use erg_compiler::context::ControlKind;
 use erg_compiler::hir::{ClassDef, Expr, HIR};
 use erg_compiler::module::SharedModuleCache;
 use erg_compiler::ty::value::{GenTypeObj, TypeObj};
@@ -180,6 +181,26 @@ impl DeclFileGenerator {
             Expr::Dummy(dummy) => {
                 for chunk in dummy.iter() {
                     self.gen_chunk_decl(chunk);
+                }
+            }
+            Expr::Compound(compound) => {
+                for chunk in compound.iter() {
+                    self.gen_chunk_decl(chunk);
+                }
+            }
+            Expr::Call(call)
+                if call
+                    .obj
+                    .show_acc()
+                    .is_some_and(|acc| ControlKind::try_from(&acc[..]).is_ok()) =>
+            {
+                for arg in call.args.iter() {
+                    self.gen_chunk_decl(arg);
+                }
+            }
+            Expr::Lambda(lambda) => {
+                for arg in lambda.body.iter() {
+                    self.gen_chunk_decl(arg);
                 }
             }
             _ => {}
