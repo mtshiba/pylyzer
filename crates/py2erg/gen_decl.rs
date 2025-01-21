@@ -25,11 +25,11 @@ pub struct DeclFileGenerator {
 }
 
 impl DeclFileGenerator {
-    pub fn new(path: &NormalizedPathBuf, status: CheckStatus) -> Self {
+    pub fn new(path: &NormalizedPathBuf, status: CheckStatus) -> std::io::Result<Self> {
         let (timestamp, hash) = {
-            let metadata = std::fs::metadata(path).unwrap();
+            let metadata = std::fs::metadata(path)?;
             let dummy_hash = metadata.len();
-            (metadata.modified().unwrap(), dummy_hash)
+            (metadata.modified()?, dummy_hash)
         };
         let status = PylyzerStatus {
             status,
@@ -38,16 +38,16 @@ impl DeclFileGenerator {
             hash,
         };
         let code = format!("{status}\n");
-        Self {
+        Ok(Self {
             filename: path
                 .file_name()
-                .unwrap()
+                .unwrap_or_default()
                 .to_string_lossy()
                 .replace(".py", ".d.er"),
             namespace: "".to_string(),
             imported: Set::new(),
             code,
-        }
+        })
     }
 
     pub fn gen_decl_er(mut self, hir: &HIR) -> DeclFile {
@@ -209,11 +209,11 @@ impl DeclFileGenerator {
     }
 }
 
-fn dump_decl_er(path: &NormalizedPathBuf, hir: &HIR, status: CheckStatus) {
-    let decl_gen = DeclFileGenerator::new(path, status);
+fn dump_decl_er(path: &NormalizedPathBuf, hir: &HIR, status: CheckStatus) -> std::io::Result<()> {
+    let decl_gen = DeclFileGenerator::new(path, status)?;
     let file = decl_gen.gen_decl_er(hir);
     let Some(dir) = path.parent().and_then(|p| p.canonicalize().ok()) else {
-        return;
+        return Ok(());
     };
     let cache_dir = dir.join("__pycache__");
     if !cache_dir.exists() {
@@ -221,19 +221,17 @@ fn dump_decl_er(path: &NormalizedPathBuf, hir: &HIR, status: CheckStatus) {
     }
     let path = cache_dir.join(file.filename);
     if !path.exists() {
-        let _f = File::create(&path);
+        File::create(&path)?;
     }
-    let Ok(f) = File::options().write(true).open(path) else {
-        return;
-    };
+    let f = File::options().write(true).open(path)?;
     let mut f = BufWriter::new(f);
-    let _ = f.write_all(file.code.as_bytes());
+    f.write_all(file.code.as_bytes())
 }
 
 pub fn dump_decl_package(modules: &SharedModuleCache) {
     for (path, module) in modules.raw_iter() {
         if let Some(hir) = module.hir.as_ref() {
-            dump_decl_er(path, hir, module.status);
+            let _ = dump_decl_er(path, hir, module.status);
         }
     }
 }
