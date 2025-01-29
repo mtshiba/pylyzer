@@ -17,7 +17,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.0.77"
+version = "0.0.78"
 authors = ["Shunsuke Shibayama <sbym1346@gmail.com>"]
 license = "MIT OR Apache-2.0"
 edition = "2021"
@@ -50,7 +50,7 @@ simplified_chinese = ["erg_common/simplified_chinese", "els/simplified_chinese"]
 traditional_chinese = ["erg_common/traditional_chinese", "els/traditional_chinese"]
 
 [dependencies]
-pylyzer_core = { version = "0.0.77", path = "./crates/pylyzer_core" }
+pylyzer_core = { version = "0.0.78", path = "./crates/pylyzer_core" }
 erg_common = { workspace = true }
 els = { workspace = true }
 

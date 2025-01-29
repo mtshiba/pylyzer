@@ -81,9 +81,9 @@ checksum = "8f68f53c83ab957f72c32642f3868eec03eb974d1fb82e453128456482613d36"
 
 [[package]]
 name = "bumpalo"
-version = "3.16.0"
+version = "3.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "79296716171880943b8470b5f8d03aa55eb2e645a4874bdbb28adb49162e012c"
+checksum = "1628fb46dfa0b37568d12e5edd512553eccf6a22a78e8bde00bb4aed84d5bdbf"
 
 [[package]]
 name = "byteorder"
@@ -93,9 +93,9 @@ checksum = "1fd0f2584146f6f2ef48085050886acf353beff7305ebd1ae69500e27c67f64b"
 
 [[package]]
 name = "cc"
-version = "1.2.9"
+version = "1.2.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c8293772165d9345bdaaa39b45b2109591e63fe5e6fbc23c6ff930a048aa310b"
+checksum = "13208fcbb66eaeffe09b99fffbe1af420f00a7b35aa99ad683dfc1aa76145229"
 dependencies = [
  "shlex",
 ]
@@ -114,9 +114,9 @@ checksum = "6245d59a3e82a7fc217c5828a6692dbc6dfb63a0c8c90495621f7b9d79704a0e"
 
 [[package]]
 name = "crunchy"
-version = "0.2.2"
+version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7a81dae078cea95a014a339291cec439d2f232ebe854a9d672b796c6afafa9b7"
+checksum = "43da5946c66ffcc7745f48db692ffbb10a83bfe0afd96235c5c2a4fb23994929"
 
 [[package]]
 name = "derive_more"
@@ -479,9 +479,9 @@ dependencies = [
 
 [[package]]
 name = "malachite"
-version = "0.4.16"
+version = "0.4.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5616515d632967cd329b6f6db96be9a03ea0b3a49cdbc45b0016803dad8a77b7"
+checksum = "4a6ecab92657eb234bfe98abd0b17920772c6b14ce69256950142e2eb36d000b"
 dependencies = [
  "malachite-base",
  "malachite-nz",
@@ -490,9 +490,9 @@ dependencies = [
 
 [[package]]
 name = "malachite-base"
-version = "0.4.16"
+version = "0.4.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "46059721011b0458b7bd6d9179be5d0b60294281c23320c207adceaecc54d13b"
+checksum = "06f6d078bb4dad5b76f6a85737e6c9113667d199612a73eef375c56e75d5d4d5"
 dependencies = [
  "hashbrown",
  "itertools",
@@ -515,9 +515,9 @@ dependencies = [
 
 [[package]]
 name = "malachite-nz"
-version = "0.4.16"
+version = "0.4.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1503b27e825cabd1c3d0ff1e95a39fb2ec9eab6fd3da6cfa41aec7091d273e78"
+checksum = "ad61a09cde72dcdb8b2baaf3e71430c5bd94fb6753da89f17301a459f3e466db"
 dependencies = [
  "itertools",
  "libm",
@@ -526,9 +526,9 @@ dependencies = [
 
 [[package]]
 name = "malachite-q"
-version = "0.4.16"
+version = "0.4.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a475503a70a3679dbe3b9b230a23622516742528ba614a7b2490f180ea9cb514"
+checksum = "be4a9dfffb87667ae94e8320213d3f5419e3e37311bc6bf8f4d2ab9b44f3a535"
 dependencies = [
  "itertools",
  "malachite-base",
@@ -709,7 +709,7 @@ dependencies = [
 
 [[package]]
 name = "py2erg"
-version = "0.0.77"
+version = "0.0.78"
 dependencies = [
  "erg_common",
  "erg_compiler",
@@ -719,7 +719,7 @@ dependencies = [
 
 [[package]]
 name = "pylyzer"
-version = "0.0.77"
+version = "0.0.78"
 dependencies = [
  "els",
  "erg_common",
@@ -729,7 +729,7 @@ dependencies = [
 
 [[package]]
 name = "pylyzer_core"
-version = "0.0.77"
+version = "0.0.78"
 dependencies = [
  "erg_common",
  "erg_compiler",
@@ -740,7 +740,7 @@ dependencies = [
 
 [[package]]
 name = "pylyzer_wasm"
-version = "0.0.77"
+version = "0.0.78"
 dependencies = [
  "erg_common",
  "erg_compiler",
@@ -820,7 +820,7 @@ dependencies = [
 [[package]]
 name = "rustpython-ast"
 version = "0.4.0"
-source = "git+https://github.com/RustPython/Parser#5e9d9853e751240b28138efd165e793a7ee5dad4"
+source = "git+https://github.com/RustPython/Parser#f07b97cef396d573364639904d767c9ff3e3e701"
 dependencies = [
  "is-macro",
  "malachite-bigint",
@@ -831,7 +831,7 @@ dependencies = [
 [[package]]
 name = "rustpython-parser"
 version = "0.4.0"
-source = "git+https://github.com/RustPython/Parser#5e9d9853e751240b28138efd165e793a7ee5dad4"
+source = "git+https://github.com/RustPython/Parser#f07b97cef396d573364639904d767c9ff3e3e701"
 dependencies = [
  "anyhow",
  "is-macro",
@@ -854,7 +854,7 @@ dependencies = [
 [[package]]
 name = "rustpython-parser-core"
 version = "0.4.0"
-source = "git+https://github.com/RustPython/Parser#5e9d9853e751240b28138efd165e793a7ee5dad4"
+source = "git+https://github.com/RustPython/Parser#f07b97cef396d573364639904d767c9ff3e3e701"
 dependencies = [
  "is-macro",
  "memchr",
@@ -864,7 +864,7 @@ dependencies = [
 [[package]]
 name = "rustpython-parser-vendored"
 version = "0.4.0"
-source = "git+https://github.com/RustPython/Parser#5e9d9853e751240b28138efd165e793a7ee5dad4"
+source = "git+https://github.com/RustPython/Parser#f07b97cef396d573364639904d767c9ff3e3e701"
 dependencies = [
  "memchr",
  "once_cell",
@@ -878,9 +878,9 @@ checksum = "f7c45b9784283f1b2e7fb61b42047c2fd678ef0960d4f6f1eba131594cc369d4"
 
 [[package]]
 name = "ryu"
-version = "1.0.18"
+version = "1.0.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f3cb5ba0dc43242ce17de99c180e96db90b235b8a9fdc9543c96d2209116bd9f"
+checksum = "6ea1a2d0a644769cc99faa24c3ad26b379b786fe7c36fd3c546254801650e6dd"
 
 [[package]]
 name = "scopeguard"
@@ -890,9 +890,9 @@ checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
 
 [[package]]
 name = "semver"
-version = "1.0.24"
+version = "1.0.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3cb6eb87a131f756572d7fb904f6e7b68633f09cca868c5df1c4b8d1a694bbba"
+checksum = "f79dfe2d285b0488816f30e700a7438c5a73d816b5b7d3ac72fbc48b0d185e03"
 
 [[package]]
 name = "serde"
@@ -916,9 +916,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.135"
+version = "1.0.138"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2b0d7ba2887406110130a978386c4e1befb98c674b4fba677954e4db976630d9"
+checksum = "d434192e7da787e94a6ea7e9670b26a036d0ca41e0b7efb2676dd32bae872949"
 dependencies = [
  "itoa",
  "memchr",
@@ -1083,9 +1083,9 @@ dependencies = [
 
 [[package]]
 name = "unicode-ident"
-version = "1.0.14"
+version = "1.0.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "adb9e6ca4f869e1180728b7950e35922a7fc6397f7b641499e8f3ef06e50dc83"
+checksum = "a210d160f08b701c8721ba1c726c11662f877ea6b7094007e1ca9a1041945034"
 
 [[package]]
 name = "unicode-width"
