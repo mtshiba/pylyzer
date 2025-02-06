@@ -1,0 +1,19 @@
+name: Feature request
+description: Suggest an idea for this project
+labels:
+  - enhancement
+body:
+  - type: textarea
+    attributes:
+      label: "Describe the feature"
+      description: "A clear and concise description of what the feature is."
+      placeholder: "Enter a detailed description of the feature"
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: "Additional context"
+      description: "Add any other context about the feature here."
+      placeholder: "Enter any additional context"
+    validations:
+      required: false
