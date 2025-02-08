@@ -13,3 +13,8 @@ from typing import Optional
 x: Optional[int] = None
 if x is not None:
     x += 1
+
+def sb(s: str | bytes) -> None:
+    if not isinstance(s, str):
+        str(s, "ascii")
+    return None

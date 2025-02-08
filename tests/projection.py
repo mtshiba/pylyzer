@@ -17,6 +17,9 @@ def call_method(obj, x):
 def call_method2(obj, x):
     return call_method(obj, x)
 
+def call_foo(x):
+    return x.foo("foo") # OK
+
 c = C()
 assert call_method(c, 1) == 1
 assert call_method(c, 1) == "a" # ERR

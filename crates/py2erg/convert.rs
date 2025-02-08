@@ -1825,10 +1825,9 @@ impl ASTConverter {
                 let rhs = self.convert_expr(*un.operand);
                 let (kind, cont) = match un.op {
                     UnOp::UAdd => (TokenKind::PrePlus, "+"),
-                    // UnOp::Not => (TokenKind::PreBitNot, "not"),
                     UnOp::USub => (TokenKind::PreMinus, "-"),
                     UnOp::Invert => (TokenKind::PreBitNot, "~"),
-                    _ => return Expr::Dummy(Dummy::new(None, vec![rhs])),
+                    UnOp::Not => return Expr::Call(Identifier::public("not".into()).call1(rhs)),
                 };
                 let op = Token::from_str(kind, cont);
                 Expr::UnaryOp(UnaryOp::new(op, rhs))
