@@ -33,6 +33,12 @@ body:
       required: false
   - type: textarea
     attributes:
+      label: "Error log"
+      description: "Add error logs here. Language server errors may be logged in $ERG_PATH/els.log."
+    validations:
+      required: false
+  - type: textarea
+    attributes:
       label: "Screenshots"
       description: "Add screenshots to help explain your problem."
       placeholder: "Provide screenshot links or instructions to attach images"
