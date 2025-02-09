@@ -3,7 +3,7 @@
 	"displayName": "pylyzer",
 	"description": "A fast Python static code analyzer & language server for VSCode",
 	"publisher": "pylyzer",
-	"version": "0.1.10",
+	"version": "0.1.11",
 	"engines": {
 		"vscode": "^1.70.0"
 	},
@@ -67,6 +67,11 @@
 					"type": "boolean",
 					"default": true,
 					"markdownDescription": "Enable smart completion (see [ELS features](https://github.com/erg-lang/erg/blob/main/crates/els/doc/features.md))"
+				},
+				"pylyzer.deepCompletion": {
+					"type": "boolean",
+					"default": true,
+					"markdownDescription": "Enable deep completion (see [ELS features](https://github.com/erg-lang/erg/blob/main/crates/els/doc/features.md))"
 				},
 				"pylyzer.signatureHelp": {
 					"type": "boolean",

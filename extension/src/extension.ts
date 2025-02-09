@@ -22,6 +22,7 @@ async function startLanguageClient(context: ExtensionContext) {
 		const enableHover = workspace.getConfiguration("pylyzer").get<boolean>("hover", true);
 		const enableCompletion = workspace.getConfiguration("pylyzer").get<boolean>("completion", true);
 		const smartCompletion = workspace.getConfiguration("pylyzer").get<boolean>("smartCompletion", true);
+		const deepCompletion = workspace.getConfiguration("pylyzer").get<boolean>("deepCompletion", true);
 		const enableSignatureHelp = workspace.getConfiguration("pylyzer").get<boolean>("signatureHelp", true);
 		const enableDocumentLink = workspace.getConfiguration("pylyzer").get<boolean>("documentLink", true);
 		const enableCodeAction = workspace.getConfiguration("pylyzer").get<boolean>("codeAction", true);
@@ -53,6 +54,10 @@ async function startLanguageClient(context: ExtensionContext) {
 		if (!smartCompletion) {
 			args.push("--disable");
 			args.push("smartCompletion");
+		}
+		if (!deepCompletion) {
+			args.push("--disable");
+			args.push("deepCompletion");
 		}
 		if (!enableSignatureHelp) {
 			args.push("--disable");

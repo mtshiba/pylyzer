@@ -36,4 +36,12 @@ cargo install pylyzer
 | - | - | - |
 | pylyzer.diagnostics | Enable diagnostics | true |
 | pylyzer.inlayHints | Enable inlay hints (this feature is unstable) | false |
+| pylyzer.semanticTokens | Enable semantic tokens | false |
+| pylyzer.hover | Enable hover | true |
+| pylyzer.completion | Enable completion | true |
 | pylyzer.smartCompletion | Enable smart completion (see [ELS features](https://github.com/erg-lang/erg/blob/main/crates/els/doc/features.md))| true |
+| pylyzer.deepCompletion | Enable deep completion | true |
+| pylyzer.signatureHelp | Enable signature help | true |
+| pylyzer.documentLink | Enable document link | true |
+| pylyzer.codeAction | Enable code action | true |
+| pylyzer.codeLens | Enable code lens | true |
