@@ -114,6 +114,7 @@ pub(crate) fn parse_args() -> ErgConfig {
     let mut cfg = ErgConfig {
         effect_check: false,
         ownership_check: false,
+        respect_pyi: false,
         ..ErgConfig::default()
     };
     let mut runtime_args: Vec<&'static str> = Vec::new();
@@ -170,6 +171,9 @@ pub(crate) fn parse_args() -> ErgConfig {
             }
             "--do-not-show-ext-errors" => {
                 cfg.do_not_show_ext_errors = true;
+            }
+            "--do-not-respect-pyi" => {
+                cfg.respect_pyi = false;
             }
             other if other.starts_with('-') => {
                 println!(

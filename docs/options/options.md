@@ -68,3 +68,8 @@ Enable `--no-infer-fn-type` and `--fast-error-report`.
 ## --do-not-show-ext-errors
 
 Do not show errors from external libraries.
+
+## --do-not-respect-pyi
+
+If specified, the actual `.py` types will be respected over the `.pyi` types.
+Applying this option may slow down the analysis.
