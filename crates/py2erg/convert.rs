@@ -1313,6 +1313,8 @@ impl ASTConverter {
                 let elems = ConstArgs::new(elems, None, vec![], None, None);
                 TypeSpec::Enum(elems)
             }
+            // TODO: Currently, these types are simply interpreted as inner types
+            "Final" | "Required" | "NotRequired" | "ReadOnly" => self.convert_type_spec(args),
             // TODO: distinguish from collections.abc.Callable
             "Callable" => {
                 let mut tuple = match args {
