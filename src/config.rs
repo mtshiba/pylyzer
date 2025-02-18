@@ -114,7 +114,7 @@ pub(crate) fn parse_args() -> ErgConfig {
     let mut cfg = ErgConfig {
         effect_check: false,
         ownership_check: false,
-        respect_pyi: false,
+        respect_pyi: true,
         ..ErgConfig::default()
     };
     let mut runtime_args: Vec<&'static str> = Vec::new();
