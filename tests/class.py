@@ -1,4 +1,4 @@
-from typing import Self
+from typing import Self, List
 
 class Empty: pass
 emp = Empty()
@@ -105,3 +105,18 @@ class Implicit:
 
     def set_foo(self):
         self.foo = True
+
+class Cs:
+    cs: list[C]
+    cs2: List[C]
+    cs_list: list[list[C]]
+
+    def __init__(self, cs: list[C]):
+        self.cs = cs
+        self.cs2 = cs
+        self.cs_list = []
+
+    def add(self, c: C):
+        self.cs.append(c)
+        self.cs2.append(c)
+        self.cs_list.append([c])

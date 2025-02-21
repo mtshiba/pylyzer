@@ -105,7 +105,7 @@ fn exec_class() -> Result<(), String> {
 
 #[test]
 fn exec_class_err() -> Result<(), String> {
-    expect("tests/err/class.py", 0, 1)
+    expect("tests/err/class.py", 0, 3)
 }
 
 #[test]

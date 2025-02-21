@@ -144,10 +144,24 @@ fn escape_name(name: String) -> String {
         "tuple" => "GenericTuple".into(),
         "type" => "Type".into(),
         "ModuleType" => "GeneticModule".into(),
-        "MutableSequence" => "Sequence!".into(),
-        "MutableMapping" => "Mapping!".into(),
         _ => name,
     }
+}
+
+fn is_global_poly_type(name: &str) -> bool {
+    matches!(
+        name,
+        "list"
+            | "dict"
+            | "set"
+            | "tuple"
+            | "List"
+            | "Dict"
+            | "Tuple"
+            | global_unary_collections!()
+            | global_mutable_unary_collections!()
+            | global_binary_collections!()
+    )
 }
 
 fn quoted_symbol(sym: &str, lineno: u32, col_begin: u32) -> Token {
@@ -241,6 +255,7 @@ impl DefinedPlace {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct NameInfo {
+    kind: NameKind,
     rename: Option<String>,
     defined_in: DefinedPlace,
     defined_block_id: usize,
@@ -250,12 +265,14 @@ pub struct NameInfo {
 
 impl NameInfo {
     pub fn new(
+        kind: NameKind,
         rename: Option<String>,
         defined_in: DefinedPlace,
         defined_block_id: usize,
         defined_times: usize,
     ) -> Self {
         Self {
+            kind,
             rename,
             defined_in,
             defined_block_id,
@@ -636,6 +653,15 @@ impl ASTConverter {
         None
     }
 
+    fn is_type_name(&self, name: &str) -> bool {
+        is_global_poly_type(name)
+            || self
+                .contexts
+                .iter()
+                .rev()
+                .any(|ctx| ctx.names.get(name).is_some_and(|ni| ni.kind.is_class()))
+    }
+
     fn define_name(&mut self, name: String, info: NameInfo) {
         self.contexts.last_mut().unwrap().names.insert(name, info);
     }
@@ -732,7 +758,7 @@ impl ASTConverter {
                 None
             };
             let defined_in = DefinedPlace::Known(self.cur_namespace());
-            let info = NameInfo::new(rename, defined_in, self.cur_block_id(), 1);
+            let info = NameInfo::new(kind, rename, defined_in, self.cur_block_id(), 1);
             self.define_name(String::from(name), info);
             RenameKind::Let
         }
@@ -773,7 +799,7 @@ impl ASTConverter {
             } else {
                 DefinedPlace::Unknown
             };
-            let mut info = NameInfo::new(None, defined_in, cur_block_id, 0);
+            let mut info = NameInfo::new(NameKind::Variable, None, defined_in, cur_block_id, 0);
             info.add_referrer(cur_namespace);
             self.declare_name(name.clone(), info);
             name
@@ -1527,7 +1553,6 @@ impl ASTConverter {
     }
 
     fn convert_type_spec(&mut self, expr: py_ast::Expr) -> TypeSpec {
-        #[allow(clippy::collapsible_match)]
         match expr {
             py_ast::Expr::Name(name) => {
                 self.contexts
@@ -2000,6 +2025,19 @@ impl ASTConverter {
             }
             py_ast::Expr::Subscript(subs) => {
                 let obj = self.convert_expr(*subs.value);
+                // List[T] => List!(T)
+                if obj.get_name().is_some_and(|n| self.is_type_name(n)) {
+                    let obj = if obj.get_name().is_some_and(|n| n == "List") {
+                        let global = self.convert_ident("global".to_string(), subs.range.start);
+                        Expr::from(global).attr_expr(Identifier::private("List!".into()))
+                    } else if obj.get_name().is_some_and(|n| n == "Set") {
+                        let global = self.convert_ident("global".to_string(), subs.range.start);
+                        Expr::from(global).attr_expr(Identifier::private("Set!".into()))
+                    } else {
+                        obj
+                    };
+                    return obj.call1(self.convert_expr(*subs.slice));
+                }
                 let method = obj.attr_expr(
                     self.convert_ident("__getitem__".to_string(), subs.slice.location()),
                 );
