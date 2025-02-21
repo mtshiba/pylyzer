@@ -214,24 +214,43 @@ For more information try `pylyzer --help`"
     cfg
 }
 
-pub(crate) fn files_to_be_checked() -> Vec<PathBuf> {
+pub(crate) fn files_to_be_checked() -> (Vec<PathBuf>, Vec<String>) {
     let file_or_patterns = env::args()
         .skip(1)
         .rev()
         .take_while(|arg| !arg.starts_with("-"));
     let mut files = HashSet::new();
+    let mut invalid_files = HashSet::new();
     for file_or_pattern in file_or_patterns {
         if PathBuf::from(&file_or_pattern).is_file() {
             files.insert(PathBuf::from(&file_or_pattern));
         } else {
-            for entry in glob::glob(&file_or_pattern).expect("Failed to read glob pattern") {
-                match entry {
-                    Err(e) => eprintln!("err: {e}"),
-                    Ok(path) if path.is_file() => {files.insert(path);},
-                    _ => {}
+            let entries = glob::glob(&file_or_pattern);
+            match entries {
+                Err(_) => {
+                    invalid_files.insert(file_or_pattern.clone());
+                    continue;
+                }
+                Ok(entries) => {
+                    let mut entries = entries.into_iter().peekable();
+                    if entries.peek().is_none() {
+                        invalid_files.insert(file_or_pattern.clone());
+                    }
+                    for entry in entries {
+                        match entry {
+                            Err(e) => eprintln!("err: {e}"),
+                            Ok(path) if path.is_file() => {
+                                files.insert(path);
+                            }
+                            _ => {}
+                        }
+                    }
                 }
             }
         }
     }
-    files.into_iter().collect()
+    (
+        files.into_iter().collect(),
+        invalid_files.into_iter().collect(),
+    )
 }
