@@ -41,6 +41,13 @@ Make sure that `cargo`/`rustc` is up-to-date, as pylyzer may be written with the
 pylyzer file.py
 ```
 
+## Check multiple files
+
+```sh
+# glob patterns are supported
+pylyzer file1.py file2.py dir/file*.py
+```
+
 ### Check an entire package
 
 If you don't specify a file path, pylyzer will automatically search for the entry point.
@@ -177,7 +184,7 @@ pylyzer converts Python ASTs to Erg ASTs and passes them to Erg's type checker. 
 * [x] type assertion (`typing.cast`)
 * [x] type narrowing (`is`, `isinstance`)
 * [x] `pyi` (stub) files support
-* [ ] glob pattern file check
+* [x] glob pattern file check
 * [x] type comment (`# type: ...`)
 * [x] virtual environment support
 * [x] package manager support

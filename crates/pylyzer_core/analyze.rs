@@ -295,7 +295,7 @@ impl PythonAnalyzer {
         res
     }
 
-    pub fn run(&mut self) {
+    pub fn run(&mut self) -> i32 {
         /*if self.cfg.dist_dir.is_some() {
             reserve_decl_er(self.cfg.input.clone());
         }*/
@@ -317,7 +317,7 @@ impl PythonAnalyzer {
                     dump_decl_package(&self.checker.shared().mod_cache);
                     println!("A declaration file has been generated to __pycache__ directory.");
                 }
-                std::process::exit(0);
+                0
             }
             Err(artifact) => {
                 if !artifact.warns.is_empty() {
@@ -345,7 +345,7 @@ impl PythonAnalyzer {
                     dump_decl_package(&self.checker.shared().mod_cache);
                     println!("A declaration file has been generated to __pycache__ directory.");
                 }
-                std::process::exit(code);
+                code
             }
         }
     }

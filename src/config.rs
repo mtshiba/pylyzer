@@ -212,3 +212,25 @@ For more information try `pylyzer --help`"
     cfg.runtime_args = runtime_args.into();
     cfg
 }
+
+pub(crate) fn files_to_be_checked() -> Vec<PathBuf> {
+    let file_or_patterns = env::args()
+        .skip(1)
+        .rev()
+        .take_while(|arg| !arg.starts_with("-"));
+    let mut files = vec![];
+    for file_or_pattern in file_or_patterns {
+        if PathBuf::from(&file_or_pattern).is_file() {
+            files.push(PathBuf::from(&file_or_pattern));
+        } else {
+            for entry in glob::glob(&file_or_pattern).expect("Failed to read glob pattern") {
+                match entry {
+                    Err(e) => eprintln!("err: {e}"),
+                    Ok(path) if path.is_file() => files.push(path),
+                    _ => {}
+                }
+            }
+        }
+    }
+    files
+}

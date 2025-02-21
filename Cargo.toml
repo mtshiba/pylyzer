@@ -53,6 +53,7 @@ traditional_chinese = ["erg_common/traditional_chinese", "els/traditional_chines
 pylyzer_core = { version = "0.0.80", path = "./crates/pylyzer_core" }
 erg_common = { workspace = true }
 els = { workspace = true }
+glob = "0.3.2"
 
 [dev-dependencies]
 erg_compiler = { workspace = true }
