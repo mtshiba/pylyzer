@@ -223,7 +223,7 @@ pub(crate) fn files_to_be_checked() -> Vec<Result<PathBuf, String>> {
                 // Discard runtime args
                 break;
             }
-            "--verbose" | "--code" | "-c" | "--disable" => {
+            "--code" | "-c" | "--disable" | "--verbose" => {
                 // Skip options
                 let _ = &args.next();
                 continue;
