@@ -19,26 +19,27 @@ fn run() {
         lang_server.run();
     } else {
         let mut code = 0;
-        let (mut files, invalid_files) = files_to_be_checked();
-        for invalid_file in invalid_files {
-            if code == 0 {
-                code = 1;
-            }
-            println!("{RED}Invalid file or pattern{RESET}: {invalid_file}");
-        }
+        let files = files_to_be_checked();
         if files.is_empty() {
             let mut analyzer = PythonAnalyzer::new(cfg);
             code = analyzer.run();
         } else {
-            files.reverse();  // TODO: actually this only makes sense if not using a hashset
-            // TODO use a Vec<Result<PathBuf, String>> and keep the order?
-            //                                  ^- error msg
             for path in files {
-                let cfg = cfg.inherit(path);
-                let mut analyzer = PythonAnalyzer::new(cfg);
-                let c = analyzer.run();
-                if c != 0 {
-                    code = 1;
+                match path {
+                    Err(invalid_file_or_pattern) => {
+                        if code == 0 {
+                            code = 1;
+                        }
+                        println!("{RED}Invalid file or pattern{RESET}: {invalid_file_or_pattern}");
+                    }
+                    Ok(path) => {
+                        let cfg = cfg.inherit(path);
+                        let mut analyzer = PythonAnalyzer::new(cfg);
+                        let c = analyzer.run();
+                        if c != 0 {
+                            code = 1;
+                        }
+                    }
                 }
             }
         }
