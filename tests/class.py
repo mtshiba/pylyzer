@@ -120,3 +120,20 @@ class Cs:
         self.cs.append(c)
         self.cs2.append(c)
         self.cs_list.append([c])
+
+class I:
+    def __init__(self):
+        self.ix: int = 1
+        if True:
+            self.init_y()
+
+    def init_y(self):
+        self.iy: int = 2
+
+    def foo(self):
+        self.iz: int = 1  # ERR
+
+i = I()
+_ = i.ix
+_ = i.iy  # OK
+_ = i.iz  # ERR

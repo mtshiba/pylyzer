@@ -6,7 +6,7 @@ use erg_common::dict::Dict as HashMap;
 use erg_common::error::Location as ErgLocation;
 use erg_common::fresh::FRESH_GEN;
 use erg_common::set::Set as HashSet;
-use erg_common::traits::{Locational, Stream};
+use erg_common::traits::{Locational, Stream, Traversable};
 use erg_common::{fmt_vec, log, set};
 use erg_compiler::artifact::IncompleteArtifact;
 use erg_compiler::erg_parser::ast::{
@@ -2165,30 +2165,57 @@ impl ASTConverter {
         Block::new(new_block)
     }
 
-    fn check_init_sig(&mut self, sig: &Signature) -> Option<()> {
+    #[allow(clippy::result_large_err)]
+    fn check_init_sig(&self, sig: &Signature) -> Result<(), (bool, CompileError)> {
         match sig {
             Signature::Subr(subr) => {
                 if let Some(first) = subr.params.non_defaults.first() {
                     if first.inspect().map(|s| &s[..]) == Some("self") {
-                        return Some(());
+                        return Ok(());
                     }
                 }
-                self.errs.push(self_not_found_error(
-                    self.cfg.input.clone(),
-                    subr.loc(),
-                    self.cur_namespace(),
-                ));
-                Some(())
+                Err((
+                    true,
+                    self_not_found_error(self.cfg.input.clone(), subr.loc(), self.cur_namespace()),
+                ))
             }
-            Signature::Var(var) => {
-                self.errs.push(init_var_error(
-                    self.cfg.input.clone(),
-                    var.loc(),
-                    self.cur_namespace(),
-                ));
-                None
-            }
+            Signature::Var(var) => Err((
+                false,
+                init_var_error(self.cfg.input.clone(), var.loc(), self.cur_namespace()),
+            )),
         }
+    }
+
+    // ```python
+    // def __init__(self, x: Int, y: Int, z):
+    //     self.x = x
+    //     self.y = y
+    //     if True:
+    //         self.set_z(z)
+    //
+    // def set_z(self, z):
+    //     self.z = z
+    // ```
+    // ↓
+    // methods: {"set_z"}
+    #[allow(clippy::only_used_in_recursion)]
+    fn collect_called_methods(&self, expr: &Expr, methods: &mut HashSet<String>) {
+        expr.traverse(&mut |ex| {
+            if let Expr::Call(call) = ex {
+                match call.obj.as_ref() {
+                    Expr::Accessor(Accessor::Ident(ident)) if ident.inspect() == "self" => {
+                        if let Some(method_ident) = &call.attr_name {
+                            methods.insert(method_ident.inspect().to_string());
+                        } else {
+                            self.collect_called_methods(&call.obj, methods);
+                        }
+                    }
+                    _ => self.collect_called_methods(ex, methods),
+                }
+            } else {
+                self.collect_called_methods(ex, methods);
+            }
+        });
     }
 
     // def __init__(self, x: Int, y: Int, z):
@@ -2198,8 +2225,21 @@ impl ASTConverter {
     // ↓
     // requirement : {x: Int, y: Int, z: Any}
     // returns     : .__call__(x: Int, y: Int, z: Obj): Self = .unreachable()
-    fn extract_init(&mut self, base_type: &mut Option<Expr>, init_def: Def) -> Option<Def> {
-        self.check_init_sig(&init_def.sig)?;
+    fn extract_init(
+        &mut self,
+        base_type: &mut Option<Expr>,
+        init_def: Def,
+        attrs: &[ClassAttr],
+        pre_check: bool,
+    ) -> Option<Def> {
+        if let Err((continuable, err)) = self.check_init_sig(&init_def.sig) {
+            if pre_check {
+                self.errs.push(err);
+            }
+            if !continuable {
+                return None;
+            }
+        }
         let l_brace = Token::new(
             TokenKind::LBrace,
             "{",
@@ -2212,50 +2252,21 @@ impl ASTConverter {
             init_def.ln_end().unwrap_or(0),
             init_def.col_end().unwrap_or(0),
         );
+        let expr = Expr::Def(init_def.clone());
         let Signature::Subr(sig) = init_def.sig else {
             unreachable!()
         };
         let mut fields = vec![];
-        for chunk in init_def.body.block {
-            #[allow(clippy::single_match)]
-            match chunk {
-                Expr::ReDef(redef) => {
-                    let Accessor::Attr(attr) = redef.attr else {
-                        continue;
-                    };
-                    // if `self.foo == ...`
-                    if attr.obj.get_name().map(|s| &s[..]) == Some("self") {
-                        // get attribute types
-                        let typ = if let Some(t_spec_op) = sig
-                            .params
-                            .non_defaults
-                            .iter()
-                            .find(|&param| param.inspect() == Some(attr.ident.inspect()))
-                            .and_then(|param| param.t_spec.as_ref())
-                            .or_else(|| {
-                                sig.params
-                                    .defaults
-                                    .iter()
-                                    .find(|&param| param.inspect() == Some(attr.ident.inspect()))
-                                    .and_then(|param| param.sig.t_spec.as_ref())
-                            }) {
-                            *t_spec_op.t_spec_as_expr.clone()
-                        } else if let Some(typ) = redef.t_spec.map(|t_spec| t_spec.t_spec_as_expr) {
-                            *typ
-                        } else {
-                            Expr::from(Accessor::Ident(Identifier::private_with_line(
-                                "Any".into(),
-                                attr.obj.ln_begin().unwrap_or(0),
-                            )))
-                        };
-                        let sig =
-                            Signature::Var(VarSignature::new(VarPattern::Ident(attr.ident), None));
-                        let body = DefBody::new(EQUAL, Block::new(vec![typ]), DefId(0));
-                        let field_type_def = Def::new(sig, body);
-                        fields.push(field_type_def);
+        self.extract_instance_attrs(&sig, &init_def.body.block, &mut fields);
+        let mut method_names = HashSet::new();
+        self.collect_called_methods(&expr, &mut method_names);
+        for class_attr in attrs {
+            if let ClassAttr::Def(def) = class_attr {
+                if let Signature::Subr(sig) = &def.sig {
+                    if method_names.contains(&sig.ident.inspect()[..]) {
+                        self.extract_instance_attrs(sig, &def.body.block, &mut fields);
                     }
                 }
-                _ => {}
             }
         }
         if let Some(Expr::Record(Record::Normal(rec))) = base_type.as_mut() {
@@ -2312,6 +2323,55 @@ impl ASTConverter {
         Some(def)
     }
 
+    fn extract_instance_attrs(&self, sig: &SubrSignature, block: &Block, fields: &mut Vec<Def>) {
+        for chunk in block.iter() {
+            if let Expr::ReDef(redef) = chunk {
+                let Accessor::Attr(attr) = &redef.attr else {
+                    continue;
+                };
+                // if `self.foo == ...`
+                if attr.obj.get_name().map(|s| &s[..]) == Some("self")
+                    && fields
+                        .iter()
+                        .all(|field| field.sig.ident().unwrap() != &attr.ident)
+                {
+                    // get attribute types
+                    let typ = if let Some(t_spec_op) = sig
+                        .params
+                        .non_defaults
+                        .iter()
+                        .find(|&param| param.inspect() == Some(attr.ident.inspect()))
+                        .and_then(|param| param.t_spec.as_ref())
+                        .or_else(|| {
+                            sig.params
+                                .defaults
+                                .iter()
+                                .find(|&param| param.inspect() == Some(attr.ident.inspect()))
+                                .and_then(|param| param.sig.t_spec.as_ref())
+                        }) {
+                        *t_spec_op.t_spec_as_expr.clone()
+                    } else if let Some(typ) =
+                        redef.t_spec.clone().map(|t_spec| t_spec.t_spec_as_expr)
+                    {
+                        *typ
+                    } else {
+                        Expr::from(Accessor::Ident(Identifier::private_with_line(
+                            "Any".into(),
+                            attr.obj.ln_begin().unwrap_or(0),
+                        )))
+                    };
+                    let sig = Signature::Var(VarSignature::new(
+                        VarPattern::Ident(attr.ident.clone()),
+                        None,
+                    ));
+                    let body = DefBody::new(EQUAL, Block::new(vec![typ]), DefId(0));
+                    let field_type_def = Def::new(sig, body);
+                    fields.push(field_type_def);
+                }
+            }
+        }
+    }
+
     fn gen_default_init(&self, line: usize) -> Def {
         let call_ident = Identifier::new(
             VisModifierSpec::Public(ErgLocation::Unknown),
@@ -2346,7 +2406,6 @@ impl ASTConverter {
     ) -> (Option<Expr>, ClassAttrs) {
         let mut base_type = None;
         let mut attrs = vec![];
-        let mut init_is_defined = false;
         let mut call_params_len = None;
         for stmt in body {
             match self.convert_statement(stmt, true) {
@@ -2402,12 +2461,15 @@ impl ASTConverter {
                         .ident()
                         .is_some_and(|id| &id.inspect()[..] == "__init__")
                     {
-                        if let Some(call_def) = self.extract_init(&mut base_type, def) {
+                        // We will generate `__init__` and determine the shape of the class at the end
+                        // Here we just extract the signature
+                        if let Some(call_def) =
+                            self.extract_init(&mut base_type, def.clone(), &attrs, true)
+                        {
                             if let Some(params) = call_def.sig.params() {
                                 call_params_len = Some(params.len());
                             }
-                            attrs.insert(0, ClassAttr::Def(call_def));
-                            init_is_defined = true;
+                            attrs.push(ClassAttr::Def(def));
                         }
                     } else {
                         attrs.push(ClassAttr::Def(def));
@@ -2457,7 +2519,25 @@ impl ASTConverter {
                 _other => {} // TODO:
             }
         }
-        if !init_is_defined && !inherit {
+        let mut init = None;
+        for (i, attr) in attrs.iter().enumerate() {
+            if let ClassAttr::Def(def) = attr {
+                if def
+                    .sig
+                    .ident()
+                    .is_some_and(|id| &id.inspect()[..] == "__init__")
+                {
+                    if let Some(def) = self.extract_init(&mut base_type, def.clone(), &attrs, false)
+                    {
+                        init = Some((i, def));
+                    }
+                }
+            }
+        }
+        if let Some((i, def)) = init {
+            attrs.remove(i);
+            attrs.insert(0, ClassAttr::Def(def));
+        } else if !inherit {
             attrs.insert(0, ClassAttr::Def(self.gen_default_init(0)));
         }
         (base_type, ClassAttrs::new(attrs))
