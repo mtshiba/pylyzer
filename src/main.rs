@@ -19,7 +19,7 @@ fn run() {
         lang_server.run();
     } else {
         let mut code = 0;
-        let (files, invalid_files) = files_to_be_checked();
+        let (mut files, invalid_files) = files_to_be_checked();
         for invalid_file in invalid_files {
             if code == 0 {
                 code = 1;
@@ -30,6 +30,9 @@ fn run() {
             let mut analyzer = PythonAnalyzer::new(cfg);
             code = analyzer.run();
         } else {
+            files.reverse();  // TODO: actually this only makes sense if not using a hashset
+            // TODO use a Vec<Result<PathBuf, String>> and keep the order?
+            //                                  ^- error msg
             for path in files {
                 let cfg = cfg.inherit(path);
                 let mut analyzer = PythonAnalyzer::new(cfg);
