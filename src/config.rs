@@ -214,7 +214,7 @@ For more information try `pylyzer --help`"
     cfg
 }
 
-pub(crate) fn files_to_be_checked() -> Vec<Result<PathBuf, String>> {
+pub(crate) fn files_to_be_checked() -> IndexSet<Result<PathBuf, String>> {
     let mut file_or_patterns = vec![];
     let mut args = env::args().skip(1);
     while let Some(arg) = &args.next() {
@@ -265,5 +265,5 @@ pub(crate) fn files_to_be_checked() -> Vec<Result<PathBuf, String>> {
             }
         }
     }
-    files.into_iter().collect()
+    files
 }
