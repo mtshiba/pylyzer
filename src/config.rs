@@ -244,13 +244,13 @@ pub(crate) fn files_to_be_checked() -> IndexSet<Result<PathBuf, String>> {
             let entries = glob::glob(&file_or_pattern);
             match entries {
                 Err(_) => {
-                    files.insert(Err(file_or_pattern.clone()));
+                    files.insert(Err(file_or_pattern));
                     continue;
                 }
                 Ok(entries) => {
                     let mut entries = entries.into_iter().peekable();
                     if entries.peek().is_none() {
-                        files.insert(Err(file_or_pattern.clone()));
+                        files.insert(Err(file_or_pattern));
                     }
                     for entry in entries {
                         match entry {
