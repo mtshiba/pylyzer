@@ -368,6 +368,21 @@
   
 </li>
         
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#check-multiple-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      Check multiple files
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Check multiple files">
+      <ul class="md-nav__list">
+        
           <li class="md-nav__item">
   <a href="#check-an-entire-package" class="md-nav__link">
     <span class="md-ellipsis">
@@ -715,13 +730,17 @@
 <h3 id="check-a-single-file">Check a single file<a class="headerlink" href="#check-a-single-file" title="Permanent link">#</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>pylyzer<span class="w"> </span>file.py
 </code></pre></div>
+<h2 id="check-multiple-files">Check multiple files<a class="headerlink" href="#check-multiple-files" title="Permanent link">#</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># glob patterns are supported</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>pylyzer<span class="w"> </span>file1.py<span class="w"> </span>file2.py<span class="w"> </span>dir/file*.py
+</code></pre></div>
 <h3 id="check-an-entire-package">Check an entire package<a class="headerlink" href="#check-an-entire-package" title="Permanent link">#</a></h3>
 <p>If you don't specify a file path, pylyzer will automatically search for the entry point.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>pylyzer
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>pylyzer
 </code></pre></div>
 <h3 id="start-the-language-server">Start the language server<a class="headerlink" href="#start-the-language-server" title="Permanent link">#</a></h3>
 <p>This option is used when an LSP-aware editor requires arguments to start pylyzer.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>pylyzer<span class="w"> </span>--server
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>pylyzer<span class="w"> </span>--server
 </code></pre></div>
 <p>For other options, check <a href="https://mtshiba.github.io/pylyzer/options/options/">the manual</a>.</p>
 <h2 id="what-is-the-advantage-over-pylint-pyright-pytype-etc">What is the advantage over pylint, pyright, pytype, etc.?<a class="headerlink" href="#what-is-the-advantage-over-pylint-pyright-pytype-etc" title="Permanent link">#</a></h2>
@@ -746,7 +765,7 @@
 <p><img alt="autoimport" src="https://raw.githubusercontent.com/mtshiba/pylyzer/main/images/autoimport.gif" /></p>
 <h2 id="vscode-extension">VSCode extension<a class="headerlink" href="#vscode-extension" title="Permanent link">#</a></h2>
 <p>You can install the VSCode extension from the <a href="https://marketplace.visualstudio.com/items?itemName=pylyzer.pylyzer">Marketplace</a> or from the command line:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>code<span class="w"> </span>--install-extension<span class="w"> </span>pylyzer.pylyzer
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>code<span class="w"> </span>--install-extension<span class="w"> </span>pylyzer.pylyzer
 </code></pre></div>
 <h2 id="what-is-the-difference-from-ruff">What is the difference from <a href="https://github.com/astral-sh/ruff">Ruff</a>?<a class="headerlink" href="#what-is-the-difference-from-ruff" title="Permanent link">#</a></h2>
 <p><a href="https://github.com/astral-sh/ruff">Ruff</a>, like pylyzer, is a static code analysis tool for Python written in Rust, but Ruff is a linter and pylyzer is a type checker &amp; language server.
@@ -841,7 +860,7 @@ This language is a transpiled language that targets Python, and has a static typ
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> type assertion (<code>typing.cast</code>)</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> type narrowing (<code>is</code>, <code>isinstance</code>)</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <code>pyi</code> (stub) files support</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> glob pattern file check</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> glob pattern file check</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> type comment (<code># type: ...</code>)</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> virtual environment support</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> package manager support<ul class="task-list">
