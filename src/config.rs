@@ -6,6 +6,7 @@ use erg_common::config::{ErgConfig, ErgMode};
 use erg_common::io::Input;
 use erg_common::pathutil::project_entry_file_of;
 use erg_common::switch_lang;
+use indexmap::IndexSet;
 
 use crate::copy::clear_cache;
 
@@ -49,7 +50,7 @@ OPTIONS
     --clear-cache                        キャッシュをクリア
     --code/-c cmd                        文字列をプログラムに渡す
     --dump-decl                          型宣言ファイルを出力
-    --disable                            指定した機能を無効化",
+    --disable feat                       指定した機能を無効化",
 
     "simplified_chinese" =>
     "\
@@ -67,7 +68,7 @@ OPTIONS
     --clear-cache                        清除缓存
     --code/-c cmd                        作为字符串传入程序
     --dump-decl                          输出类型声明文件
-    --disable                            禁用指定功能",
+    --disable feat                       禁用指定功能",
 
     "traditional_chinese" =>
         "\
@@ -85,7 +86,7 @@ OPTIONS
     --clear-cache                        清除快取
     --code/-c cmd                        作為字串傳入程式
     --dump-decl                          輸出類型宣告檔案
-    --disable                            禁用指定功能",
+    --disable feat                       禁用指定功能",
 
     "english" =>
         "\
@@ -103,7 +104,7 @@ OPTIONS
     --clear-cache                        clear cache
     --code/-c cmd                        program passed in as string
     --dump-decl                          output type declaration file
-    --disable                            disable specified features",
+    --disable feat                       disable specified features",
     )
 }
 
@@ -213,21 +214,53 @@ For more information try `pylyzer --help`"
     cfg
 }
 
-pub(crate) fn files_to_be_checked() -> Vec<PathBuf> {
-    let file_or_patterns = env::args()
-        .skip(1)
-        .rev()
-        .take_while(|arg| !arg.starts_with("-"));
-    let mut files = vec![];
+pub(crate) fn files_to_be_checked() -> IndexSet<Result<PathBuf, String>> {
+    let mut file_or_patterns = vec![];
+    let mut args = env::args().skip(1);
+    while let Some(arg) = &args.next() {
+        match arg.as_str() {
+            "--" => {
+                // Discard runtime args
+                break;
+            }
+            "--code" | "-c" | "--disable" | "--verbose" => {
+                // Skip options
+                let _ = &args.next();
+                continue;
+            }
+            file_or_pattern if file_or_pattern.starts_with("-") => {
+                // Skip flags
+                continue;
+            }
+
+            file_or_pattern => file_or_patterns.push(file_or_pattern.to_owned()),
+        }
+    }
+    let mut files = IndexSet::new();
     for file_or_pattern in file_or_patterns {
         if PathBuf::from(&file_or_pattern).is_file() {
-            files.push(PathBuf::from(&file_or_pattern));
+            files.insert(Ok(PathBuf::from(&file_or_pattern)));
         } else {
-            for entry in glob::glob(&file_or_pattern).expect("Failed to read glob pattern") {
-                match entry {
-                    Err(e) => eprintln!("err: {e}"),
-                    Ok(path) if path.is_file() => files.push(path),
-                    _ => {}
+            let entries = glob::glob(&file_or_pattern);
+            match entries {
+                Err(_) => {
+                    files.insert(Err(file_or_pattern));
+                    continue;
+                }
+                Ok(entries) => {
+                    let mut entries = entries.into_iter().peekable();
+                    if entries.peek().is_none() {
+                        files.insert(Err(file_or_pattern));
+                    }
+                    for entry in entries {
+                        match entry {
+                            Err(e) => eprintln!("err: {e}"),
+                            Ok(path) if path.is_file() => {
+                                files.insert(Ok(path));
+                            }
+                            _ => {}
+                        }
+                    }
                 }
             }
         }

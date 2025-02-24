@@ -54,6 +54,7 @@ pylyzer_core = { version = "0.0.81", path = "./crates/pylyzer_core" }
 erg_common = { workspace = true }
 els = { workspace = true }
 glob = "0.3.2"
+indexmap = "2.7.1"
 
 [dev-dependencies]
 erg_compiler = { workspace = true }

@@ -4,6 +4,8 @@ mod copy;
 use els::Server;
 use erg_common::config::ErgMode;
 use erg_common::spawn::exec_new_thread;
+use erg_common::style::colors::RED;
+use erg_common::style::RESET;
 use pylyzer_core::{PythonAnalyzer, SimplePythonParser};
 
 use crate::config::files_to_be_checked;
@@ -23,11 +25,21 @@ fn run() {
             code = analyzer.run();
         } else {
             for path in files {
-                let cfg = cfg.inherit(path);
-                let mut analyzer = PythonAnalyzer::new(cfg);
-                let c = analyzer.run();
-                if c != 0 {
-                    code = 1;
+                match path {
+                    Err(invalid_file_or_pattern) => {
+                        if code == 0 {
+                            code = 1;
+                        }
+                        println!("{RED}Invalid file or pattern{RESET}: {invalid_file_or_pattern}");
+                    }
+                    Ok(path) => {
+                        let cfg = cfg.inherit(path);
+                        let mut analyzer = PythonAnalyzer::new(cfg);
+                        let c = analyzer.run();
+                        if c != 0 {
+                            code = 1;
+                        }
+                    }
                 }
             }
         }
