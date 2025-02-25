@@ -41,7 +41,7 @@ Make sure that `cargo`/`rustc` is up-to-date, as pylyzer may be written with the
 pylyzer file.py
 ```
 
-## Check multiple files
+### Check multiple files
 
 ```sh
 # glob patterns are supported

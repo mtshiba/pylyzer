@@ -17,16 +17,16 @@ members = [
 ]
 
 [workspace.package]
-version = "0.0.81"
+version = "0.0.82"
 authors = ["Shunsuke Shibayama <sbym1346@gmail.com>"]
 license = "MIT OR Apache-2.0"
 edition = "2021"
 repository = "https://github.com/mtshiba/pylyzer"
 
 [workspace.dependencies]
-erg_common = { version = "0.6.53-nightly.2", features = ["py_compat", "els"] }
-erg_compiler = { version = "0.6.53-nightly.2", features = ["py_compat", "els"] }
-els = { version = "0.1.65-nightly.2", features = ["py_compat"] }
+erg_common = { version = "0.6.53-nightly.5", features = ["py_compat", "els"] }
+erg_compiler = { version = "0.6.53-nightly.5", features = ["py_compat", "els"] }
+els = { version = "0.1.65-nightly.5", features = ["py_compat"] }
 # rustpython-parser = { version = "0.3.0", features = ["all-nodes-with-ranges", "location"] }
 # rustpython-ast = { version = "0.3.0", features = ["all-nodes-with-ranges", "location"] }
 rustpython-parser = { git = "https://github.com/RustPython/Parser", version = "0.4.0", features = ["all-nodes-with-ranges", "location"] }
@@ -50,7 +50,7 @@ simplified_chinese = ["erg_common/simplified_chinese", "els/simplified_chinese"]
 traditional_chinese = ["erg_common/traditional_chinese", "els/traditional_chinese"]
 
 [dependencies]
-pylyzer_core = { version = "0.0.81", path = "./crates/pylyzer_core" }
+pylyzer_core = { version = "0.0.82", path = "./crates/pylyzer_core" }
 erg_common = { workspace = true }
 els = { workspace = true }
 glob = "0.3.2"

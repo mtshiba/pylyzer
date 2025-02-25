@@ -152,9 +152,9 @@ checksum = "60b1af1c220855b6ceac025d3f6ecdd2b7c4894bfe9cd9bda4fbb4bc7c0d4cf0"
 
 [[package]]
 name = "els"
-version = "0.1.65-nightly.2"
+version = "0.1.65-nightly.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1dd708f21ce87a184ff5c9010afe61169b021a986fa1f0480ce93f7069308b34"
+checksum = "5cbf48dcb22f23c344ebcf751ba479ea2d770782826659d5ac0e341f6b971432"
 dependencies = [
  "erg_common",
  "erg_compiler",
@@ -174,9 +174,9 @@ checksum = "877a4ace8713b0bcf2a4e7eec82529c029f1d0619886d18145fea96c3ffe5c0f"
 
 [[package]]
 name = "erg_common"
-version = "0.6.53-nightly.2"
+version = "0.6.53-nightly.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fc22c2d3966dfd49dc4e3d142a4c066acfbc2debbf807bd80239640263f82906"
+checksum = "e712be33223eb2376056e5864c32290b592058c5ebdfaf27562e5196cb6ae74a"
 dependencies = [
  "backtrace-on-stack-overflow",
  "erg_proc_macros",
@@ -187,9 +187,9 @@ dependencies = [
 
 [[package]]
 name = "erg_compiler"
-version = "0.6.53-nightly.2"
+version = "0.6.53-nightly.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "33a71fd95255b255147476dba4b043babe82350d1b32c3bd2b716b5c801ac455"
+checksum = "84555ce7074c7c068f64393630add858d5b4d9ccd9c304f5c8274ddae291c58c"
 dependencies = [
  "erg_common",
  "erg_parser",
@@ -197,9 +197,9 @@ dependencies = [
 
 [[package]]
 name = "erg_parser"
-version = "0.6.53-nightly.2"
+version = "0.6.53-nightly.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "283375be7368b88ab745eeb2530c4a276325d36d41f664935c6521cd2afe4043"
+checksum = "e28e444531ca109213845ff38f96e1717f26018ed7cc857e5c8fd4ff29bf3800"
 dependencies = [
  "erg_common",
  "erg_proc_macros",
@@ -208,9 +208,9 @@ dependencies = [
 
 [[package]]
 name = "erg_proc_macros"
-version = "0.6.53-nightly.2"
+version = "0.6.53-nightly.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "222a96d889f1f49149a1d20e634096a82fc575dfe49661d8e713ebcfb152ef71"
+checksum = "dbe0c49c58f7bd9003582c725ce0050bcac6c3754f408e24793c0a29102de9ce"
 dependencies = [
  "quote",
  "syn 1.0.109",
@@ -739,7 +739,7 @@ dependencies = [
 
 [[package]]
 name = "py2erg"
-version = "0.0.81"
+version = "0.0.82"
 dependencies = [
  "erg_common",
  "erg_compiler",
@@ -749,7 +749,7 @@ dependencies = [
 
 [[package]]
 name = "pylyzer"
-version = "0.0.81"
+version = "0.0.82"
 dependencies = [
  "els",
  "erg_common",
@@ -761,7 +761,7 @@ dependencies = [
 
 [[package]]
 name = "pylyzer_core"
-version = "0.0.81"
+version = "0.0.82"
 dependencies = [
  "erg_common",
  "erg_compiler",
@@ -772,7 +772,7 @@ dependencies = [
 
 [[package]]
 name = "pylyzer_wasm"
-version = "0.0.81"
+version = "0.0.82"
 dependencies = [
  "erg_common",
  "erg_compiler",
