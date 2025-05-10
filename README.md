@@ -1,5 +1,9 @@
 # pylyzer ⚡
 
+> [!IMPORTANT]
+> pylyzer is now under the maintenance phase, which means that only bug fixes will be made and no new features will be added.
+The author is currently cooperating with the development of [astral-sh/ty](https://github.com/astral-sh/ty). Please try that instead!
+
 ![pylyzer_logo_with_letters](https://raw.githubusercontent.com/mtshiba/pylyzer/main/images/pylyzer-logo-with-letters.png)
 
 <a href="https://marketplace.visualstudio.com/items?itemName=pylyzer.pylyzer" target="_blank" rel="noreferrer noopener nofollow"><img src="https://img.shields.io/visual-studio-marketplace/v/pylyzer.pylyzer?style=flat&amp;label=VS%20Marketplace&amp;logo=visual-studio-code" alt="vsm-version"></a>
